@@ -25,6 +25,8 @@ services:
         name: X-Content-Type-Options
         value: nosniff
     envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
       - key: VITE_API_URL
         value: https://api.telepakt.pl
 
