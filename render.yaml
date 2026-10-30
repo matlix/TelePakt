@@ -11,8 +11,6 @@ services:
   - type: web
     name: telepakt-web
     runtime: static
-    region: frankfurt
-    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
