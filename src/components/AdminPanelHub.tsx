@@ -43,6 +43,14 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
   const [testingStatus, setTestingStatus] = useState<{ [id: string]: string }>({});
   const [showMasked, setShowMasked] = useState<{ [id: string]: boolean }>({});
 
+  // Staging Password Gate State
+  const [stagingGateActive, setStagingGateActive] = useState<boolean>(() => {
+    return localStorage.getItem('telepakt_staging_gate_enabled') !== 'false';
+  });
+  const [stagingPassInput, setStagingPassInput] = useState<string>(() => {
+    return localStorage.getItem('telepakt_staging_pass') || 'telepakt2025';
+  });
+
   // Users State
   const [users, setUsers] = useState<UserCredentialItem[]>(INITIAL_USER_ACCOUNTS);
   const [userSearch, setUserSearch] = useState('');
@@ -466,6 +474,92 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
               <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
                 <CheckCircle2 className="w-4 h-4" />
                 Wszystkie integracje produkcyjne aktywne
+              </div>
+            </div>
+
+            {/* STAGING ACCESS PASSWORD GATE SETTINGS */}
+            <div className="mb-6 bg-slate-950 border border-amber-500/30 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>Brama Dostępu Przedpremierowego (Staging Password Gate)</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Ochrona Strony
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Blokuje nieupoważnionym osobom wejście na stronę www. Odwiedzający muszą podać poniższe hasło.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={stagingGateActive}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setStagingGateActive(val);
+                        localStorage.setItem('telepakt_staging_gate_enabled', val ? 'true' : 'false');
+                        showToast(val ? 'Włączono wymóg podania hasła na stronie' : 'Wyłączono bramę dostępu (strona jest publicznie otwarta)');
+                      }}
+                      className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                    />
+                    <span className="font-semibold">{stagingGateActive ? 'Brama WŁĄCZONA' : 'Brama WYŁĄCZONA'}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                {/* Change password */}
+                <div className="space-y-1.5">
+                  <label className="text-slate-300 font-semibold flex items-center justify-between">
+                    <span>Hasło dostępu przedpremierowego:</span>
+                    <button
+                      onClick={() => {
+                        localStorage.setItem('telepakt_staging_pass', stagingPassInput.trim() || 'telepakt2025');
+                        showToast('Zaktualizowano hasło dostępu!');
+                      }}
+                      className="text-cyan-400 hover:text-cyan-300 font-bold"
+                    >
+                      Zapisz nowe hasło
+                    </button>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={stagingPassInput}
+                      onChange={(e) => setStagingPassInput(e.target.value)}
+                      placeholder="Wpisz nowe hasło..."
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Direct Bypass Link */}
+                <div className="space-y-1.5">
+                  <label className="text-slate-300 font-semibold flex items-center justify-between">
+                    <span>Bezpośredni link dla testerów (auto-logowanie):</span>
+                    <button
+                      onClick={() => {
+                        const directUrl = `${window.location.origin}/?pass=${encodeURIComponent(stagingPassInput)}`;
+                        navigator.clipboard.writeText(directUrl);
+                        showToast('Skopiowano bezpośredni link z hasłem!');
+                      }}
+                      className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1"
+                    >
+                      Kopiuj link
+                    </button>
+                  </label>
+                  <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 font-mono text-[11px] text-amber-300 truncate select-all">
+                    {window.location.origin}/?pass={stagingPassInput}
+                  </div>
+                </div>
               </div>
             </div>
 

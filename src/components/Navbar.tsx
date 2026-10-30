@@ -14,6 +14,7 @@ interface NavbarProps {
   onSelectTab: (tab: ActiveTab) => void;
   onOpenNameSelector: () => void;
   callsCount: number;
+  onLockApp?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -22,6 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectTab,
   onOpenNameSelector,
   callsCount,
+  onLockApp,
 }) => {
   const logoImagePath = '/src/assets/images/telepakt_logo_icon_1793197547893.jpg';
 
@@ -100,6 +102,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Platformy: <strong className="text-indigo-400">Android & iOS</strong>
               </span>
             </div>
+
+            {/* Staging Access Lock Button */}
+            <button
+              onClick={onLockApp}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-semibold transition-all"
+              title="Aplikacja chroniona hasłem. Kliknij, aby zablokować i przetestować ekran logowania."
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Blokada Hasłem</span>
+            </button>
 
             <button
               onClick={() => onSelectTab('downloads')}

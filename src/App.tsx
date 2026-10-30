@@ -23,6 +23,7 @@ import { InstructionAnimationStudio } from './components/InstructionAnimationStu
 import { LegalAndBusinessHub } from './components/LegalAndBusinessHub';
 import { DownloadExportCenter } from './components/DownloadExportCenter';
 import { AdminPanelHub } from './components/AdminPanelHub';
+import { AccessGateModal } from './components/AccessGateModal';
 import { Shield, Sparkles, Scale, Terminal, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -33,6 +34,20 @@ export default function App() {
   const [calls, setCalls] = useState<CallLog[]>(INITIAL_CALL_LOGS);
   const [selectedCallForComplaint, setSelectedCallForComplaint] = useState<CallLog | null>(null);
   const [preselectedScriptForSimulator, setPreselectedScriptForSimulator] = useState<LegalScript | null>(null);
+
+  // Staging Password Protection State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    // Check if previously authenticated in this browser
+    return localStorage.getItem('telepakt_staging_authenticated') === 'true';
+  });
+  const [isGateEnabled, setIsGateEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('telepakt_staging_gate_enabled') !== 'false';
+  });
+
+  const handleLockApp = () => {
+    localStorage.removeItem('telepakt_staging_authenticated');
+    setIsAuthenticated(false);
+  };
 
   const handleCallLogged = (newCall: CallLog) => {
     setCalls(prev => [newCall, ...prev]);
@@ -58,13 +73,21 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
       
-      {/* Navbar with brand name selector */}
+      {/* Staging Early Access Password Gate */}
+      {isGateEnabled && !isAuthenticated && (
+        <AccessGateModal
+          onAuthenticated={() => setIsAuthenticated(true)}
+        />
+      )}
+
+      {/* Navbar with brand name selector and Lock button */}
       <Navbar
         appName={selectedName}
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenNameSelector={() => setIsNameModalOpen(true)}
         callsCount={calls.length}
+        onLockApp={handleLockApp}
       />
 
       {/* Main Content Area */}
