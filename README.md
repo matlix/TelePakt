@@ -91,27 +91,34 @@ Aplikacja będzie dostępna pod adresem: `http://localhost:3000`
 
 ---
 
-## ☁️ Wdrożenie na Render.com (Backend Django)
+## ☁️ Wdrożenie na Render.com (Render Blueprint 1-Klik)
 
-1. Załóż darmowe konto na [Render.com](https://render.com).
-2. Połącz swoje konto GitHub i wybierz repozytorium `telepakt`.
-3. Wybierz typ: **Web Service**:
-   - **Environment:** `Python 3`
-   - **Build Command:** `pip install -r requirements.txt && python manage.py migrate`
-   - **Start Command:** `gunicorn telepakt_project.wsgi:application --bind 0.0.0.0:$PORT`
-4. Dodaj zmienne środowiskowe:
-   - `SECRET_KEY`: twój bezpieczny klucz Django
-   - `ALLOWED_HOSTS`: `telepakt.pl,api.telepakt.pl,.onrender.com`
-   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
+Projekt posiada gotowy plik **`render.yaml`** (Infrastructure as Code), który automatycznie powołuje bazę PostgreSQL, serwer Django oraz frontend:
+
+1. Zaloguj się na [Render.com](https://render.com).
+2. W prawym górnym rogu kliknij **New +** -> **Blueprint**.
+3. Połącz repozytorium **`matlix/TelePakt`**.
+4. Render odczyta `render.yaml` i automatycznie utworzy:
+   - **`telepakt-web`**: Frontend React SPA (statyczna witryna na `telepakt.pl`)
+   - **`telepakt-api`**: Backend Python Django z Gunicorn i WhiteNoise na `api.telepakt.pl`
+   - **`telepakt-db`**: Zarządzana baza PostgreSQL
+5. Kliknij **Apply** – wdrożenie ruszy automatycznie.
 
 ---
 
 ## 🌐 Konfiguracja Domeny w Hostinger (telepakt.pl)
 
-W panelu Hostinger DNS Management dla domeny `telepakt.pl` dodaj rekordy:
-- **A Record**: `@` wskazuje na adres IP serwera Render lub frontendu
-- **CNAME Record**: `www` wskazuje na `telepakt.pl`
-- **CNAME Record**: `api` wskazuje na twój alias Render: `telepakt-api.onrender.com`
+W panelu Hostinger hPanel w zakładce **DNS / Serwery nazw** dla domeny `telepakt.pl` skonfiguruj poniższe rekordy:
+
+| Typ | Nazwa (Host) | Wartość (Wskazuje na) | Rola |
+| :--- | :--- | :--- | :--- |
+| **A** | `@` | `216.24.57.1` *(lub IP podany przez Render)* | Strona główna `https://telepakt.pl` |
+| **CNAME** | `www` | `telepakt-web.onrender.com` | Subdomena `https://www.telepakt.pl` |
+| **CNAME** | `api` | `telepakt-api.onrender.com` | Backend REST API i webhooki Twilio |
+
+*Certyfikaty SSL (HTTPS) są generowane automatycznie przez Let's Encrypt po stronie Render w ciągu kilku minut od dodania rekordów.*
+
+Szczegółowy przewodnik: zobacz plik [`HOSTINGER_AND_RENDER_DEPLOYMENT_GUIDE.md`](HOSTINGER_AND_RENDER_DEPLOYMENT_GUIDE.md).
 
 ---
 
