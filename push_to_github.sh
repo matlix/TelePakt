@@ -21,15 +21,38 @@ if [ ! -d ".git" ]; then
     git config user.email "matlix@gmail.com"
 fi
 
-echo "➕ Dodawanie wszystkich plików projektu..."
+echo "➕ Sprawdzanie i przygotowywanie plików projektu..."
 git add -A
 
 COMMIT_MSG="feat: complete TelePakt.pl platform with Django backend, Admin panel, and mobile mockups"
 if git diff-index --quiet HEAD -- 2>/dev/null; then
-    echo "ℹ️  Brak nowych zmian do zatwierdzenia."
+    echo "ℹ️  Brak nowych zmian do zatwierdzenia. Drzewo robocze jest czyste."
 else
     echo "💾 Tworzenie commita: '$COMMIT_MSG'..."
     git commit -m "$COMMIT_MSG"
+fi
+
+# If argument passed as $1 (e.g. ./push_to_github.sh https://github.com/username/TelePakt.git)
+if [ -n "$1" ]; then
+    REMOTE_URL="$1"
+    echo "🔗 Ustawianie zdalnego repozytorium origin: $REMOTE_URL"
+    git remote remove origin 2>/dev/null || true
+    git remote add origin "$REMOTE_URL"
+    git branch -M main
+    echo "🚀 Wypychanie gałęzi main do $REMOTE_URL..."
+    git push -u origin main
+    echo "✅ Sukces! Kod projektu TelePakt.pl został pomyślnie wysłany na GitHub!"
+    exit 0
+fi
+
+# If running non-interactively or no argument given
+if [ ! -t 0 ]; then
+    echo "⚠️ Skrypt uruchomiono w trybie nieinteraktywnym bez argumentu URL."
+    echo "Użycie:"
+    echo "   ./push_to_github.sh https://github.com/<twoj-login>/<twoje-repo>.git"
+    echo "lub z tokenem autoryzacyjnym:"
+    echo "   ./push_to_github.sh https://<TWOJ_PERSONAL_TOKEN>@github.com/<twoj-login>/<twoje-repo>.git"
+    exit 0
 fi
 
 echo ""
@@ -48,8 +71,8 @@ case $choice in
             gh repo create TelePakt --public --source=. --remote=origin --push
             echo "✅ Gotowe! Repozytorium zostało pomyślnie utworzone i zsynchronizowane na GitHub!"
         else
-            echo "⚠️ Narzędzie 'gh' (GitHub CLI) nie jest zainstalowane."
-            echo "Możesz je zainstalować lub wybrać opcję 2 z adresem URL."
+            echo "⚠️ Narzędzie 'gh' (GitHub CLI) nie jest zainstalowane w tym środowisku."
+            echo "Wybierz opcję 2 i wklej URL repozytorium z github.com."
         fi
         ;;
     2)
