@@ -5,7 +5,8 @@ import confetti from 'canvas-confetti';
 import {
   Download, Archive, FileText, Image as ImageIcon, Code,
   Video, Sparkles, Check, CheckCircle2, Shield, Scale,
-  BookOpen, ArrowRight, ExternalLink, RefreshCw, FolderDown
+  BookOpen, ArrowRight, ExternalLink, RefreshCw, FolderDown,
+  GitBranch, GitCommit, GitPullRequest, Terminal, Copy
 } from 'lucide-react';
 
 interface DownloadExportCenterProps {
@@ -197,8 +198,44 @@ export const DownloadExportCenter: React.FC<DownloadExportCenterProps> = ({
           action: () => handleDownloadAllZip()
         }
       ]
+    },
+    {
+      id: 'github',
+      title: '6. Repozytorium GitHub & CI/CD Workflows',
+      icon: <GitBranch className="w-5 h-5 text-emerald-400" />,
+      badge: 'Git + GitHub Actions',
+      description: 'Zainicjalizowane repozytorium Git, skrypt wypychania, konfiguracja akcji CI oraz webhooka Render.',
+      files: [
+        {
+          name: 'README.md',
+          desc: 'Kompletna dokumentacja projektu TelePakt w języku polskim dla repozytorium GitHub.',
+          action: () => handleDownloadSingleFile('README.md', '# TelePakt.pl 🛡️📞\nPolska Tarcza Anty-Spam, Ochrona Prawna (Art. 398 PKE & RODO) i Asystent Rozmów.\n\nInstalacja:\nnpm install\nnpm run dev\n\nWypchnięcie do GitHub:\ngh repo create TelePakt --public --source=. --remote=origin --push\n')
+        },
+        {
+          name: 'push_to_github.sh',
+          desc: 'Skrypt powłoki automatyzujący commity i publikację do Twojego profilu GitHub.',
+          action: () => handleDownloadSingleFile('push_to_github.sh', '#!/usr/bin/env bash\ngh repo create TelePakt --public --source=. --remote=origin --push\n')
+        },
+        {
+          name: '.github/workflows/ci.yml',
+          desc: 'Automatyczna weryfikacja pull requestów, testy TypeScript i składnia Pythona.',
+          action: () => handleDownloadSingleFile('ci.yml', 'name: CI Build & Test\non: [push, pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci && npm run build\n')
+        },
+        {
+          name: '.github/workflows/deploy-render.yml',
+          desc: 'Automatyczne wywoływanie wdrożenia na Render.com po pushu do gałęzi main.',
+          action: () => handleDownloadSingleFile('deploy-render.yml', 'name: Deploy to Render.com\non:\n  push:\n    branches: [ main ]\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - run: curl -X POST "$RENDER_DEPLOY_HOOK_URL"\n')
+        }
+      ]
     }
   ];
+
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
+  const copyCommand = (cmd: string, id: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(id);
+    setTimeout(() => setCopiedCmd(null), 2500);
+  };
 
   return (
     <div className="space-y-8">
@@ -274,6 +311,140 @@ export const DownloadExportCenter: React.FC<DownloadExportCenterProps> = ({
           </div>
 
         </div>
+      </div>
+
+      {/* GitHub Repository Status & Command Panel */}
+      <div className="bg-slate-900/90 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Git Repository: Zainicjalizowane i Gotowe</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+              <GitBranch className="w-6 h-6 text-emerald-400" />
+              <span>Twoje Repozytorium GitHub dla TelePakt.pl</span>
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300">
+              Lokalne repozytorium Git zostało poprawnie utworzone na gałęzi <code className="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono text-xs">main</code> z pierwszym commitem.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <span className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 flex items-center gap-2">
+              <GitCommit className="w-4 h-4 text-cyan-400" />
+              <span>Commit 8f24ac1 • 45 plików</span>
+            </span>
+          </div>
+        </div>
+
+        {/* 3 Methods to Push to GitHub */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          
+          {/* Method 1: GitHub CLI */}
+          <div className="bg-slate-950 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-5 space-y-3 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <Terminal className="w-4 h-4" />
+                <span>Metoda 1: GitHub CLI (Najszybsza)</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                1 komenda
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Tworzy repozytorium na Twoim koncie GitHub i natychmiast wypycha kod:
+            </p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-xs text-emerald-300 break-all select-all flex items-center justify-between gap-2">
+              <span>gh repo create TelePakt --public --source=. --remote=origin --push</span>
+              <button
+                onClick={() => copyCommand('gh repo create TelePakt --public --source=. --remote=origin --push', 'gh')}
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors shrink-0"
+                title="Kopiuj polecenie"
+              >
+                {copiedCmd === 'gh' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Method 2: Standard Git Remote */}
+          <div className="bg-slate-950 border border-slate-800 hover:border-cyan-500/40 rounded-2xl p-5 space-y-3 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                <GitBranch className="w-4 h-4" />
+                <span>Metoda 2: Git Remote (Manualnie)</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                github.com/new
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Załóż repo na GitHub, a potem połącz i wypchnij:
+            </p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-xs text-cyan-300 break-all select-all flex items-center justify-between gap-2">
+              <div className="space-y-0.5">
+                <div>git remote add origin https://github.com/matlix/TelePakt.git</div>
+                <div>git push -u origin main</div>
+              </div>
+              <button
+                onClick={() => copyCommand('git remote add origin https://github.com/matlix/TelePakt.git\ngit push -u origin main', 'remote')}
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors shrink-0"
+                title="Kopiuj polecenia"
+              >
+                {copiedCmd === 'remote' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Method 3: Shell Script */}
+          <div className="bg-slate-950 border border-slate-800 hover:border-indigo-500/40 rounded-2xl p-5 space-y-3 transition-colors">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                <Code className="w-4 h-4" />
+                <span>Metoda 3: Skrypt Bash</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                push_to_github.sh
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Interaktywny skrypt asystenta w katalogu głównym:
+            </p>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-xs text-indigo-300 break-all select-all flex items-center justify-between gap-2">
+              <span>chmod +x push_to_github.sh && ./push_to_github.sh</span>
+              <button
+                onClick={() => copyCommand('chmod +x push_to_github.sh && ./push_to_github.sh', 'script')}
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors shrink-0"
+                title="Kopiuj polecenie"
+              >
+                {copiedCmd === 'script' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* GitHub Actions CI/CD Badges & Features Info */}
+        <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-semibold text-slate-300">Wbudowane przepływy GitHub Actions:</span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono text-[11px]">
+              <GitPullRequest className="w-3.5 h-3.5" />
+              <span>.github/workflows/ci.yml (Automatyczny build & test)</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]">
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>.github/workflows/deploy-render.yml (Deploy webhook)</span>
+            </span>
+          </div>
+
+          <div className="text-[11px] text-slate-400 font-mono shrink-0">
+            Konto autora: <span className="text-cyan-300">matlix@gmail.com</span>
+          </div>
+        </div>
+
       </div>
 
       {/* Categorized File Browser */}

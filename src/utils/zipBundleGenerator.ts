@@ -436,6 +436,62 @@ Główne punkty:
     pythonFolder?.file(pf.path, pf.content);
   });
 
+  // 6.5. GITHUB REPOSITORY & CI/CD WORKFLOWS
+  const githubFolder = zip.folder('.github');
+  const workflowsFolder = githubFolder?.folder('workflows');
+  
+  workflowsFolder?.file('ci.yml', `name: CI Build & Test
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+`);
+
+  workflowsFolder?.file('deploy-render.yml', `name: Deploy to Render.com
+on:
+  push:
+    branches: [ main ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Webhook
+        env:
+          RENDER_DEPLOY_HOOK_URL: \${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            curl -X POST "$RENDER_DEPLOY_HOOK_URL"
+          fi
+`);
+
+  zip.file('push_to_github.sh', `#!/usr/bin/env bash
+# TelePakt.pl - Quick Push to GitHub
+git add -A
+git commit -m "feat: updates to TelePakt platform" || true
+echo "Wybierz komendę:"
+echo "gh repo create TelePakt --public --source=. --push"
+echo "lub git push -u origin main"
+`);
+
+  zip.file('README.md', `# TelePakt.pl 🛡️📞
+Polska Tarcza Anty-Spam, Ochrona Prawna (Art. 398 PKE & RODO) i Asystent Rozmów.
+Domena: telepakt.pl | Backend: Django 5 (Render.com) | Frontend: React 19 + Vite
+
+## Szybki start:
+npm install
+npm run dev
+
+## Wypchnięcie do GitHub:
+gh repo create TelePakt --public --source=. --remote=origin --push
+`);
+
   // 7. COMPLETE SCRIPTS LIST IN POLISH
   const scriptsContent = LEGAL_SCRIPTS.map((s, idx) => {
     return `=== SKRYPT ${idx + 1}: ${s.title} ===
