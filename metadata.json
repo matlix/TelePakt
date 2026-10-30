@@ -1,0 +1,6 @@
+{
+  "name": "TelePakt (telepakt.pl) - Legalna Ochrona, Pakt i Własne Odpowiedzi w Rozmowie",
+  "description": "Oficjalny system TelePakt dla domeny telepakt.pl: weto na telemarketerów i oszustwa bankowe, ustalenia B2B, generator skarg oraz własne nagrane i syntetyzowane odpowiedzi suwakiem w trakcie rozmowy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
