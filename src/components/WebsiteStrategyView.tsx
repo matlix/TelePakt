@@ -323,6 +323,21 @@ export const WebsiteStrategyView: React.FC<WebsiteStrategyViewProps> = ({
                   </ul>
                 </div>
               </div>
+
+              {/* Marketplace Trust Badge */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-slate-300">
+                  <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>
+                    <strong>100% Bezpieczna Subskrypcja w Sklepach:</strong> Płać z <strong>Google Play</strong>, <strong>Apple App Store</strong> lub <strong>Samsung Galaxy Store</strong>.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">BLIK</span>
+                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Apple Pay / Google Pay</span>
+                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Rachunek Play/Orange/Plus/T-Mobile</span>
+                </div>
+              </div>
             </div>
 
             {/* Reviews Section on Landing Page */}

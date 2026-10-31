@@ -800,68 +800,145 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
               </div>
             </div>
 
-            {/* Answer Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 my-6">
-              {/* Card 1: W Aplikacji Mobilnej (Apple & Google Play) */}
-              <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
+            {/* Answer Cards: Polish Marketplaces Strategy */}
+            <div className="space-y-6 my-6">
+              
+              {/* Strategic Banner: Why 100% Marketplace is the Best Move in Poland */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-950 to-indigo-950/40 border border-emerald-500/40 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
                   <span className="font-bold text-white text-sm flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-cyan-400" />
-                    1. W aplikacji mobilnej (iOS / Android)
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    Strategia 100% Marketplace w Polsce (Merchant of Record)
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">
-                    Apple & Google obsługują 100%
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-xs font-mono">
+                    Zero bramek płatniczych • Zero KSeF • Zero problemów
                   </span>
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  <strong>NIE POTRZEBUJESZ bramki typu Stripe czy PayU w aplikacji mobilnej!</strong> Zgodnie z wytycznymi <em>Apple App Store Review Guidelines (sekcja 3.1.1)</em> oraz <em>Google Play Payments Policy</em>:
+                  Decyzja o <strong>rezygnacji z własnej bramki płatniczej (np. Stripe, PayU, Przelewy24) na rzecz wyłącznej sprzedaży przez oficjalne sklepy aplikacji</strong> to optymalna decyzja biznesowa i podatkowa w Polsce:
                 </p>
 
-                <ul className="text-xs text-slate-400 space-y-2 list-disc pl-5">
-                  <li>
-                    Wszelkie subskrypcje i usługi cyfrowe konsumowane w telefonie <strong>MUSZĄ</strong> przejść przez In-App Purchases (Google Play Billing / Apple StoreKit).
-                  </li>
-                  <li>
-                    Apple i Google <strong>zajmują się wszystkim</strong>: pobieraniem pieniędzy z kart, obsługą Apple Pay, Google Pay, a w Polsce nawet <strong>BLIK-iem podpiętym do konta Google Play</strong>!
-                  </li>
-                  <li>
-                    Oni rozliczają też podatki, VAT MOSS, waluty i ewentualne zwroty konsumenckie (chargebacks).
-                  </li>
-                  <li>
-                    Prowizja sklepu wynosi <strong>15%</strong> (dla małych firm w programie App Store Small Business do 1 mln USD rocznie).
-                  </li>
-                </ul>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="font-bold text-cyan-300 block">1. Sklep jako Merchant of Record</span>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      Google, Apple, Samsung i Huawei są formalnymi sprzedawcami detalicznymi. To oni wystawiają paragony konsumentom i rozliczają 23% polskiego VAT.
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="font-bold text-emerald-300 block">2. Brak problemu KSeF i faktur</span>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      Otrzymujesz jeden zbiorczy przelew miesięcznie i jedną zbiorczą fakturę B2B od Google Ireland / Apple Distribution International (eksport usług).
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="font-bold text-amber-300 block">3. Polacy płacą BLIK-iem i u operatora</span>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      W Google Play i Galaxy Store Polacy mogą płacić podpiętym BLIK-iem lub dopisując kwotę do abonamentu Play, Orange, Plus czy T-Mobile!
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Card 2: Na stronie WWW (telepakt.pl) */}
-              <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+              {/* All Marketplaces in Poland Comparison Table */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-sm flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-emerald-400" />
-                    2. Na stronie WWW (telepakt.pl)
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px]">
-                    Opcjonalny Stripe / BLIK / PayU
-                  </span>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-cyan-400" />
+                    Wszystkie Sklepy z Aplikacjami w Polsce (Poza Google Play i Apple)
+                  </h4>
+                  <span className="text-[11px] text-slate-400 font-mono">Rynek smartfonów w Polsce: ~25-28M urządzeń</span>
                 </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Na stronie internetowej <strong>telepakt.pl</strong> nie obowiązują restrykcje Apple/Google. Możesz tutaj sprzedawać subskrypcję bezpośrednio:
-                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  
+                  {/* Store 1: Samsung Galaxy Store */}
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/40 transition-colors space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-white">
+                        <span className="text-base">📱</span>
+                        <span>Samsung Galaxy Store (Samsung IAP)</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 font-bold text-[10px] border border-cyan-500/20">
+                        ~32% rynku w Polsce
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Samsung to najpopularniejsza marka telefonów z Androidem w Polsce (Galaxy A, S, Z). Na każdym telefonie zainstalowany jest fabrycznie Galaxy Store.
+                    </p>
+                    <ul className="text-[11px] text-slate-400 space-y-1 list-disc pl-4">
+                      <li><strong>Obsługa subskrypcji:</strong> Pełna przez Samsung In-App Purchase (IAP) SDK.</li>
+                      <li><strong>Metody płatności w PL:</strong> Karty, Samsung Pay, dopisanie do rachunku operatora.</li>
+                      <li><strong>Prowizja:</strong> 15% dla małych wydawców (Small Business Program).</li>
+                      <li><strong>Warto wdrożyć:</strong> Zdecydowanie tak – Samsung chętnie promuje lokalne polskie aplikacje bezpieczeństwa na stronie głównej sklepu.</li>
+                    </ul>
+                  </div>
 
-                <ul className="text-xs text-slate-400 space-y-2 list-disc pl-5">
-                  <li>
-                    Prowizja polskiego BLIK-a lub Stripe to zaledwie <strong>1,2% - 2,5%</strong> (zamiast 15% Apple/Google!).
-                  </li>
-                  <li>
-                    Wzorem Spotify czy YouTube Premium, możesz oferować na stronie abonament taniej (np. 19,99 zł na www vs 24,99 zł w aplikacji), zachęcając użytkowników do zakupu przez stronę.
-                  </li>
-                  <li>
-                    Użytkownik kupuje na <code>telepakt.pl</code>, loguje się tym samym mailem w aplikacji mobilnej, a Django od razu odblokowuje mu ochronę!
-                  </li>
-                </ul>
+                  {/* Store 2: Huawei AppGallery */}
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 transition-colors space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-white">
+                        <span className="text-base">🔴</span>
+                        <span>Huawei AppGallery (HMS IAP)</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 font-bold text-[10px] border border-rose-500/20">
+                        ~6-8% rynku w Polsce
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Miliony Polaków nadal korzysta ze smartfonów i tabletów Huawei, które nie mają dostępu do Google Play z powodu sankcji USA.
+                    </p>
+                    <ul className="text-[11px] text-slate-400 space-y-1 list-disc pl-4">
+                      <li><strong>Obsługa subskrypcji:</strong> Pełna przez Huawei In-App Purchases (HMS Core).</li>
+                      <li><strong>Metody płatności w PL:</strong> <strong>BLIK bezpośrednio w AppGallery!</strong>, karty, Direct Carrier Billing.</li>
+                      <li><strong>Prowizja:</strong> 15% (program wsparcia deweloperów).</li>
+                      <li><strong>Warto wdrożyć:</strong> Tak – TelePakt będzie jedną z nielicznych aplikacji chroniących użytkowników Huawei w Polsce.</li>
+                    </ul>
+                  </div>
+
+                  {/* Store 3: Xiaomi GetApps */}
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/40 transition-colors space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-white">
+                        <span className="text-base">🟠</span>
+                        <span>Xiaomi GetApps / Mi Store</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-bold text-[10px] border border-amber-500/20">
+                        ~28% urządzeń w Polsce
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Xiaomi (Redmi, POCO) to potęga w Polsce. Choć telefony mają sklep GetApps, w Unii Europejskiej Xiaomi domyślnie kieruje transakcje przez <strong>Google Play Billing</strong>, więc publikacja w Google Play automatycznie pokrywa użytkowników Xiaomi.
+                    </p>
+                    <ul className="text-[11px] text-slate-400 space-y-1 list-disc pl-4">
+                      <li>Użytkownicy Xiaomi w Polsce instalują aplikację z Google Play bez dodatkowej pracy z Twojej strony.</li>
+                    </ul>
+                  </div>
+
+                  {/* Store 4: Alternatywne Sklepy w UE na iOS (Akt DMA) */}
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/40 transition-colors space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-white">
+                        <span className="text-base">🇪🇺</span>
+                        <span>Sklepy Alternatywne iOS w UE (AltStore PAL, Setapp)</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 font-bold text-[10px] border border-purple-500/20">
+                        Unijny akt DMA (iOS w Polsce)
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Unijne prawo Digital Markets Act (DMA) wymusiło na Apple otwarcie iPhone'ów na alternatywne sklepy w Polsce i całej UE (AltStore PAL, Epic Store, Setapp Mobile).
+                    </p>
+                    <ul className="text-[11px] text-slate-400 space-y-1 list-disc pl-4">
+                      <li><strong>Status:</strong> Bardzo niszowe (poniżej 1% użytkowników iPhone w Polsce).</li>
+                      <li><strong>Rekomendacja:</strong> Na start w Polsce oficjalny <strong>Apple App Store</strong> w zupełności wystarczy, by pokryć 100% użytkowników iOS.</li>
+                    </ul>
+                  </div>
+
+                </div>
               </div>
+
             </div>
 
             {/* Crucial Technical Clarification: What Django MUST Have */}
