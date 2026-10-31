@@ -9,6 +9,7 @@ import { AppNameOption, CustomerReview } from '../types';
 import { INITIAL_CUSTOMER_REVIEWS } from '../data/adminAndReviewsData';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
 import pwaGuideImage from '../assets/images/pwa_install_android_1793461222858.jpg';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface PublicWebsiteProps {
   appName: AppNameOption;
@@ -26,6 +27,21 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   const [logoErr, setLogoErr] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showPwaScreenshotZoom, setShowPwaScreenshotZoom] = useState(false);
+
+  // Native PWA Installation Hook
+  const { isInstallable, isInstalled, isIOS, isAndroid, install } = usePWAInstall();
+  const [installStatusMsg, setInstallStatusMsg] = useState<'success' | 'dismissed' | 'manual' | null>(null);
+
+  const handlePWAInstallClick = async () => {
+    const outcome = await install();
+    if (outcome === 'accepted') {
+      setInstallStatusMsg('success');
+    } else if (outcome === 'dismissed') {
+      setInstallStatusMsg('dismissed');
+    } else {
+      setInstallStatusMsg('manual');
+    }
+  };
 
   // Download & Testing modal state
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -1057,23 +1073,80 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               {/* TAB 1: PWA (Recommended Instant Android & iOS Install) */}
               {downloadModalTab === 'pwa' && (
                 <div className="space-y-4">
+                  
+                  {/* HERO 1-CLICK DIRECT INSTALL BUTTON */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-indigo-950/70 to-slate-900 border-2 border-cyan-500/60 shadow-xl shadow-cyan-500/15 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                        <span className="text-xs font-black uppercase tracking-wider text-cyan-300 font-mono">
+                          Oficjalny Instalator PWA
+                        </span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded font-bold">
+                        Android • iOS • PC
+                      </span>
+                    </div>
+
+                    {!isInstalled ? (
+                      <button
+                        onClick={handlePWAInstallClick}
+                        className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl shadow-cyan-500/30 active:scale-95 transition-all ring-2 ring-cyan-400/80 cursor-pointer group"
+                      >
+                        <Download className="w-6 h-6 text-white group-hover:scale-110 transition-transform animate-bounce" />
+                        <span>Zainstaluj Aplikację TelePakt (1-Kliknięcie)</span>
+                      </button>
+                    ) : (
+                      <div className="p-3.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-center text-emerald-300 font-bold text-xs flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <span>Aplikacja TelePakt jest już pomyślnie zainstalowana na Twoim telefonie!</span>
+                      </div>
+                    )}
+
+                    {installStatusMsg === 'success' && (
+                      <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-center text-emerald-300 font-bold text-xs animate-in fade-in flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Sukces! Aplikacja została zainstalowana i dodana do ekranu głównego telefonu.</span>
+                      </div>
+                    )}
+
+                    {installStatusMsg === 'manual' && (
+                      <div className="p-3 bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-200 text-xs animate-in fade-in space-y-1">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>Instalacja w Twojej przeglądarce:</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed">
+                          {isIOS
+                            ? 'Na iPhone (Safari): Dotknij ikonę Udostępnij (kwadrat ze strzałką) i wybierz „Do ekranu początkowego”.'
+                            : 'W Chrome na Androidzie: Dotknij 3 pionowe kropki (⋮) w prawym górnym rogu i wybierz „Zainstaluj aplikację” (zobacz zrzut ekranu poniżej).'}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-300 pt-1">
+                      <span>⚡ 100% Darmowa i legalna instalacja</span>
+                      <span>🛡️ Bez czekania na Google Play</span>
+                    </div>
+                  </div>
+
                   <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <strong className="text-white text-xs block">
-                        Aplikacja jest gotowa do natychmiastowej instalacji na Twoim telefonie!
+                        Czym różni się PWA od aplikacji ze sklepu?
                       </strong>
                       <p className="text-slate-300 text-[11px] leading-relaxed">
-                        Dzięki technologii <strong>Progressive Web App (PWA)</strong>, zarejestrowanemu manifestowi i Service Workerowi nie musisz czekać na weryfikację w sklepach. TelePakt instaluje się z własną ikoną na pulpicie telefonu, działa pełnoekranowo i zachowuje się jak natywna aplikacja.
+                        Dzięki technologii <strong>Progressive Web App (PWA)</strong>, zarejestrowanemu manifestowi i Service Workerowi nie musisz pobierać pliku z marketu. TelePakt instaluje się z oficjalną ikoną tarczy na pulpicie telefonu, działa pełnoekranowo i zachowuje się dokładnie jak aplikacja natywna.
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="font-bold text-white text-sm">Jak zainstalować na telefonie z Androidem (Google Chrome lub Samsung Internet):</h4>
+                    <h4 className="font-bold text-white text-sm">Instrukcja instalacji w Chrome na telefonie z Androidem:</h4>
                     <ol className="list-decimal list-inside space-y-2 text-slate-300 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                      <li>Otwórz stronę <code className="text-cyan-400 font-mono">telepakt.pl</code> w przeglądarce <strong>Google Chrome</strong> lub <strong>Samsung Internet</strong> na telefonie.</li>
-                      <li>Kliknij menu w prawym górnym rogu (ikona trzech pionowych kropek <strong>⋮</strong>).</li>
+                      <li>Jeśli czytasz to na telefonie, kliknij powyższy przycisk <strong className="text-cyan-400">„Zainstaluj Aplikację TelePakt”</strong>.</li>
+                      <li>Jeśli przeglądarka nie wyświetli automatycznego monitu, kliknij menu w prawym górnym rogu (ikona trzech pionowych kropek <strong>⋮</strong>).</li>
                       <li>Wybierz opcję <strong className="text-white">„Zainstaluj aplikację”</strong> lub <strong className="text-white">„Dodaj do ekranu głównego”</strong>.</li>
                       <li>Potwierdź klikając <strong className="text-emerald-400">„Zainstaluj”</strong>. Ikona tarczy TelePakt pojawi się na pulpicie obok innych Twoich aplikacji!</li>
                     </ol>
@@ -1143,17 +1216,24 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     </ol>
                   </div>
 
-                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                  {/* Dual Action Bottom Bar */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 border-t border-slate-800/80">
+                    <button
+                      onClick={handlePWAInstallClick}
+                      className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 cursor-pointer transition-all active:scale-95"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Zainstaluj na tym urządzeniu</span>
+                    </button>
+
                     <button
                       onClick={handleCopyLink}
-                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                      className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                      title="Skopiuj link i wyślij na telefon przez WhatsApp / Messenger / e-mail"
                     >
                       {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-cyan-400" />}
-                      <span>{copiedLink ? 'Skopiowano adres!' : 'Skopiuj adres do otwarcia na telefonie'}</span>
+                      <span>{copiedLink ? 'Skopiowano adres WWW!' : 'Przeglądasz na PC? Skopiuj link na telefon'}</span>
                     </button>
-                    <span className="text-[11px] text-slate-400 text-center sm:text-left">
-                      Otwórz ten adres bezpośrednio w Chrome na swoim smartfonie.
-                    </span>
                   </div>
                 </div>
               )}
