@@ -2,13 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#030712" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/jpeg" href="/telepakt_logo.jpg" />
+    <link rel="apple-touch-icon" href="/telepakt_logo.jpg" />
+    <link rel="manifest" href="/manifest.json" />
     <title>TelePakt (telepakt.pl) - Legalna Ochrona, Pakt i Własne Odpowiedzi w Rozmowie</title>
     <meta name="description" content="Oficjalny system TelePakt dla domeny telepakt.pl: weto na telemarketerów i oszustwa bankowe, ustalenia B2B, generator skarg oraz własne nagrane i syntetyzowane odpowiedzi suwakiem w trakcie rozmowy." />
     <meta property="og:title" content="TelePakt (telepakt.pl) - Legalna Ochrona, Pakt i Własne Odpowiedzi w Rozmowie" />
     <meta property="og:description" content="Oficjalny system TelePakt dla domeny telepakt.pl: weto na telemarketerów i oszustwa bankowe, ustalenia B2B, generator skarg oraz własne nagrane i syntetyzowane odpowiedzi suwakiem w trakcie rozmowy." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

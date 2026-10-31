@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import {
   Shield, Smartphone, Scale, CheckCircle2, AlertTriangle, Play,
   Download, Star, MessageSquare, Plus, Lock, ChevronDown, ChevronUp,
-  ExternalLink, ArrowRight, Sparkles, HelpCircle, FileText, Check, PhoneCall
+  ExternalLink, ArrowRight, Sparkles, HelpCircle, FileText, Check, PhoneCall,
+  Menu, X, Share2, Copy
 } from 'lucide-react';
 import { AppNameOption, CustomerReview } from '../types';
 import { INITIAL_CUSTOMER_REVIEWS } from '../data/adminAndReviewsData';
+import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
 
 interface PublicWebsiteProps {
   appName: AppNameOption;
@@ -20,7 +22,16 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   onOpenSimulator,
   onLockApp,
 }) => {
-  const logoImagePath = '/src/assets/images/telepakt_logo_icon_1793197547893.jpg';
+  const [logoErr, setLogoErr] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Download & Testing modal state
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [downloadModalTab, setDownloadModalTab] = useState<'pwa' | 'apk' | 'testing' | 'simulator'>('pwa');
+  const [testerEmail, setTesterEmail] = useState('');
+  const [testerStore, setTesterStore] = useState<'google' | 'apple' | 'samsung' | 'huawei'>('google');
+  const [testerRegistered, setTesterRegistered] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Search widget state
   const [searchNumber, setSearchNumber] = useState('+48 22 104 39 88');
@@ -39,6 +50,23 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
   // FAQ Accordion
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.origin);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleRegisterTester = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (testerEmail) {
+      setTesterRegistered(true);
+      setTimeout(() => {
+        setTesterRegistered(false);
+        setTesterEmail('');
+      }, 4000);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,52 +129,69 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-600 selection:text-white">
       
-      {/* 1. PUBLIC WEBSITE HEADER */}
-      <header className="sticky top-0 z-40 w-full bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+      {/* 1. PUBLIC WEBSITE HEADER - 100% RESPONSIVE FOR ALL SCREEN SIZES */}
+      <header className="sticky top-0 z-40 w-full bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
             
             {/* Brand Logo & Name */}
-            <a href="/" className="flex items-center gap-3 group">
-              <div className="w-11 h-11 rounded-2xl overflow-hidden border border-cyan-500/50 shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform shrink-0">
-                <img 
-                  src={logoImagePath} 
-                  alt="TelePakt Logo" 
-                  className="w-full h-full object-cover" 
-                />
+            <a href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl overflow-hidden border border-cyan-500/50 shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform shrink-0 flex items-center justify-center bg-slate-900">
+                {!logoErr ? (
+                  <img 
+                    src={logoImage} 
+                    alt="TelePakt Logo" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.includes('telepakt_logo.jpg')) {
+                        target.src = '/telepakt_logo.jpg';
+                      } else {
+                        setLogoErr(true);
+                      }
+                    }} 
+                  />
+                ) : (
+                  <Shield className="w-5 h-5 text-cyan-400" />
+                )}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-black tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-cyan-300 transition-colors">
                     TelePakt<span className="text-cyan-400">.pl</span>
                   </span>
-                  <span className="text-[10px] bg-cyan-500/10 text-cyan-300 font-mono px-2 py-0.5 rounded-full border border-cyan-500/30 font-bold">
+                  <span className="hidden sm:inline-flex text-[10px] bg-cyan-500/10 text-cyan-300 font-mono px-2 py-0.5 rounded-full border border-cyan-500/30 font-bold whitespace-nowrap">
                     PKE Art. 398
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
+                <p className="text-[11px] text-slate-400 font-medium hidden md:block truncate">
                   Prawna Tarcza Anty-Spam dla Twojego Telefonu
                 </p>
               </div>
             </a>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
+            <nav className="hidden lg:flex items-center gap-5 xl:gap-6 text-xs font-semibold text-slate-300">
               <a href="#jak-dziala" className="hover:text-cyan-400 transition-colors">Jak to działa</a>
               <a href="#prawo-pke" className="hover:text-cyan-400 transition-colors">Podstawa Prawna</a>
               <a href="#sprawdz-numer" className="hover:text-cyan-400 transition-colors">Sprawdź Numer</a>
-              <a href="#pobierz" className="hover:text-cyan-400 transition-colors">Pobierz Aplikację</a>
+              <button 
+                onClick={() => { setDownloadModalTab('pwa'); setIsDownloadModalOpen(true); }}
+                className="hover:text-cyan-400 transition-colors cursor-pointer"
+              >
+                Pobierz i Testuj
+              </button>
               <a href="#cennik" className="hover:text-cyan-400 transition-colors">Cennik</a>
               <a href="#opinie" className="hover:text-cyan-400 transition-colors">Opinie (4.9★)</a>
               <a href="#faq" className="hover:text-cyan-400 transition-colors">FAQ</a>
             </nav>
 
-            {/* Actions: Download CTA + Discrete Admin Studio Button */}
-            <div className="flex items-center gap-3">
+            {/* Actions: Download CTA + Studio Button + Mobile Toggle */}
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               {onLockApp && (
                 <button
                   onClick={onLockApp}
-                  className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400 hover:border-amber-500/40 transition-colors"
+                  className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400 hover:border-amber-500/40 transition-colors shrink-0"
                   title="Aplikacja przedpremierowa - zablokuj hasłem"
                 >
                   <Lock className="w-4 h-4" />
@@ -156,7 +201,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               {onOpenStudio && (
                 <button
                   onClick={onOpenStudio}
-                  className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all"
+                  className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all shrink-0"
                   title="Przejdź do Studia Projektowego, Generatora Skarg i Panelu Admina"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
@@ -164,31 +209,127 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </button>
               )}
 
-              <a
-                href="#pobierz"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all active:scale-95 shrink-0"
+              {/* Mobile Compact CTA button (never overflows screen on Android) */}
+              <button
+                onClick={() => { setDownloadModalTab('pwa'); setIsDownloadModalOpen(true); }}
+                className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-white font-bold text-xs shadow-md shadow-cyan-500/20 active:scale-95 shrink-0 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Pobierz</span>
+              </button>
+
+              {/* Desktop / Tablet CTA button */}
+              <button
+                onClick={() => { setDownloadModalTab('pwa'); setIsDownloadModalOpen(true); }}
+                className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all active:scale-95 shrink-0 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>Pobierz Aplikację</span>
-              </a>
+              </button>
+
+              {/* Mobile Hamburger Menu Toggle */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 lg:hidden rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white shrink-0 cursor-pointer"
+                aria-label="Menu"
+              >
+                {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
             </div>
 
           </div>
         </div>
+
+        {/* Mobile Dropdown Menu Drawer */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-xl px-4 py-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+            <nav className="flex flex-col space-y-2 text-sm font-semibold text-slate-300">
+              <a 
+                href="#jak-dziala" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-xl hover:bg-slate-900 hover:text-cyan-400 transition-colors"
+              >
+                Jak to działa
+              </a>
+              <a 
+                href="#prawo-pke" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-xl hover:bg-slate-900 hover:text-cyan-400 transition-colors"
+              >
+                Podstawa Prawna (art. 398 PKE)
+              </a>
+              <a 
+                href="#sprawdz-numer" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-xl hover:bg-slate-900 hover:text-cyan-400 transition-colors"
+              >
+                Sprawdź Numer
+              </a>
+              <button 
+                onClick={() => { setIsMobileMenuOpen(false); setDownloadModalTab('pwa'); setIsDownloadModalOpen(true); }}
+                className="text-left px-3 py-2 rounded-xl bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20"
+              >
+                📲 Pobierz i Przetestuj na Telefonie (PWA & APK)
+              </button>
+              <a 
+                href="#cennik" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-xl hover:bg-slate-900 hover:text-cyan-400 transition-colors"
+              >
+                Cennik (Tylko Subskrypcje Sklepowe)
+              </a>
+              <a 
+                href="#opinie" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-xl hover:bg-slate-900 hover:text-cyan-400 transition-colors"
+              >
+                Opinie Klientów (4.9★)
+              </a>
+              <a 
+                href="#faq" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-xl hover:bg-slate-900 hover:text-cyan-400 transition-colors"
+              >
+                FAQ
+              </a>
+            </nav>
+
+            <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2">
+              {onOpenSimulator && (
+                <button
+                  onClick={() => { setIsMobileMenuOpen(false); onOpenSimulator(); }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-cyan-300 font-semibold"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  <span>Uruchom Symulator Rozmowy w Przeglądarce</span>
+                </button>
+              )}
+              {onOpenStudio && (
+                <button
+                  onClick={() => { setIsMobileMenuOpen(false); onOpenStudio(); }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 font-semibold"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Studio Projektowe & Panel Admina</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* 2. HERO SECTION */}
-      <section className="relative overflow-hidden pt-12 pb-20 border-b border-slate-800/80 bg-gradient-to-b from-slate-950 via-slate-900/60 to-slate-950">
+      <section className="relative overflow-hidden pt-10 sm:pt-14 pb-16 sm:pb-20 border-b border-slate-800/80 bg-gradient-to-b from-slate-950 via-slate-900/60 to-slate-950">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-gradient-to-tr from-cyan-500/10 via-indigo-500/10 to-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm">
-            <Shield className="w-4 h-4" />
-            <span>Oficjalna tarcza prawna zgodna z Prawem komunikacji elektronicznej (PKE 2024)</span>
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm max-w-full">
+            <Shield className="w-4 h-4 shrink-0" />
+            <span className="truncate">Oficjalna tarcza prawna zgodna z Prawem komunikacji elektronicznej (PKE 2024)</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
             Koniec niechcianych telefonów. <br />
             <span className="bg-gradient-to-r from-cyan-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
               Jedno kliknięcie. Twoje weto. Zgodnie z prawem.
@@ -199,72 +340,92 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             <strong>TelePakt.pl</strong> to pierwsza w Polsce aplikacja, która w trakcie uciążliwej rozmowy wpuszcza asystenta prawnego wygłaszającego bezwzględny sprzeciw z <strong>art. 398 PKE</strong> i <strong>art. 21 RODO</strong> pod rygorem kary 1 000 000 zł oraz rejestruje niepodważalny dowód audio dla UKE.
           </p>
 
-          {/* Download Badges - The Big 4 in Poland */}
+          {/* Download & Testing Badges - 4 Official Stores */}
           <div id="pobierz" className="pt-4 space-y-3">
             <p className="text-xs font-semibold text-slate-400">
               Dostępne we wszystkich 4 oficjalnych sklepach z aplikacjami w Polsce:
             </p>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 max-w-3xl mx-auto">
               
               {/* Google Play */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/60 text-white flex items-center gap-3 cursor-pointer transition-all shadow-md group">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-5 h-5" />
+              <div 
+                onClick={() => { setTesterStore('google'); setDownloadModalTab('testing'); setIsDownloadModalOpen(true); }}
+                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="text-left">
+                <div className="text-left min-w-0">
                   <span className="text-[10px] text-slate-400 block leading-tight">Pobierz w</span>
-                  <strong className="text-xs text-white">Google Play</strong>
+                  <strong className="text-xs text-white truncate block">Google Play</strong>
                 </div>
               </div>
 
               {/* Apple App Store */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 text-white flex items-center gap-3 cursor-pointer transition-all shadow-md group">
-                <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-5 h-5" />
+              <div 
+                onClick={() => { setTesterStore('apple'); setDownloadModalTab('testing'); setIsDownloadModalOpen(true); }}
+                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="text-left">
+                <div className="text-left min-w-0">
                   <span className="text-[10px] text-slate-400 block leading-tight">Pobierz w</span>
-                  <strong className="text-xs text-white">App Store</strong>
+                  <strong className="text-xs text-white truncate block">App Store</strong>
                 </div>
               </div>
 
               {/* Samsung Galaxy Store */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/60 text-white flex items-center gap-3 cursor-pointer transition-all shadow-md group">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-5 h-5" />
+              <div 
+                onClick={() => { setTesterStore('samsung'); setDownloadModalTab('testing'); setIsDownloadModalOpen(true); }}
+                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="text-left">
+                <div className="text-left min-w-0">
                   <span className="text-[10px] text-slate-400 block leading-tight">Pobierz w</span>
-                  <strong className="text-xs text-white">Galaxy Store</strong>
+                  <strong className="text-xs text-white truncate block">Galaxy Store</strong>
                 </div>
               </div>
 
               {/* Huawei AppGallery */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/60 text-white flex items-center gap-3 cursor-pointer transition-all shadow-md group">
-                <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-5 h-5" />
+              <div 
+                onClick={() => { setTesterStore('huawei'); setDownloadModalTab('testing'); setIsDownloadModalOpen(true); }}
+                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="text-left">
+                <div className="text-left min-w-0">
                   <span className="text-[10px] text-slate-400 block leading-tight">Pobierz w</span>
-                  <strong className="text-xs text-white">AppGallery</strong>
+                  <strong className="text-xs text-white truncate block">AppGallery</strong>
                 </div>
               </div>
 
             </div>
 
-            {/* In-app Simulator Link for Demo */}
-            {onOpenSimulator && (
-              <div className="pt-2">
+            {/* In-app Simulator & PWA Install Direct Triggers */}
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs">
+              <button
+                onClick={() => { setDownloadModalTab('pwa'); setIsDownloadModalOpen(true); }}
+                className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4 cursor-pointer"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Zainstaluj bezpośrednio na telefonie (PWA 1-klik)</span>
+              </button>
+
+              {onOpenSimulator && (
                 <button
                   onClick={onOpenSimulator}
-                  className="inline-flex items-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 font-semibold underline underline-offset-4 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold underline underline-offset-4 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>Zobacz interaktywny symulator rozmowy w przeglądarce</span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
         </div>
@@ -678,9 +839,23 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-slate-800/80 pb-8">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg overflow-hidden border border-cyan-500/40">
-                  <img src={logoImagePath} alt="Logo" className="w-full h-full object-cover" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl overflow-hidden border border-cyan-500/40 shrink-0 flex items-center justify-center bg-slate-900">
+                  {!logoErr ? (
+                    <img 
+                      src={logoImage} 
+                      alt="TelePakt Logo" 
+                      className="w-full h-full object-cover" 
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (!target.src.includes('telepakt_logo.jpg')) {
+                          target.src = '/telepakt_logo.jpg';
+                        }
+                      }}
+                    />
+                  ) : (
+                    <Shield className="w-4 h-4 text-cyan-400" />
+                  )}
                 </div>
                 <span className="text-lg font-black text-white">TelePakt.pl</span>
               </div>
@@ -698,7 +873,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               {onOpenStudio && (
                 <button 
                   onClick={onOpenStudio} 
-                  className="text-cyan-400 hover:text-cyan-300 font-bold"
+                  className="text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer"
                 >
                   🛠️ Strefa Dewelopera & Admin
                 </button>
@@ -801,6 +976,315 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: POBIERZ / ZAINSTALUJ / PRZETESTUJ NA TELEFONIE */}
+      {isDownloadModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-md z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base sm:text-lg">Zainstaluj lub Przetestuj na Telefonie</h3>
+                  <p className="text-xs text-slate-400">Wersja Przedpremierowa (Release Candidate 1.0)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm cursor-pointer transition-colors"
+                aria-label="Zamknij"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Tabs Navigation */}
+            <div className="grid grid-cols-4 p-2 bg-slate-950/80 border-b border-slate-800 gap-1 text-[11px] sm:text-xs font-semibold">
+              <button
+                onClick={() => setDownloadModalTab('pwa')}
+                className={`py-2 px-1 sm:px-3 rounded-xl transition-all cursor-pointer text-center ${
+                  downloadModalTab === 'pwa'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                📱 PWA (1-klik)
+              </button>
+              <button
+                onClick={() => setDownloadModalTab('apk')}
+                className={`py-2 px-1 sm:px-3 rounded-xl transition-all cursor-pointer text-center ${
+                  downloadModalTab === 'apk'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                📦 Plik APK
+              </button>
+              <button
+                onClick={() => setDownloadModalTab('testing')}
+                className={`py-2 px-1 sm:px-3 rounded-xl transition-all cursor-pointer text-center ${
+                  downloadModalTab === 'testing'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                🧪 Google Play
+              </button>
+              <button
+                onClick={() => setDownloadModalTab('simulator')}
+                className={`py-2 px-1 sm:px-3 rounded-xl transition-all cursor-pointer text-center ${
+                  downloadModalTab === 'simulator'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                🎮 Symulator
+              </button>
+            </div>
+
+            {/* Tab Contents */}
+            <div className="p-4 sm:p-6 space-y-5 text-xs text-slate-300 flex-1">
+              
+              {/* TAB 1: PWA (Recommended Instant Android & iOS Install) */}
+              {downloadModalTab === 'pwa' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <strong className="text-white text-xs block">
+                        Aplikacja jest gotowa do natychmiastowej instalacji na Twoim telefonie!
+                      </strong>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        Dzięki technologii <strong>Progressive Web App (PWA)</strong>, zarejestrowanemu manifestowi i Service Workerowi nie musisz czekać na weryfikację w sklepach. TelePakt instaluje się z własną ikoną na pulpicie telefonu, działa pełnoekranowo i zachowuje się jak natywna aplikacja.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-white text-sm">Jak zainstalować na telefonie z Androidem (Google Chrome lub Samsung Internet):</h4>
+                    <ol className="list-decimal list-inside space-y-2 text-slate-300 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                      <li>Otwórz stronę <code className="text-cyan-400 font-mono">telepakt.pl</code> w przeglądarce <strong>Google Chrome</strong> lub <strong>Samsung Internet</strong> na telefonie.</li>
+                      <li>Kliknij menu w prawym górnym rogu (ikona trzech pionowych kropek <strong>⋮</strong>).</li>
+                      <li>Wybierz opcję <strong className="text-white">„Zainstaluj aplikację”</strong> lub <strong className="text-white">„Dodaj do ekranu głównego”</strong>.</li>
+                      <li>Potwierdź klikając <strong className="text-emerald-400">„Zainstaluj”</strong>. Ikona tarczy TelePakt pojawi się na pulpicie obok innych Twoich aplikacji!</li>
+                    </ol>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-white text-sm">Jak zainstalować na iPhone (Apple Safari):</h4>
+                    <ol className="list-decimal list-inside space-y-2 text-slate-300 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                      <li>Otwórz stronę w <strong>Safari</strong> na iOS.</li>
+                      <li>Dotknij przycisk <strong className="text-white">Udostępnij</strong> (kwadrat ze strzałką w górę na dolnym pasku).</li>
+                      <li>Przewiń w dół i wybierz <strong className="text-white">„Do ekranu początkowego” (Add to Home Screen)</strong>.</li>
+                    </ol>
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                    <button
+                      onClick={handleCopyLink}
+                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    >
+                      {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-cyan-400" />}
+                      <span>{copiedLink ? 'Skopiowano adres!' : 'Skopiuj adres do otwarcia na telefonie'}</span>
+                    </button>
+                    <span className="text-[11px] text-slate-400 text-center sm:text-left">
+                      Otwórz ten adres bezpośrednio w Chrome na swoim smartfonie.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: APK SIDELOADING (Android Direct Install) */}
+              {downloadModalTab === 'apk' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <strong className="text-white text-xs block">
+                        Instalacja pliku .APK na Androidzie (tzw. Sideloading)
+                      </strong>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        System Android umożliwia deweloperom i testerom instalację plików <code className="text-emerald-400 font-mono">.apk</code> bezpośrednio z pamięci telefonu z pominięciem marketu Google Play.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <h4 className="font-bold text-white text-sm">Instrukcja instalacji pliku .APK:</h4>
+                    <ul className="space-y-2 text-slate-300 text-xs">
+                      <li className="flex items-start gap-2">
+                        <span className="font-mono text-cyan-400 font-bold">1.</span>
+                        <span>Pobierz paczkę deweloperską poniższym przyciskiem na swój smartfon.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-mono text-cyan-400 font-bold">2.</span>
+                        <span>Otwórz pobrany plik w Menedżerze Plików (Pobrane / Downloads).</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-mono text-cyan-400 font-bold">3.</span>
+                        <span>Gdy Android wyświetli monit: <em>„Ze względów bezpieczeństwa telefon nie zezwala na instalowanie nieznanych aplikacji z tego źródła”</em>, kliknij <strong>Ustawienia</strong> i włącz suwak <strong>„Zezwalaj z tego źródła”</strong>.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-mono text-cyan-400 font-bold">4.</span>
+                        <span>Wróć i kliknij <strong>„Zainstaluj”</strong>. Gotowe!</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div>
+                      <span className="font-bold text-white block">Paczka Wdrożeniowa TelePakt Mobile</span>
+                      <span className="text-[11px] text-slate-400">Zawiera manifest PWA, ikony wysokiej rozdzielczości oraz konfigurację Android Capacitor</span>
+                    </div>
+                    <a
+                      href="/manifest.json"
+                      download="telepakt-manifest.json"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Pobierz konfigurator</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: CLOSED TESTING TRACKS (Google Play & Apple TestFlight) */}
+              {downloadModalTab === 'testing' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-start gap-3">
+                    <Smartphone className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <strong className="text-white text-xs block">
+                        Zamknięte Testy Sklepowe (Google Play Closed Testing & TestFlight)
+                      </strong>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        Zgodnie z wymogami Google Play (obowiązkowe testy z udziałem 20 testerów przez 14 dni przed premierą publiczną), aplikacja jest dostępna w oficjalnych sklepach na <strong>prywatnych ścieżkach testowych</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  {testerRegistered ? (
+                    <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2 animate-in fade-in">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                      <h4 className="font-bold text-white text-sm">Zgłoszenie do testów przyjęte!</h4>
+                      <p className="text-xs text-slate-300">
+                        Na adres <strong className="text-white">{testerEmail}</strong> otrzymasz zaproszenie z bezpośrednim linkiem instalacyjnym w wybranym sklepie.
+                      </p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleRegisterTester} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                      <h4 className="font-bold text-white text-sm">Dołącz do zamkniętej grupy testerów:</h4>
+                      <p className="text-slate-400 text-[11px]">
+                        Podaj swój adres e-mail powiązany z kontem Google Play lub Apple ID:
+                      </p>
+
+                      <div className="space-y-2">
+                        <label className="block text-slate-300 font-semibold text-[11px]">Sklep docelowy:</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {[
+                            { id: 'google', label: 'Google Play' },
+                            { id: 'apple', label: 'App Store (TestFlight)' },
+                            { id: 'samsung', label: 'Galaxy Store' },
+                            { id: 'huawei', label: 'AppGallery' }
+                          ].map(store => (
+                            <button
+                              type="button"
+                              key={store.id}
+                              onClick={() => setTesterStore(store.id as any)}
+                              className={`p-2 rounded-xl text-center border text-[11px] font-semibold cursor-pointer transition-colors ${
+                                testerStore === store.id 
+                                  ? 'bg-cyan-500/20 border-cyan-500 text-white font-bold'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              {store.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 font-semibold text-[11px] mb-1">Twój adres e-mail:</label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="twoj-email@gmail.com"
+                          value={testerEmail}
+                          onChange={(e) => setTesterEmail(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-cyan-500 text-xs"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 cursor-pointer"
+                      >
+                        Otrzymaj prywatny link do testów w sklepie
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: LIVE BROWSER SIMULATOR */}
+              {downloadModalTab === 'simulator' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                    <Play className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <strong className="text-white text-xs block">
+                        Interaktywny Symulator Rozmowy w Czasie Rzeczywistym
+                      </strong>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">
+                        Nie musisz niczego instalować, aby przetestować działanie TelePakt. W naszym symulatorze sprawdzisz odtworzenie formuły prawnej z art. 398 PKE, suwak sprzeciwu, audio lektora oraz wygenerujesz przykładowy protokół dowodowy dla UKE.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 text-center space-y-4">
+                    <Smartphone className="w-12 h-12 text-cyan-400 mx-auto" />
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-white text-sm">Gotowy na test na żywo?</h4>
+                      <p className="text-slate-400 text-xs max-w-sm mx-auto">
+                        Otwórz symulator połączenia przychodzącego od natrętnego call center i uruchom asystenta jednym ruchem.
+                      </p>
+                    </div>
+
+                    {onOpenSimulator && (
+                      <button
+                        onClick={() => {
+                          setIsDownloadModalOpen(false);
+                          onOpenSimulator();
+                        }}
+                        className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 cursor-pointer transition-transform active:scale-95"
+                      >
+                        Uruchom Symulator Rozmowy Teraz
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Zgodność z PKE 2024 i RODO • 100% Bezpieczeństwa</span>
+              <button
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold cursor-pointer"
+              >
+                Zamknij
+              </button>
+            </div>
+
           </div>
         </div>
       )}

@@ -6,6 +6,8 @@ import {
   Film, TrendingUp, FolderDown, Download, Lock
 } from 'lucide-react';
 
+import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
+
 export type ActiveTab = 'telepakt' | 'simulator' | 'downloads' | 'global_expansion' | 'animation' | 'legal_hub' | 'website' | 'admin_hub' | 'usecases' | 'voice' | 'legal' | 'complaints' | 'telephony' | 'python' | 'history';
 
 interface NavbarProps {
@@ -25,7 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   callsCount,
   onLockApp,
 }) => {
-  const logoImagePath = '/src/assets/images/telepakt_logo_icon_1793197547893.jpg';
+  const [logoErr, setLogoErr] = React.useState(false);
 
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'telepakt', label: 'TelePakt.pl & Logo', icon: <Shield className="w-4 h-4 text-cyan-400" />, badge: 'Logo & Makiety' },
@@ -56,14 +58,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-3">
             <div 
               onClick={() => onSelectTab('telepakt')}
-              className="w-10 h-10 rounded-xl overflow-hidden border border-cyan-500/50 shadow-lg shadow-cyan-500/20 cursor-pointer shrink-0"
+              className="w-10 h-10 rounded-xl overflow-hidden border border-cyan-500/50 shadow-lg shadow-cyan-500/20 cursor-pointer shrink-0 flex items-center justify-center bg-slate-900"
               title="Przejdź do studia TelePakt & Logo"
             >
-              <img 
-                src={logoImagePath} 
-                alt="TelePakt Logo" 
-                className="w-full h-full object-cover" 
-              />
+              {!logoErr ? (
+                <img 
+                  src={logoImage} 
+                  alt="TelePakt Logo" 
+                  onError={() => setLogoErr(true)}
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <Shield className="w-6 h-6 text-cyan-400" />
+              )}
             </div>
 
             <div>
