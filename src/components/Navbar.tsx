@@ -6,7 +6,7 @@ import {
   Film, TrendingUp, FolderDown, Download, Lock
 } from 'lucide-react';
 
-export type ActiveTab = 'telepakt' | 'simulator' | 'downloads' | 'animation' | 'legal_hub' | 'website' | 'admin_hub' | 'usecases' | 'voice' | 'legal' | 'complaints' | 'telephony' | 'python' | 'history';
+export type ActiveTab = 'telepakt' | 'simulator' | 'downloads' | 'global_expansion' | 'animation' | 'legal_hub' | 'website' | 'admin_hub' | 'usecases' | 'voice' | 'legal' | 'complaints' | 'telephony' | 'python' | 'history';
 
 interface NavbarProps {
   appName: AppNameOption;
@@ -30,6 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'telepakt', label: 'TelePakt.pl & Logo', icon: <Shield className="w-4 h-4 text-cyan-400" />, badge: 'Logo & Makiety' },
     { id: 'simulator', label: 'Symulator Rozmowy', icon: <Smartphone className="w-4 h-4" /> },
+    { id: 'global_expansion', label: 'Ekspansja Globalna (Świat)', icon: <Globe className="w-4 h-4 text-cyan-400" />, badge: 'USA / EU / UK' },
     { id: 'downloads', label: 'Pobierz Projekt (.ZIP)', icon: <FolderDown className="w-4 h-4 text-emerald-400" />, badge: 'Całość + Pliki' },
     { id: 'animation', label: 'Wideo & Animacje', icon: <Film className="w-4 h-4 text-cyan-400" />, badge: 'TikTok / YT' },
     { id: 'legal_hub', label: 'Prawo, Biznes & Dokumenty', icon: <Scale className="w-4 h-4 text-emerald-400" />, badge: 'Analiza + ToS' },

@@ -24,6 +24,7 @@ import { LegalAndBusinessHub } from './components/LegalAndBusinessHub';
 import { DownloadExportCenter } from './components/DownloadExportCenter';
 import { AdminPanelHub } from './components/AdminPanelHub';
 import { AccessGateModal } from './components/AccessGateModal';
+import { GlobalStrategyView } from './components/GlobalStrategyView';
 import { Shield, Sparkles, Scale, Terminal, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -146,6 +147,10 @@ export default function App() {
             onUpdateScript={handleUpdateScript}
             onAddCustomScript={handleAddCustomScript}
           />
+        )}
+
+        {activeTab === 'global_expansion' && (
+          <GlobalStrategyView />
         )}
 
         {activeTab === 'downloads' && (
