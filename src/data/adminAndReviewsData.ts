@@ -116,6 +116,28 @@ export const INITIAL_INTEGRATION_CREDENTIALS: IntegrationCredential[] = [
     instructions: 'App Store Connect -> Users and Access -> Integrations -> In-App Purchase -> Generate Private Key.'
   },
   {
+    id: 'cred-samsung-iap',
+    category: 'samsung_store',
+    name: 'Samsung Galaxy Store IAP Server Credentials',
+    key: 'SAMSUNG_IAP_SERVICE_ID',
+    valueMasked: 'SGS_SRV_PL_009•••••••• (Package: pl.telepakt.shield, Item: telepakt_monthly)',
+    status: 'active',
+    lastTested: 'Dzisiaj, 17:30 (Samsung IAP v6 Server API zweryfikowane)',
+    description: 'Klucz uwierzytelniania transakcji w sklepie Galaxy Store dla 32% polskich smartfonów Samsung Galaxy.',
+    instructions: 'Samsung Developers Portal -> Galaxy Store Developer Console -> In-App Purchase -> Service ID & Public Key.'
+  },
+  {
+    id: 'cred-huawei-iap',
+    category: 'huawei_store',
+    name: 'Huawei AppGallery Connect API (HMS Core)',
+    key: 'HUAWEI_APPGALLERY_CLIENT_SECRET',
+    valueMasked: 'client_id: 10928374•••• | secret: 8f9b••••••••••••••••••••',
+    status: 'active',
+    lastTested: 'Wczoraj, 19:15 (Huawei Order Service API aktywne)',
+    description: 'Integracja z Huawei In-App Purchases (IAP) dla użytkowników telefonów i tabletów Huawei w Polsce.',
+    instructions: 'Huawei Developers -> AppGallery Connect -> General Information -> App Information -> Client Secret.'
+  },
+  {
     id: 'cred-s3-r2',
     category: 'cloud_storage',
     name: 'Cloudflare R2 / AWS S3 Zero-Storage Retention Bucket',
@@ -138,7 +160,7 @@ export const INITIAL_USER_ACCOUNTS: UserCredentialItem[] = [
     joinedDate: '2026-09-15',
     quotaMinutesUsed: 14,
     totalMinutes: 120,
-    provider: 'Google Play IAP'
+    provider: 'Google Play Store'
   },
   {
     id: 'usr-102',
@@ -153,6 +175,28 @@ export const INITIAL_USER_ACCOUNTS: UserCredentialItem[] = [
   },
   {
     id: 'usr-103',
+    email: 'tomasz.samsung@o2.pl',
+    phone: '+48 693 445 566',
+    plan: 'Miesięczny (19,99 zł)',
+    status: 'active',
+    joinedDate: '2026-10-18',
+    quotaMinutesUsed: 9,
+    totalMinutes: 60,
+    provider: 'Samsung Galaxy Store'
+  },
+  {
+    id: 'usr-104',
+    email: 'ewa.huawei@interia.pl',
+    phone: '+48 510 332 211',
+    plan: 'Roczny Tarcza (179 zł)',
+    status: 'active',
+    joinedDate: '2026-10-24',
+    quotaMinutesUsed: 17,
+    totalMinutes: 120,
+    provider: 'Huawei AppGallery'
+  },
+  {
+    id: 'usr-105',
     email: 'kancelaria.legal@wp.pl',
     phone: '+48 22 890 12 34',
     plan: 'B2B Firma (499 zł)',
@@ -160,17 +204,6 @@ export const INITIAL_USER_ACCOUNTS: UserCredentialItem[] = [
     joinedDate: '2026-08-10',
     quotaMinutesUsed: 89,
     totalMinutes: 500,
-    provider: 'Web Direct (telepakt.pl)'
-  },
-  {
-    id: 'usr-104',
-    email: 'marek.tester@interia.pl',
-    phone: '+48 791 112 233',
-    plan: 'Darmowy (3 dni)',
-    status: 'active',
-    joinedDate: '2026-10-28',
-    quotaMinutesUsed: 3,
-    totalMinutes: 10,
-    provider: 'Google Play IAP'
+    provider: 'Google Play B2B'
   }
 ];

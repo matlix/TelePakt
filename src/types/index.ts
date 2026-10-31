@@ -119,7 +119,7 @@ export interface CustomerReview {
 
 export interface IntegrationCredential {
   id: string;
-  category: 'twilio' | 'google_play' | 'apple_store' | 'cloud_storage' | 'tts_speech';
+  category: 'twilio' | 'google_play' | 'apple_store' | 'samsung_store' | 'huawei_store' | 'cloud_storage' | 'tts_speech';
   name: string;
   key: string;
   valueMasked: string;
@@ -138,5 +138,5 @@ export interface UserCredentialItem {
   joinedDate: string;
   quotaMinutesUsed: number;
   totalMinutes: number;
-  provider: 'Google Play IAP' | 'Apple App Store' | 'Web Direct (telepakt.pl)';
+  provider: 'Google Play IAP' | 'Google Play Store' | 'Apple App Store' | 'Samsung Galaxy Store' | 'Huawei AppGallery' | 'Google Play B2B' | 'Web Direct (telepakt.pl)';
 }

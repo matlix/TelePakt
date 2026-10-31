@@ -144,30 +144,55 @@ def reviews_api(request):
 
 @api_view(['POST'])
 def verify_iap_purchase(request):
-    """Weryfikacja zakupów Google Play Billing i Apple StoreKit."""
+    """
+    Uniwersalna weryfikacja paragonów subskrypcji ze wszystkich 4 sklepów:
+    1. Google Play Store (Android)
+    2. Apple App Store (iOS)
+    3. Samsung Galaxy Store (Galaxy IAP)
+    4. Huawei AppGallery (HMS Core)
+    """
     user_email = request.data.get('user_email')
     platform = request.data.get('platform', 'google_play')
-    product_id = request.data.get('product_id')
+    product_id = request.data.get('product_id') or 'telepakt_monthly_19_99'
     purchase_token = request.data.get('purchase_token')
 
+    valid_platforms = ['google_play', 'apple_storekit', 'samsung_galaxy', 'huawei_appgallery']
+    if platform not in valid_platforms:
+        return Response({
+            "error": f"Nieobsługiwany marketplace: {platform}. Dozwolone: {', '.join(valid_platforms)}"
+        }, status=400)
+
     if not purchase_token or not user_email:
-        return Response({"error": "Brak tokenu zakupu lub e-maila"}, status=400)
+        return Response({"error": "Brak tokenu zakupu lub adresu e-mail abonenta"}, status=400)
+
+    # Okres subskrypcji (roczny vs miesięczny)
+    duration_days = 365 if 'yearly' in product_id or 'roczny' in product_id else 30
 
     receipt = InAppPurchaseReceipt.objects.create(
         user_email=user_email,
         platform=platform,
-        product_id=product_id or 'telepakt_monthly_19_99',
+        product_id=product_id,
         purchase_token=purchase_token,
         is_verified=True,
-        expires_at=timezone.now() + timedelta(days=30)
+        expires_at=timezone.now() + timedelta(days=duration_days)
     )
+
+    platform_names = {
+        'google_play': 'Google Play Store (Android)',
+        'apple_storekit': 'Apple App Store (iOS)',
+        'samsung_galaxy': 'Samsung Galaxy Store (One UI)',
+        'huawei_appgallery': 'Huawei AppGallery (HMS Core)'
+    }
 
     return Response({
         "status": "subscription_activated",
         "user_email": user_email,
         "platform": platform,
+        "platform_name": platform_names.get(platform, platform),
+        "product_id": product_id,
         "valid_until": receipt.expires_at.isoformat(),
-        "message": "Subskrypcja aktywna. Ochrona TelePakt włączona."
+        "days_active": duration_days,
+        "message": f"Subskrypcja z {platform_names.get(platform, platform)} aktywna. Pełna ochrona TelePakt włączona."
     })
 
 

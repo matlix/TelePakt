@@ -114,8 +114,15 @@ class IntegrationCredential(models.Model):
 
 
 class InAppPurchaseReceipt(models.Model):
+    PLATFORM_CHOICES = [
+        ('google_play', 'Google Play Store'),
+        ('apple_storekit', 'Apple App Store'),
+        ('samsung_galaxy', 'Samsung Galaxy Store'),
+        ('huawei_appgallery', 'Huawei AppGallery'),
+    ]
+
     user_email = models.EmailField(verbose_name="E-mail abonenta")
-    platform = models.CharField(max_length=30, verbose_name="Platforma (google_play / apple)")
+    platform = models.CharField(max_length=30, choices=PLATFORM_CHOICES, default='google_play', verbose_name="Platforma Marketplace")
     product_id = models.CharField(max_length=100, verbose_name="ID Produktu")
     purchase_token = models.TextField(verbose_name="Token paragonu zakupu")
     is_verified = models.BooleanField(default=False, verbose_name="Zweryfikowano z serwerem sklepu")

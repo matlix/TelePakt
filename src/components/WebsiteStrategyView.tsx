@@ -188,24 +188,51 @@ export const WebsiteStrategyView: React.FC<WebsiteStrategyViewProps> = ({
                 {appName.name} to pierwsza w Polsce aplikacja, która w trakcie połączenia wpuszcza bota wygłaszającego bezwzględny sprzeciw z art. 398 PKE i art. 21 RODO oraz rejestruje niepodważalny dowód audio dla UKE.
               </p>
 
-              {/* Store Download Badges */}
+              {/* Store Download Badges - The Big 4 in Poland */}
+              <div className="space-y-2 pt-2">
+                <div className="text-[11px] font-semibold text-slate-400">
+                  Dostępne we wszystkich 4 oficjalnych sklepach z aplikacjami w Polsce:
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-3xl mx-auto">
+                  {/* Google Play */}
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-emerald-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md">
+                    <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div className="text-left text-xs">
+                      <span className="text-[9px] text-slate-400 block leading-none">Pobierz w</span>
+                      <strong className="text-[11px]">Google Play</strong>
+                    </div>
+                  </div>
+
+                  {/* Apple App Store */}
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-blue-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md">
+                    <Smartphone className="w-4 h-4 text-blue-400 shrink-0" />
+                    <div className="text-left text-xs">
+                      <span className="text-[9px] text-slate-400 block leading-none">Pobierz w</span>
+                      <strong className="text-[11px]">App Store</strong>
+                    </div>
+                  </div>
+
+                  {/* Samsung Galaxy Store */}
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-cyan-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md">
+                    <Smartphone className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div className="text-left text-xs">
+                      <span className="text-[9px] text-slate-400 block leading-none">Pobierz w</span>
+                      <strong className="text-[11px]">Galaxy Store</strong>
+                    </div>
+                  </div>
+
+                  {/* Huawei AppGallery */}
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-rose-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md">
+                    <Smartphone className="w-4 h-4 text-rose-400 shrink-0" />
+                    <div className="text-left text-xs">
+                      <span className="text-[9px] text-slate-400 block leading-none">Pobierz w</span>
+                      <strong className="text-[11px]">AppGallery</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <div className="px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-white flex items-center gap-3 cursor-pointer transition-all shadow-lg shadow-black/40">
-                  <Smartphone className="w-5 h-5 text-emerald-400" />
-                  <div className="text-left text-xs">
-                    <span className="text-[10px] text-slate-400 block leading-none">Pobierz w</span>
-                    <strong className="text-xs">Google Play (Android)</strong>
-                  </div>
-                </div>
-
-                <div className="px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-white flex items-center gap-3 cursor-pointer transition-all shadow-lg shadow-black/40">
-                  <Smartphone className="w-5 h-5 text-blue-400" />
-                  <div className="text-left text-xs">
-                    <span className="text-[10px] text-slate-400 block leading-none">Pobierz w</span>
-                    <strong className="text-xs">App Store (iPhone)</strong>
-                  </div>
-                </div>
-
                 {onOpenAnimation && (
                   <button
                     onClick={onOpenAnimation}

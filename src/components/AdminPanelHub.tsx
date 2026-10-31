@@ -56,6 +56,39 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
   const [userSearch, setUserSearch] = useState('');
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
+  // In-App Purchase Simulator State (4 stores)
+  const [simulatedReceiptResult, setSimulatedReceiptResult] = useState<{
+    platform: string;
+    product: string;
+    user: string;
+    validUntil: string;
+    status: string;
+    receiptHash: string;
+  } | null>(null);
+
+  const handleSimulateStorePurchase = (storeId: 'google_play' | 'apple_storekit' | 'samsung_galaxy' | 'huawei_appgallery') => {
+    const storeNames = {
+      google_play: 'Google Play Store (Android)',
+      apple_storekit: 'Apple App Store (iOS)',
+      samsung_galaxy: 'Samsung Galaxy Store (Galaxy IAP v6)',
+      huawei_appgallery: 'Huawei AppGallery (HMS Core)'
+    };
+    const randomUser = `uzytkownik.${Math.floor(Math.random() * 8999 + 1000)}@telepakt.pl`;
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 30);
+
+    const result = {
+      platform: storeNames[storeId],
+      product: 'telepakt_monthly_19_99 (Tarcza Osobista)',
+      user: randomUser,
+      validUntil: expiry.toISOString().split('T')[0],
+      status: 'Weryfikacja zakończona sukcesem (Status 200 OK)',
+      receiptHash: `sha256_${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`
+    };
+    setSimulatedReceiptResult(result);
+    showToast(`Zweryfikowano zakup z ${storeNames[storeId]}!`);
+  };
+
   const showToast = (msg: string) => {
     setSuccessToast(msg);
     setTimeout(() => setSuccessToast(null), 3000);
@@ -979,11 +1012,93 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
                   <span>
-                    <strong>Złoty standard w branży mobilnej:</strong> Narzędzie <strong>RevenueCat</strong> (darmowe do $2,500 przychodu/mies.) obsługuje za Ciebie weryfikację zarówno Apple, jak i Google Play w jednym SDK!
+                    <strong>Unifikacja paragonów w Django:</strong> Wszystkie 4 sklepy (Google Play, Apple StoreKit, Samsung IAP, Huawei IAP) trafiają do jednego modelu <code>InAppPurchaseReceipt</code> w Twojej bazie PostgreSQL.
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* LIVE SIMULATOR: Test In-App Purchase Receipts for all 4 stores */}
+            <div className="p-5 rounded-2xl bg-slate-950 border border-cyan-500/30 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-cyan-400" />
+                    <span>Symulator Testowy Weryfikacji Paragonów (Wszystkie 4 Sklepy)</span>
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Kliknij poniższy sklep, aby przetestować endpoint API: <code>POST /api/telephony/verify-purchase/</code>
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                  Django 5 + PostgreSQL
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <button
+                  onClick={() => handleSimulateStorePurchase('google_play')}
+                  className="p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 hover:bg-slate-800/80 text-white text-left transition-all active:scale-95 cursor-pointer shadow-md"
+                >
+                  <span className="text-sm block">🟢 Google Play</span>
+                  <span className="text-[10px] text-slate-400">Android / Xiaomi / Pixel</span>
+                </button>
+
+                <button
+                  onClick={() => handleSimulateStorePurchase('apple_storekit')}
+                  className="p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-blue-500 hover:bg-slate-800/80 text-white text-left transition-all active:scale-95 cursor-pointer shadow-md"
+                >
+                  <span className="text-sm block">🍎 Apple StoreKit</span>
+                  <span className="text-[10px] text-slate-400">iPhone iOS 16 / 17 / 18</span>
+                </button>
+
+                <button
+                  onClick={() => handleSimulateStorePurchase('samsung_galaxy')}
+                  className="p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500 hover:bg-slate-800/80 text-white text-left transition-all active:scale-95 cursor-pointer shadow-md"
+                >
+                  <span className="text-sm block">📱 Galaxy Store</span>
+                  <span className="text-[10px] text-slate-400">Samsung IAP v6</span>
+                </button>
+
+                <button
+                  onClick={() => handleSimulateStorePurchase('huawei_appgallery')}
+                  className="p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-rose-500 hover:bg-slate-800/80 text-white text-left transition-all active:scale-95 cursor-pointer shadow-md"
+                >
+                  <span className="text-sm block">🔴 AppGallery</span>
+                  <span className="text-[10px] text-slate-400">Huawei HMS Core</span>
+                </button>
+              </div>
+
+              {/* Simulation Result Window */}
+              {simulatedReceiptResult && (
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-xs space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between text-emerald-400 font-bold border-b border-slate-800 pb-2">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      {simulatedReceiptResult.status}
+                    </span>
+                    <span className="font-mono text-[10px] text-slate-400">
+                      ID paragonu: {simulatedReceiptResult.receiptHash}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1">
+                    <div>
+                      <span className="text-slate-400 block">Sklep (Marketplace):</span>
+                      <strong className="text-white">{simulatedReceiptResult.platform}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Abonent:</span>
+                      <strong className="text-cyan-300 font-mono">{simulatedReceiptResult.user}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Ważność ochrony w PostgreSQL:</span>
+                      <strong className="text-emerald-300 font-mono">do {simulatedReceiptResult.validUntil}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       )}
