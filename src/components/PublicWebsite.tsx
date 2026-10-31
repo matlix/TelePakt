@@ -8,6 +8,7 @@ import {
 import { AppNameOption, CustomerReview } from '../types';
 import { INITIAL_CUSTOMER_REVIEWS } from '../data/adminAndReviewsData';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
+import pwaGuideImage from '../assets/images/pwa_install_android_1793461222858.jpg';
 
 interface PublicWebsiteProps {
   appName: AppNameOption;
@@ -24,6 +25,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 }) => {
   const [logoErr, setLogoErr] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showPwaScreenshotZoom, setShowPwaScreenshotZoom] = useState(false);
 
   // Download & Testing modal state
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -1077,6 +1079,61 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     </ol>
                   </div>
 
+                  {/* Visual Screenshot of Chrome Android with the highlighted 3-dots and "Zainstaluj aplikację" */}
+                  <div className="bg-slate-950 p-4 rounded-2xl border border-cyan-500/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-cyan-400">📸 Zrzut ekranu z telefonu (Google Chrome na Androidzie):</span>
+                      </div>
+                      <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-mono font-bold">
+                        Gdzie kliknąć ⋮
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                      <div 
+                        onClick={() => setShowPwaScreenshotZoom(true)}
+                        className="relative w-40 sm:w-48 rounded-xl overflow-hidden border border-cyan-500/50 shadow-lg shadow-cyan-500/20 cursor-pointer group shrink-0"
+                      >
+                        <img 
+                          src={pwaGuideImage} 
+                          alt="Instrukcja instalacji PWA na Androidzie - menu 3 kropek i Zainstaluj aplikację" 
+                          className="w-full h-auto object-cover group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            e.currentTarget.src = '/pwa_install_android_guide.jpg';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                          <span className="text-[10px] font-bold bg-slate-950/90 text-cyan-300 px-2 py-1 rounded-lg border border-cyan-500/40 shadow-sm opacity-90 group-hover:opacity-100">
+                            🔍 Kliknij, aby powiększyć
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-xs flex-1">
+                        <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                          <strong className="text-white flex items-center gap-1.5 text-[11px]">
+                            <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-[10px]">1</span>
+                            Krok 1: Ikona 3 pionowych kropek (⋮)
+                          </strong>
+                          <p className="text-slate-400 text-[10px] leading-relaxed">
+                            Znajduje się w prawym górnym rogu przeglądarki Chrome, tuż obok paska adresu (zaznaczona świecącym okręgiem na zrzucie).
+                          </p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 space-y-1">
+                          <strong className="text-cyan-300 flex items-center gap-1.5 text-[11px]">
+                            <span className="w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center font-black text-[10px]">2</span>
+                            Krok 2: Opcja „Zainstaluj aplikację”
+                          </strong>
+                          <p className="text-slate-300 text-[10px] leading-relaxed">
+                            Po rozwinięciu menu zobaczysz pozycję <strong>„Zainstaluj aplikację”</strong> (z ikoną telefonu ze strzałką, podświetlona na turkusowo). W starszych wersjach Chrome może nazywać się <strong>„Dodaj do ekranu głównego”</strong>.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     <h4 className="font-bold text-white text-sm">Jak zainstalować na iPhone (Apple Safari):</h4>
                     <ol className="list-decimal list-inside space-y-2 text-slate-300 bg-slate-950 p-4 rounded-2xl border border-slate-800">
@@ -1285,6 +1342,47 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox: Powiększony Zrzut Ekranu Instalacji PWA na Androidzie */}
+      {showPwaScreenshotZoom && (
+        <div 
+          onClick={() => setShowPwaScreenshotZoom(false)}
+          className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-slate-900 border border-cyan-500/40 rounded-3xl p-4 max-w-sm sm:max-w-md w-full shadow-2xl relative space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div>
+                <h4 className="font-bold text-white text-sm">Instalacja PWA w Chrome na Androidzie</h4>
+                <p className="text-[11px] text-cyan-400">Ikona 3 kropek (⋮) ➔ Opcja „Zainstaluj aplikację”</p>
+              </div>
+              <button 
+                onClick={() => setShowPwaScreenshotZoom(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-inner max-h-[75vh] flex items-center justify-center bg-black">
+              <img 
+                src={pwaGuideImage} 
+                alt="Zrzut ekranu instalacji PWA na Androidzie" 
+                className="w-full h-auto max-h-[72vh] object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = '/pwa_install_android_guide.jpg';
+                }}
+              />
+            </div>
+
+            <div className="text-[11px] text-slate-300 text-center bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+              💡 Dotknij podświetloną opcję <strong>„Zainstaluj aplikację”</strong>, a TelePakt pojawi się na pulpicie Twojego telefonu.
+            </div>
           </div>
         </div>
       )}
