@@ -25,7 +25,8 @@ import { DownloadExportCenter } from './components/DownloadExportCenter';
 import { AdminPanelHub } from './components/AdminPanelHub';
 import { AccessGateModal } from './components/AccessGateModal';
 import { GlobalStrategyView } from './components/GlobalStrategyView';
-import { Shield, Sparkles, Scale, Terminal, CheckCircle2 } from 'lucide-react';
+import { PublicWebsite } from './components/PublicWebsite';
+import { Shield, Sparkles, Scale, Terminal, CheckCircle2, ArrowLeft } from 'lucide-react';
 
 export default function App() {
   const [selectedName, setSelectedName] = useState<AppNameOption>(APP_NAMES[0]);
@@ -35,6 +36,15 @@ export default function App() {
   const [calls, setCalls] = useState<CallLog[]>(INITIAL_CALL_LOGS);
   const [selectedCallForComplaint, setSelectedCallForComplaint] = useState<CallLog | null>(null);
   const [preselectedScriptForSimulator, setPreselectedScriptForSimulator] = useState<LegalScript | null>(null);
+
+  // View Mode: 'website' (Official Public Website for www.telepakt.pl) vs 'studio' (Developer Studio & Admin)
+  const [viewMode, setViewMode] = useState<'website' | 'studio'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'studio' || params.get('admin') === 'true' || params.get('dev') === 'true') {
+      return 'studio';
+    }
+    return 'website'; // STRICT DEFAULT FOR WWW.TELEPAKT.PL IS THE PUBLIC WEBSITE
+  });
 
   // Staging Password Protection State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -71,6 +81,30 @@ export default function App() {
     setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
   };
 
+  // 1. PUBLIC WEBSITE MODE (Default for www.telepakt.pl)
+  if (viewMode === 'website') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-600 selection:text-white">
+        {/* Staging Early Access Password Gate */}
+        {isGateEnabled && !isAuthenticated && (
+          <AccessGateModal
+            onAuthenticated={() => setIsAuthenticated(true)}
+          />
+        )}
+        <PublicWebsite
+          appName={selectedName}
+          onOpenStudio={() => setViewMode('studio')}
+          onOpenSimulator={() => {
+            setViewMode('studio');
+            setActiveTab('simulator');
+          }}
+          onLockApp={handleLockApp}
+        />
+      </div>
+    );
+  }
+
+  // 2. DEVELOPER STUDIO & ADMIN MODE
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
       
@@ -80,6 +114,23 @@ export default function App() {
           onAuthenticated={() => setIsAuthenticated(true)}
         />
       )}
+
+      {/* Studio Mode Return Banner */}
+      <div className="bg-gradient-to-r from-indigo-950 via-slate-950 to-indigo-950 border-b border-indigo-500/40 px-4 py-2.5 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 z-50">
+        <div className="flex items-center gap-2 text-indigo-300">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>
+            <strong>Tryb Dewelopera i Panel Administratora TelePakt.pl</strong> — Symulator, Generator Skarg UKE, Szablony i Narzędzia
+          </span>
+        </div>
+        <button
+          onClick={() => setViewMode('website')}
+          className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/20 cursor-pointer transition-all self-end sm:self-auto"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Wróć do Oficjalnej Strony WWW (telepakt.pl)</span>
+        </button>
+      </div>
 
       {/* Navbar with brand name selector and Lock button */}
       <Navbar
