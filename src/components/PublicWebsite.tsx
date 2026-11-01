@@ -139,7 +139,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
       a: 'Stosujemy restrykcyjną zasadę Zero-Storage (Prywatność przez Projekt). Nagranie trafia bezpośrednio do pamięci Twojego telefonu lub na Twój prywatny dysk w chmurze (Google Drive, iCloud, Dropbox). Z serwerów węzła jest natychmiast trwale niszczone (shredding).'
     },
     {
-      q: 'Czym TelePakt różni się od zwykłych aplikacji blokujących (np. Truecaller)?',
+      q: 'Czym TelePakt różni się od zwykłych, pasywnych aplikacji blokujących?',
       a: 'Zwykłe aplikacje tylko sprawdzają bazę numerów. Telemarketerzy omijają je, generując tysiące nowych numerów (tzw. CLI spoofing). TelePakt działa aktywnie: wygłasza formalne żądanie zaprzestania przetwarzania danych z rygorem kary do miliona złotych, co zmusza call center do trwałego wykreślenia Twojego numeru z bazy, pod groźbą kontroli UKE i UODO.'
     }
   ];

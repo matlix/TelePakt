@@ -220,7 +220,7 @@ Telemarketerzy uciekają w 10 sekund, a Twój numer znika z ich bazy na zawsze! 
       platform: 'YouTube / Strona WWW (16:9)',
       title: 'Opis wideo: „Jak legalnie i skutecznie powstrzymać telemarketerów w Polsce”',
       content: `W tym wideo pokazujemy działanie TelePakt (telepakt.pl) w oparciu o Art. 398 ustawy Prawo komunikacji elektronicznej (PKE) oraz Art. 21 RODO.
-Zwykłe blokery typu Truecaller zawodzą, ponieważ telemarketerzy maskują numery (CLI spoofing). TelePakt uderza bezpośrednio w ich system CRM, wymuszając natychmiastowe usunięcie danych osobowych i generując certyfikat dowodowy dla Prezesa UKE.
+Zwykłe pasywne blokery zawodzą, ponieważ telemarketerzy maskują numery (CLI spoofing). TelePakt uderza bezpośrednio w ich system CRM, wymuszając natychmiastowe usunięcie danych osobowych i generując certyfikat dowodowy dla Prezesa UKE.
 Działa na iPhone i Android w trybie telekonferencji 3-stronnej oraz Zero-Storage dla pełnej prywatności.`,
     },
   ];

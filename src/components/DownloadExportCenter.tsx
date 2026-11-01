@@ -95,7 +95,7 @@ export const DownloadExportCenter: React.FC<DownloadExportCenterProps> = ({
         {
           name: '02_BIZNESPLAN_I_ANALIZA_RYNKOWA.md',
           desc: 'TAM/SAM/SOM (25M smartfonów, 1.2M PLN MRR, marża 96% na Twilio).',
-          action: () => handleDownloadSingleFile('02_BIZNESPLAN_I_ANALIZA_RYNKOWA.md', '# BIZNESPLAN TELEPAKT.PL\n\nAnaliza konkurencji Truecaller/Robokiller, kalkulacja kosztów minuty SIP i prognoza przychodów.')
+          action: () => handleDownloadSingleFile('02_BIZNESPLAN_I_ANALIZA_RYNKOWA.md', '# BIZNESPLAN TELEPAKT.PL\n\nAnaliza rynku i otoczenia konkurencyjnego, kalkulacja kosztów minuty SIP i prognoza przychodów.')
         },
         {
           name: '03_WSZYSTKIE_SKRYPTY_I_FORMULY_PRAWNE.txt',

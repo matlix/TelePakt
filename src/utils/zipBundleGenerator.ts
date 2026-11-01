@@ -41,8 +41,7 @@ Tradycyjna aplikacja mobilna zainstalowana ze sklepu nie jest w stanie bezpośre
 - **iOS (Apple):** Polityka bezpieczeństwa Apple uniemożliwia aplikacjom firm trzecich nakładanie paneli na systemowy ekran połączenia, nagrywanie audio połączenia komórkowego oraz wstrzykiwanie strumienia audio do trwającej rozmowy.
 - **Android:** Od wersji Android 10 Google zablokował interfejsy nagrywania rozmów komórkowych. Choć aplikacja może stać się domyślnym programem do obsługi telefonu (Default Dialer), to bezpośrednie miksowanie audio do łącza GSM/VoLTE jest blokowane przez sterowniki modemu telefonu.
 
-**Rozwiązanie: Chmurowa telekonferencja 3-stronna (3-way conference line)**
-Wzorem światowych liderów (np. TapeACall, Robokiller):
+**Rozwiązaniem klasy produkcyjnej jest chmurowa linia konferencyjna (3-way conference):**
 1. Użytkownik odbiera połączenie od telemarketera.
 2. Dotyka suwaka TelePakt – aplikacja nawiązuje połączenie z dedykowanym węzłem SIP w chmurze (np. na Twilio / Plivo).
 3. Telefon scala połączenia w telekonferencję (na Androidzie automatycznie przez Dialer, na iPhone jednym kliknięciem "Połącz rozmowy / Merge").
@@ -88,8 +87,8 @@ Data: 2024 / 2025
 
 ---
 
-## 2. Dlaczego konkurenci zawodzą?
-- **Pasywne bazy numerów (Truecaller, Orange):** Nie chronią przed CLI spoofingiem (podstawianiem fałszywych numerów) oraz nie usuwają numeru z CRM telemarketera.
+## 2. Dlaczego pasywne rozwiązania zawodzą?
+- **Pasywne bazy numerów:** Nie chronią przed CLI spoofingiem (podstawianiem fałszywych numerów) oraz nie usuwają numeru z CRM telemarketera.
 - **TelePakt:** Wymusza wpis w CRM telemarketera "ZAKAZ KONTAKTU / SPRZECIW RODO" pod groźbą kary 1 mln zł od Prezesa UKE. Telemarketer usuwa numer, by nie narażać call center na karę finansową.
 
 ---

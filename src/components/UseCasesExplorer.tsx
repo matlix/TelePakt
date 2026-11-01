@@ -271,7 +271,7 @@ export const UseCasesExplorer: React.FC<UseCasesExplorerProps> = ({
               1. Zwykły antyspam: ~0 zł / darmowy
             </span>
             <p className="text-slate-400 text-[11px] leading-relaxed">
-              Przeciętne aplikacje (Truecaller, Orange Telefon) konkurują darmową bazą numerów i mają trudność z pobieraniem opłat w Polsce.
+              Pasywne aplikacje z prostą czarną listą konkurują darmową bazą numerów i mają trudność z pobieraniem opłat w Polsce.
             </p>
           </div>
 

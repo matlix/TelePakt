@@ -519,9 +519,9 @@ export const TelePaktMockupsStudio: React.FC<TelePaktMockupsStudioProps> = ({ ap
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                    <strong className="text-emerald-400 block">3. Zgodność z procedurą Apple TapeACall</strong>
+                    <strong className="text-emerald-400 block">3. Zgodność z wytycznymi App Store & Google Play</strong>
                     <p className="text-slate-400 text-[11px] leading-relaxed">
-                      Mechanizm konferencji 3-stronnej jest w 100% zgodny z wytycznymi App Store Review Guidelines i nie narusza żadnych polityk prywatności Apple.
+                      Mechanizm konferencji 3-stronnej jest w 100% zgodny z oficjalnymi wytycznymi bezpieczeństwa systemów mobilnych i nie narusza żadnych polityk prywatności.
                     </p>
                   </div>
                 </div>

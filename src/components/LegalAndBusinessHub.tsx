@@ -406,20 +406,20 @@ KROK 4: CERTYFIKAT I ZERO-STORAGE
             </div>
           </div>
 
-          {/* Why Truecaller and Standard Blocklists Fail */}
+          {/* Why Standard Blocklists Fail */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-400" />
-              <span>Dlaczego Zwykłe Blokery (Truecaller, Sync.me, Orange) Zawodzą?</span>
+              <span>Dlaczego Zwykłe Pasywne Blokery Zawodzą?</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="p-4 bg-red-950/20 border border-red-500/20 rounded-xl space-y-2">
                 <span className="text-red-400 font-bold uppercase tracking-wider block">
-                  Tradycyjne Aplikacje (Truecaller itp.) – Pasywne
+                  Tradycyjne Aplikacje Pasywne – Przestarzały Model
                 </span>
                 <ul className="space-y-1.5 text-slate-300 list-disc pl-4">
-                  <li><strong>CLI Spoofing</strong>: Call center podstawiają co godzinę nowe, losowe numery polskich komórek. Zanim Truecaller zaktualizuje bazę, wykonano już 10 000 połączeń.</li>
+                  <li><strong>CLI Spoofing</strong>: Call center podstawiają co godzinę nowe, losowe numery polskich komórek. Zanim jakakolwiek baza zaktualizuje numer, wykonano już 10 000 połączeń.</li>
                   <li><strong>Brak usunięcia z CRM</strong>: Odrzucenie połączenia powoduje, że system telemarketera ustawia status „Nie odebrano – ponów za 2 godziny”. Telemarketer zadzwoni jutro z innego numeru.</li>
                   <li><strong>Brak sankcji</strong>: Dzwoniący nie ponosi żadnych konsekwencji ani ryzyka kary.</li>
                 </ul>
@@ -442,15 +442,15 @@ KROK 4: CERTYFIKAT I ZERO-STORAGE
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-emerald-400" />
-              <span>Porównanie Cenowe z Konkurencją i Struktura Pakietów TelePakt</span>
+              <span>Porównanie Rynkowe i Przewaga Technologiczna TelePakt</span>
             </h3>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] font-mono">
-                    <th className="py-3 px-4">Usługa / Aplikacja</th>
-                    <th className="py-3 px-4">Cena Miesięczna</th>
+                    <th className="py-3 px-4">Kategoria Rozwiązania</th>
+                    <th className="py-3 px-4">Średnia Cena</th>
                     <th className="py-3 px-4">Usuwanie z CRM</th>
                     <th className="py-3 px-4">Polska Ustawa PKE 2024</th>
                     <th className="py-3 px-4">Protokół Dowodowy UKE</th>
@@ -458,23 +458,23 @@ KROK 4: CERTYFIKAT I ZERO-STORAGE
                 </thead>
                 <tbody className="divide-y divide-slate-800 text-slate-300">
                   <tr className="hover:bg-slate-800/40">
-                    <td className="py-3 px-4 font-bold text-white">Truecaller Premium</td>
+                    <td className="py-3 px-4 font-bold text-white">Zwykłe Pasywne Czarne Listy</td>
                     <td className="py-3 px-4">15,99 - 24,99 zł</td>
                     <td className="py-3 px-4 text-red-400">NIE (tylko lokalna czarna lista)</td>
                     <td className="py-3 px-4 text-red-400">BRAK</td>
                     <td className="py-3 px-4 text-red-400">BRAK</td>
                   </tr>
                   <tr className="hover:bg-slate-800/40">
-                    <td className="py-3 px-4 font-bold text-white">Robokiller (USA)</td>
-                    <td className="py-3 px-4">~25 - 40 zł ($4.99-$9.99)</td>
-                    <td className="py-3 px-4 text-amber-400">Tylko boty humorystyczne</td>
+                    <td className="py-3 px-4 font-bold text-white">Zagraniczne Aplikacje Antyspamowe</td>
+                    <td className="py-3 px-4">~25 - 40 zł</td>
+                    <td className="py-3 px-4 text-amber-400">Niedostosowane do polskiego prawa</td>
                     <td className="py-3 px-4 text-red-400">BRAK (tylko prawo USA FTC)</td>
                     <td className="py-3 px-4 text-red-400">BRAK</td>
                   </tr>
                   <tr className="hover:bg-slate-800/40">
-                    <td className="py-3 px-4 font-bold text-white">TapeACall Pro</td>
+                    <td className="py-3 px-4 font-bold text-white">Tradycyjne Aplikacje Nagrywające</td>
                     <td className="py-3 px-4">39,99 - 59,99 zł</td>
-                    <td className="py-3 px-4 text-red-400">BRAK (tylko nagrywanie)</td>
+                    <td className="py-3 px-4 text-red-400">BRAK (brak aspektu prawnego)</td>
                     <td className="py-3 px-4 text-red-400">BRAK</td>
                     <td className="py-3 px-4 text-red-400">BRAK</td>
                   </tr>

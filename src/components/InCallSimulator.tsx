@@ -920,7 +920,7 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed mb-4">
-            Zarówno <strong>iOS</strong> jak i nowożytny <strong>Android 10+</strong> blokują bezpośrednie wstrzykiwanie dźwięku przez zwykłą aplikację. Rozwiązaniem klasy produkcyjnej (używanym m.in. przez <em>TapeACall</em>) jest <strong>chmurowa linia konferencyjna</strong>.
+            Zarówno <strong>iOS</strong> jak i nowożytny <strong>Android 10+</strong> blokują bezpośrednie wstrzykiwanie dźwięku przez zwykłą aplikację. Rozwiązaniem klasy produkcyjnej jest <strong>chmurowa linia konferencyjna</strong>.
           </p>
 
           {/* Timeline Steps */}
