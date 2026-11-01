@@ -19,7 +19,14 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            // Automatically check for new updates whenever the app is opened or brought to foreground
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') {
+                reg.update().catch(() => {});
+              }
+            });
+          }).catch(() => {});
         });
       }
     </script>
