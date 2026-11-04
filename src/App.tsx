@@ -53,21 +53,12 @@ export default function App() {
       (window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as unknown as { standalone?: boolean }).standalone === true);
 
+    // If opened from phone homescreen icon (standalone PWA) or explicit ?mode=app start_url
     if (params.get('mode') === 'app' || params.get('app') === 'true' || isPwaStandalone) {
       return 'app';
     }
 
-    // If already logged in, launch directly into the app
-    if (typeof window !== 'undefined' && authService.getCurrentUser()) {
-      return 'app';
-    }
-
-    // Check if user previously switched to app in this browser
-    const saved = localStorage.getItem('telepakt_active_view');
-    if (saved === 'app') {
-      return 'app';
-    }
-
+    // Default for direct website visits (telepakt.pl): Always show the website first!
     return 'website';
   });
 
