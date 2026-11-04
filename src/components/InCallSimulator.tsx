@@ -6,12 +6,13 @@ import {
   Phone, PhoneOff, PhoneCall, Volume2, VolumeX, ShieldAlert, ShieldCheck,
   Mic, Radio, Sliders, CheckCircle2, AlertTriangle, Play,
   Pause, RotateCcw, Smartphone, ArrowRight, FileText, Sparkles, Check, Plus,
-  Download, Cloud, HardDrive, Lock, Settings2
+  Download, Cloud, HardDrive, Lock, Settings2, Info
 } from 'lucide-react';
 import { CustomAnswerModal } from './CustomAnswerModal';
 import { ResponseOrderManagerModal } from './ResponseOrderManagerModal';
 import { CloudExportModal } from './CloudExportModal';
 import { FakeCallModal } from './FakeCallModal';
+import { FeatureInfoModal, FeatureInfoKey } from './FeatureInfoModal';
 import { downloadRecordingLocally } from '../utils/audioExporter';
 
 interface InCallSimulatorProps {
@@ -91,6 +92,7 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
   const [zeroStorageOnDownload, setZeroStorageOnDownload] = useState(true);
   const [postCallFeedback, setPostCallFeedback] = useState<string | null>(null);
   const [isFakeCallModalOpen, setIsFakeCallModalOpen] = useState(false);
+  const [activeFeatureInfo, setActiveFeatureInfo] = useState<FeatureInfoKey | null>(null);
 
   // Compute effective autoHangup: uses user's live override if set, else script default (defaults to true)
   const effectiveAutoHangup = overrideAutoHangup !== null ? overrideAutoHangup : (activeScript.autoHangup ?? true);
@@ -466,12 +468,22 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                   </div>
 
                   {/* Mode hint */}
-                  <div className="text-center pt-2">
+                  <div className="flex items-center justify-center gap-2 pt-2">
                     <button
                       onClick={() => setPhoneMode(phoneMode === 'conference' ? 'forward_reject' : 'conference')}
                       className="text-[10px] text-indigo-400 underline hover:text-indigo-300"
                     >
                       Tryb odrzucenia: {phoneMode === 'conference' ? 'Zwykłe odrzucenie' : 'Przekieruj do bota ze sprzeciwem'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFeatureInfo('tryb_odrzucenia')}
+                      className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 border border-indigo-500/30 text-[8px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+                      title="Co oznacza tryb odrzucenia?"
+                      aria-label="Informacje o trybie odrzucenia"
+                    >
+                      <Info className="w-2.5 h-2.5" />
+                      <span>INFO</span>
                     </button>
                   </div>
                 </div>
@@ -586,10 +598,20 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                   
                   {/* Live Auto-Hangup Toggle Switch */}
                   <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-900/95 border border-slate-800 text-[10px]">
-                    <span className="text-slate-300 font-medium flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
                       <span className={`w-2 h-2 rounded-full ${effectiveAutoHangup ? 'bg-rose-400 animate-pulse' : 'bg-emerald-400'}`} />
-                      Koniec wypowiedzi:
-                    </span>
+                      <span className="text-slate-300 font-medium">Koniec wypowiedzi:</span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveFeatureInfo('auto_hangup')}
+                        className="px-1.5 py-0.5 rounded-md bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-[8px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+                        title="Co to jest funkcja Auto-rozłącz?"
+                        aria-label="Informacje o Auto-rozłącz"
+                      >
+                        <Info className="w-2.5 h-2.5" />
+                        <span>INFO</span>
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setOverrideAutoHangup(!effectiveAutoHangup)}
@@ -615,10 +637,22 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 flex items-center gap-1">
-                      <Sliders className="w-3 h-3 text-indigo-400" />
-                      Panel suwaków ({appName.name})
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 flex items-center gap-1">
+                        <Sliders className="w-3 h-3 text-indigo-400" />
+                        Panel suwaków ({appName.name})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveFeatureInfo('autosprzeciw')}
+                        className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 border border-indigo-400/30 text-[8px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+                        title="Do czego służą suwaki sprzeciwu?"
+                        aria-label="Informacje o suwakach sprzeciwu"
+                      >
+                        <Info className="w-2.5 h-2.5" />
+                        <span>INFO</span>
+                      </button>
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setIsOrderModalOpen(true)}
@@ -1109,6 +1143,13 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
         isOpen={isFakeCallModalOpen}
         onClose={() => setIsFakeCallModalOpen(false)}
         onCallLogged={onCallLogged}
+      />
+
+      {/* Feature Info Modal (Explanations for Auto-rozłącz, Tryb odrzucenia, etc.) */}
+      <FeatureInfoModal
+        isOpen={Boolean(activeFeatureInfo)}
+        featureKey={activeFeatureInfo}
+        onClose={() => setActiveFeatureInfo(null)}
       />
     </div>
   );

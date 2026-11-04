@@ -12,6 +12,7 @@ import { CallHistoryView } from './CallHistoryView';
 import { ComplaintGenerator } from './ComplaintGenerator';
 import { FakeCallModal } from './FakeCallModal';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
+import { FeatureInfoModal, FeatureInfoKey } from './FeatureInfoModal';
 import { authService } from '../services/authService';
 import { spamDatabaseService, LookupResult } from '../services/spamDatabaseService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -47,6 +48,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   const [activeTab, setActiveTab] = useState<MobileTab>('shield');
   const [isFakeCallOpen, setIsFakeCallOpen] = useState(false);
   const [activeLegalModal, setActiveLegalModal] = useState<LegalDocType | null>(null);
+  const [activeFeatureInfo, setActiveFeatureInfo] = useState<FeatureInfoKey | null>(null);
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => authService.getCurrentUser());
@@ -516,47 +518,95 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
 
               {/* Android Quick Toggle Tiles */}
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
-                <button
+                <div
                   onClick={() => setAutoRejectSpam(!autoRejectSpam)}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setAutoRejectSpam(!autoRejectSpam); }}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer select-none ${
                     autoRejectSpam
-                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300 shadow-sm'
                       : 'bg-slate-950 border-slate-800 text-slate-400'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase font-mono">Auto-Sprzeciw</span>
-                    {autoRejectSpam ? <ToggleRight className="w-5 h-5 text-emerald-400" /> : <ToggleLeft className="w-5 h-5 text-slate-600" />}
+                  <div className="flex items-center justify-between mb-1.5 gap-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] font-bold uppercase font-mono tracking-tight truncate">Auto-Sprzeciw</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveFeatureInfo('autosprzeciw');
+                        }}
+                        className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-400/40 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer transition-all hover:scale-105 shrink-0"
+                        title="Kliknij, aby dowiedzieć się co to jest Auto-Sprzeciw"
+                        aria-label="Informacje o Auto-Sprzeciwie"
+                      >
+                        <Info className="w-2.5 h-2.5" />
+                        <span>INFO</span>
+                      </button>
+                    </div>
+                    {autoRejectSpam ? <ToggleRight className="w-5 h-5 text-emerald-400 shrink-0" /> : <ToggleLeft className="w-5 h-5 text-slate-600 shrink-0" />}
                   </div>
                   <div className="text-xs font-bold text-white">Art. 398 PKE</div>
                   <div className="text-[10px] text-slate-400">{autoRejectSpam ? 'Włączony' : 'Wyłączony'}</div>
-                </button>
+                </div>
 
-                <button
+                <div
                   onClick={() => setRecordEvidence(!recordEvidence)}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setRecordEvidence(!recordEvidence); }}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer select-none ${
                     recordEvidence
-                      ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300'
+                      ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300 shadow-sm'
                       : 'bg-slate-950 border-slate-800 text-slate-400'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase font-mono">Dowód Audio</span>
-                    {recordEvidence ? <ToggleRight className="w-5 h-5 text-cyan-400" /> : <ToggleLeft className="w-5 h-5 text-slate-600" />}
+                  <div className="flex items-center justify-between mb-1.5 gap-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] font-bold uppercase font-mono tracking-tight truncate">Dowód Audio</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveFeatureInfo('dowod_audio');
+                        }}
+                        className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-400/40 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer transition-all hover:scale-105 shrink-0"
+                        title="Kliknij, aby dowiedzieć się co to jest Dowód Audio"
+                        aria-label="Informacje o Dowodzie Audio"
+                      >
+                        <Info className="w-2.5 h-2.5" />
+                        <span>INFO</span>
+                      </button>
+                    </div>
+                    {recordEvidence ? <ToggleRight className="w-5 h-5 text-cyan-400 shrink-0" /> : <ToggleLeft className="w-5 h-5 text-slate-600 shrink-0" />}
                   </div>
                   <div className="text-xs font-bold text-white">Suma SHA-256</div>
                   <div className="text-[10px] text-slate-400">{recordEvidence ? 'Zero-Storage' : 'Wyłączone'}</div>
-                </button>
+                </div>
               </div>
 
               {/* Primary Action Button: Launch Fake Call Test */}
-              <button
-                onClick={() => setIsFakeCallOpen(true)}
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2.5 cursor-pointer transition-transform active:scale-95"
-              >
-                <PhoneCall className="w-4 h-4 text-slate-950 animate-bounce" />
-                <span>Wywołaj Próbne Połączenie Anty-Spam</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsFakeCallOpen(true)}
+                  className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2.5 cursor-pointer transition-transform active:scale-95"
+                >
+                  <PhoneCall className="w-4 h-4 text-slate-950 animate-bounce" />
+                  <span>Wywołaj Próbne Połączenie Anty-Spam</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFeatureInfo('probne_polaczenie')}
+                  className="h-[46px] px-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-cyan-400 hover:text-white flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors shadow-md shrink-0"
+                  title="Co to jest próbne połączenie? Kliknij po wyjaśnienie"
+                  aria-label="Informacje o próbnym połączeniu"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  <span className="text-[8px] font-mono font-bold">INFO</span>
+                </button>
+              </div>
             </div>
 
             {/* Offline Number Search / Spam Lookup Widget */}
@@ -565,6 +615,16 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                 <div className="flex items-center gap-2 text-white font-bold text-xs">
                   <Search className="w-4 h-4 text-cyan-400" />
                   <span>Sprawdź podejrzany numer offline</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFeatureInfo('wyszukiwarka_offline')}
+                    className="px-1.5 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border border-slate-700 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer transition-colors"
+                    title="Informacje o bazie offline"
+                    aria-label="Informacje o bazie offline"
+                  >
+                    <Info className="w-2.5 h-2.5" />
+                    <span>INFO</span>
+                  </button>
                 </div>
                 <span className="text-[10px] text-emerald-400 font-mono font-bold">0 ms • 0 zł</span>
               </div>
@@ -772,9 +832,21 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
 
             {/* Security & Sign Out Button */}
             <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
-              <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Prywatność Zero-Storage: Wszystkie dowody audio zostają w Twoim telefonie.</span>
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] text-slate-400 flex items-center gap-1.5 min-w-0">
+                  <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate">Prywatność Zero-Storage: Wszystkie dowody zostają w telefonie.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveFeatureInfo('zero_storage')}
+                  className="px-1.5 py-0.5 rounded-md bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer shrink-0 transition-colors"
+                  title="Więcej informacji o Zero-Storage"
+                  aria-label="Więcej informacji o Zero-Storage"
+                >
+                  <Info className="w-2.5 h-2.5" />
+                  <span>INFO</span>
+                </button>
               </div>
 
               <button
@@ -803,20 +875,44 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
 
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-slate-300">Automatyczny sprzeciw (art. 398 PKE)</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-slate-300 truncate">Automatyczny sprzeciw (art. 398 PKE)</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFeatureInfo('autosprzeciw')}
+                      className="px-1.5 py-0.5 rounded-md bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer shrink-0"
+                      title="Jak działa automatyczny sprzeciw?"
+                      aria-label="Informacje o automatycznym sprzeciwie"
+                    >
+                      <Info className="w-2.5 h-2.5" />
+                      <span>INFO</span>
+                    </button>
+                  </div>
                   <button
                     onClick={() => setAutoRejectSpam(!autoRejectSpam)}
-                    className="text-cyan-400 cursor-pointer"
+                    className="text-cyan-400 cursor-pointer shrink-0 ml-2"
                   >
                     {autoRejectSpam ? <ToggleRight className="w-6 h-6 text-emerald-400" /> : <ToggleLeft className="w-6 h-6 text-slate-600" />}
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-slate-300">Blokada numerów zastrzeżonych</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-slate-300 truncate">Blokada numerów zastrzeżonych</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFeatureInfo('blokada_zastrzezonych')}
+                      className="px-1.5 py-0.5 rounded-md bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer shrink-0"
+                      title="Dlaczego warto blokować numery zastrzeżone?"
+                      aria-label="Informacje o blokadzie numerów zastrzeżonych"
+                    >
+                      <Info className="w-2.5 h-2.5" />
+                      <span>INFO</span>
+                    </button>
+                  </div>
                   <button
                     onClick={() => setBlockPrivateNumbers(!blockPrivateNumbers)}
-                    className="text-cyan-400 cursor-pointer"
+                    className="text-cyan-400 cursor-pointer shrink-0 ml-2"
                   >
                     {blockPrivateNumbers ? <ToggleRight className="w-6 h-6 text-emerald-400" /> : <ToggleLeft className="w-6 h-6 text-slate-600" />}
                   </button>
@@ -826,9 +922,21 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
 
             {/* Głos i Lektor */}
             <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-cyan-400">
-                2. Głos Asystenta Prawnego
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-cyan-400">
+                  2. Głos Asystenta Prawnego
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setActiveFeatureInfo('lektor_glos')}
+                  className="px-1.5 py-0.5 rounded-md bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer shrink-0"
+                  title="Informacje o tonie głosu lektora"
+                  aria-label="Informacje o głosie asystenta"
+                >
+                  <Info className="w-2.5 h-2.5" />
+                  <span>INFO</span>
+                </button>
+              </div>
 
               <div className="space-y-2 text-xs">
                 <label className="block text-slate-400 text-[11px]">Wybierz ton głosu odtwarzanego botowi:</label>
@@ -856,7 +964,19 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                 </div>
 
                 <div className="pt-1">
-                  <label className="block text-slate-400 text-[11px] mb-1">Opóźnienie włączenia formuły:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-slate-400 text-[11px]">Opóźnienie włączenia formuły:</label>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFeatureInfo('opoznienie')}
+                      className="px-1.5 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border border-slate-700 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+                      title="Dlaczego warto ustawić opóźnienie?"
+                      aria-label="Informacje o opóźnieniu formuły"
+                    >
+                      <Info className="w-2.5 h-2.5" />
+                      <span>INFO</span>
+                    </button>
+                  </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
                       { sec: 0, label: '0s (Od razu)' },
@@ -1016,6 +1136,13 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
         isOpen={Boolean(activeLegalModal)}
         initialDoc={activeLegalModal || 'privacy'}
         onClose={() => setActiveLegalModal(null)}
+      />
+
+      {/* Feature Info Modal (Visible explanations for Auto-Sprzeciw, Dowod Audio, etc.) */}
+      <FeatureInfoModal
+        isOpen={Boolean(activeFeatureInfo)}
+        featureKey={activeFeatureInfo}
+        onClose={() => setActiveFeatureInfo(null)}
       />
 
     </div>

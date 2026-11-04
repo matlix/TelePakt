@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Phone, PhoneOff, PhoneCall, Shield, Volume2, VolumeX,
   Play, RotateCcw, X, Check, Download, FileText, AlertTriangle,
-  Clock, Smartphone, Sparkles, Scale, Mic, ArrowRight, CheckCircle2
+  Clock, Smartphone, Sparkles, Scale, Mic, ArrowRight, CheckCircle2, Info
 } from 'lucide-react';
 import { RingtoneService } from '../utils/ringtoneAudio';
 import { PolishVoiceSynthesizer } from '../utils/speech';
 import { LEGAL_SCRIPTS } from '../data/legalScripts';
 import { LegalScript, CallLog } from '../types';
 import { downloadRecordingLocally } from '../utils/audioExporter';
+import { FeatureInfoModal, FeatureInfoKey } from './FeatureInfoModal';
 
 interface FakeCallModalProps {
   isOpen: boolean;
@@ -82,6 +83,7 @@ export const FakeCallModal: React.FC<FakeCallModalProps> = ({
   const [callDuration, setCallDuration] = useState(0);
   const [lastCallLog, setLastCallLog] = useState<CallLog | null>(null);
   const [downloadSuccessFeedback, setDownloadSuccessFeedback] = useState(false);
+  const [activeFeatureInfo, setActiveFeatureInfo] = useState<FeatureInfoKey | null>(null);
 
   const scenario = isCustomMode
     ? {
@@ -646,13 +648,30 @@ export const FakeCallModal: React.FC<FakeCallModalProps> = ({
           {/* FLOATING ACTION: THE PROMINENT TELEPAKT SLIDER BUTTON */}
           <div className="space-y-3 pb-3">
             {callPhase === 'connected' ? (
-              <button
-                onClick={handleActivateShield}
-                className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/30 active:scale-95 transition-all cursor-pointer ring-2 ring-cyan-400/80 group"
-              >
-                <Shield className="w-5 h-5 text-white group-hover:scale-110 transition-transform animate-pulse" />
-                <span>PRZESUŃ SUWAK: ART. 398 PKE ➔</span>
-              </button>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleActivateShield}
+                    className="flex-1 py-4 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/30 active:scale-95 transition-all cursor-pointer ring-2 ring-cyan-400/80 group"
+                  >
+                    <Shield className="w-5 h-5 text-white group-hover:scale-110 transition-transform animate-pulse" />
+                    <span>PRZESUŃ SUWAK: ART. 398 PKE ➔</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveFeatureInfo('autosprzeciw');
+                    }}
+                    className="h-[52px] px-2.5 rounded-2xl bg-slate-900 border border-cyan-500/40 hover:bg-slate-800 text-cyan-300 flex flex-col items-center justify-center gap-0.5 cursor-pointer shadow-md shrink-0 transition-colors"
+                    title="Do czego służy sprzeciw z art. 398 PKE?"
+                    aria-label="Informacje o art. 398 PKE"
+                  >
+                    <Info className="w-4 h-4" />
+                    <span className="text-[8px] font-mono font-bold">INFO</span>
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-center text-emerald-300 font-bold text-xs flex items-center justify-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -703,13 +722,37 @@ export const FakeCallModal: React.FC<FakeCallModalProps> = ({
             </div>
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
               <span className="text-slate-400">Zastosowany artykuł:</span>
-              <strong className="text-indigo-400">Art. 398 PKE & Art. 21 RODO</strong>
+              <div className="flex items-center gap-1.5">
+                <strong className="text-indigo-400">Art. 398 PKE & Art. 21 RODO</strong>
+                <button
+                  type="button"
+                  onClick={() => setActiveFeatureInfo('autosprzeciw')}
+                  className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 text-[8px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+                  title="Więcej informacji o art. 398 PKE"
+                  aria-label="Informacje o art. 398 PKE"
+                >
+                  <Info className="w-2.5 h-2.5" />
+                  <span>INFO</span>
+                </button>
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Status prywatności:</span>
-              <strong className="text-emerald-400 flex items-center gap-1">
-                <span>100% Zero-Storage</span>
-              </strong>
+              <div className="flex items-center gap-1.5">
+                <strong className="text-emerald-400 flex items-center gap-1">
+                  <span>100% Zero-Storage</span>
+                </strong>
+                <button
+                  type="button"
+                  onClick={() => setActiveFeatureInfo('zero_storage')}
+                  className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 text-[8px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+                  title="Co to jest Zero-Storage?"
+                  aria-label="Informacje o Zero-Storage"
+                >
+                  <Info className="w-2.5 h-2.5" />
+                  <span>INFO</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -748,6 +791,13 @@ export const FakeCallModal: React.FC<FakeCallModalProps> = ({
 
         </div>
       )}
+
+      {/* Feature Info Modal (Detailed explanations for Auto-Sprzeciw, Zero-Storage, etc.) */}
+      <FeatureInfoModal
+        isOpen={Boolean(activeFeatureInfo)}
+        featureKey={activeFeatureInfo}
+        onClose={() => setActiveFeatureInfo(null)}
+      />
 
     </div>
   );
