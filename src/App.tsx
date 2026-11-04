@@ -108,6 +108,18 @@ export default function App() {
     setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
   };
 
+  // Staging Password Protection Gate (when enabled by admin, gates all views)
+  if (isGateEnabled && !isAuthenticated) {
+    return (
+      <AccessGateModal
+        onAuthenticated={() => {
+          localStorage.setItem('telepakt_staging_authenticated', 'true');
+          setIsAuthenticated(true);
+        }}
+      />
+    );
+  }
+
   // 1. MOBILE APP MODE (TelePakt PWA & Native Phone Application)
   if (viewMode === 'app') {
     return (
@@ -140,16 +152,9 @@ export default function App() {
     );
   }
 
-  // 2. DEVELOPER STUDIO & ADMIN MODE
+  // 3. DEVELOPER STUDIO & ADMIN MODE
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white">
-      
-      {/* Staging Early Access Password Gate */}
-      {isGateEnabled && !isAuthenticated && (
-        <AccessGateModal
-          onAuthenticated={() => setIsAuthenticated(true)}
-        />
-      )}
 
       {/* Studio Mode Return Banner */}
       <div className="bg-gradient-to-r from-indigo-950 via-slate-950 to-indigo-950 border-b border-indigo-500/40 px-4 py-2.5 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 z-50">

@@ -13,7 +13,11 @@ import {
   X,
   AlertTriangle,
   FileCheck2,
-  Sparkles
+  Sparkles,
+  UserCheck,
+  Smartphone,
+  Zap,
+  Phone
 } from 'lucide-react';
 
 export type FeatureInfoKey =
@@ -26,7 +30,11 @@ export type FeatureInfoKey =
   | 'auto_hangup'
   | 'tryb_odrzucenia'
   | 'wyszukiwarka_offline'
-  | 'zero_storage';
+  | 'zero_storage'
+  | 'numer_asystenta'
+  | 'tryb_goscia'
+  | 'chroniony_numer'
+  | 'subskrypcja_minuty';
 
 interface FeatureDetail {
   id: FeatureInfoKey;
@@ -242,6 +250,90 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     telemarketerReaction:
       'Nikt poza Tobą i ewentualnie organem ścigania (UKE/UODO) nie ma dostępu do materiału dowodowego.',
     tip: 'Pełna anonimowość i 100% kontroli nad własnymi danymi.'
+  },
+  numer_asystenta: {
+    id: 'numer_asystenta',
+    badge: 'Telefonia GSM • Węzeł +48',
+    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+    icon: <Phone className="w-7 h-7 text-cyan-400" />,
+    title: 'Numer Asystenta Prawnego (+48 22 104 39 80)',
+    subtitle: 'Krajowy numer bramki telekonferencyjnej TelePakt do włączania bota w trakcie rozmowy',
+    whatIsIt:
+      'To dedykowany, warszawski numer stacjonarny TelePakt (+48 22 104 39 80), który możesz dołączyć do trwającej rozmowy z natrętnym telemarketerem.',
+    howItWorks: [
+      'Gdy dzwoni telemarketer, odbierasz połączenie i mówisz: „Chwileczkę, dołączam asystenta prawnego”.',
+      'W telefonie wybierasz funkcję „Dodaj połączenie” (lub wybierasz ten numer z książki kontaktów).',
+      'Klikasz „Scal rozmowy” (utworzenie telekonferencji 3-stronnej).',
+      'Asystent TelePakt natychmiast odczytuje oficjalny sprzeciw z art. 398 PKE prosto do słuchawki telemarketera!'
+    ],
+    legalBasis:
+      'Art. 398 PKE w zw. z art. 60 Kodeksu cywilnego. Dołączenie zautomatyzowanego pełnomocnika technicznego jest w pełni legalne i stanowi doręczenie oświadczenia woli.',
+    telemarketerReaction:
+      'Gdy konsultant słyszy oficjalną formułę prawną z polskiej linii stacjonarnej, natychmiast oznacza numer w CRM jako „Sprzeciw RODO / Zakaz kontaktu”.',
+    tip: 'Zapisz ten numer w książce telefonicznej pod nazwą „Asystent TelePakt”, aby jednym dotknięciem dołączyć go podczas dowolnego połączenia na Androidzie lub iPhone.'
+  },
+  tryb_goscia: {
+    id: 'tryb_goscia',
+    badge: 'Brak Rejestracji • Prywatność',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    icon: <UserCheck className="w-7 h-7 text-emerald-400" />,
+    title: 'Tryb Gościa (Natychmiastowy Dostęp)',
+    subtitle: 'Używaj wszystkich funkcji od razu, bez podawania e-maila, telefonu i hasła',
+    whatIsIt:
+      'Opcja pozwalająca na natychmiastowe uruchomienie aplikacji TelePakt bez konieczności zakładania konta czy logowania.',
+    howItWorks: [
+      'Klikasz „Przejdź do aplikacji jako gość”.',
+      'Aplikacja od razu otwiera panel obrony anty-spam i symulator połączeń.',
+      'Wszystkie formuły, suwaki i narzędzia są w 100% odblokowane.',
+      'Wszelkie dane są trzymane wyłącznie w pamięci Twojej przeglądarki/telefonu (Zero-Storage).'
+    ],
+    legalBasis:
+      'Zasada anonimowości i minimalizacji danych (art. 5 ust. 1 lit. c RODO). Nie musisz podawać danych osobowych, by korzystać z przysługujących Ci praw konsumenckich.',
+    telemarketerReaction:
+      'Nawet w trybie gościa wygłoszony sprzeciw prawny z art. 398 PKE jest w 100% prawnie wiążący dla dzwoniącego call center.',
+    tip: 'Jeśli w przyszłości zechcesz synchronizować chroniony numer między urządzeniami, możesz w każdej chwili utworzyć konto w zakładce Panel.'
+  },
+  chroniony_numer: {
+    id: 'chroniony_numer',
+    badge: 'Identyfikator Abonenta',
+    badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+    icon: <Smartphone className="w-7 h-7 text-indigo-400" />,
+    title: 'Chroniony Numer Telefonu w Bazie TelePakt',
+    subtitle: 'Twój numer telefonu, dla którego generowane są skargi do UKE i sprzeciwy',
+    whatIsIt:
+      'To pole, w którym wpisujesz numer telefonu, na który dzwonią spamerzy. Służy do automatycznego uzupełniania oficjalnych pism i rejestracji sprzeciwu.',
+    howItWorks: [
+      'Wpisujesz swój numer (np. +48 500 123 456) i klikasz „Zapisz”.',
+      'Gdy zgłosisz skargę na spamera, generator zawiadomień do Prezesa UKE automatycznie wpisuje Twój numer jako numer pokrzywdzonego abonenta.',
+      'Numer jest używany w nagłówkach dowodowych audio z sumą SHA-256 jako dowód, na który numer wykonano nielegalne połączenie telemarketingowe.',
+      'Nie musisz za każdym razem ręcznie wpisywać swojego numeru w generatorze zawiadomień.'
+    ],
+    legalBasis:
+      'Art. 445 ustawy Prawo Komunikacji Elektronicznej (PKE) wymaga precyzyjnego wskazania numeru telefonu, na który nastąpiło niechciane połączenie marketingowe.',
+    telemarketerReaction:
+      'Dla organów ścigania (UKE/UODO) podanie numeru abonenta w zawiadomieniu jest niezbędne do wszczęcia postępowania karnego wobec call center.',
+    tip: 'Numer jest zapisywany lokalnie w Twoim urządzeniu. W każdej chwili możesz go zmienić lub usunąć.'
+  },
+  subskrypcja_minuty: {
+    id: 'subskrypcja_minuty',
+    badge: '100% Funkcji Odblokowanych',
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    icon: <Zap className="w-7 h-7 text-amber-400" />,
+    title: 'Zasady Subskrypcji i Minuty Asystenta',
+    subtitle: 'Wszystkie funkcje prawne dla każdego • Różnica polega wyłącznie na puli minut w miesiącu',
+    whatIsIt:
+      'W TelePakt nie blokujemy żadnych funkcji obronnych za paywallem. Każdy użytkownik ma pełny dostęp do Auto-Sprzeciwu, Dowodu Audio SHA-256 i pism do UKE.',
+    howItWorks: [
+      'Pakiet Darmowy (Free): 3 minuty rozmowy asystenta / miesiąc (wystarcza na ok. 5–6 zneutralizowanych spamów po 30s) — 0 zł na zawsze.',
+      'Pakiet Pełna Tarcza (PRO): 30 minut rozmowy asystenta / miesiąc (wystarcza na ok. 50–60 zneutralizowanych połączeń) — 14,99 zł / miesiąc.',
+      'Pakiet Biznes (B2B): 120 minut rozmowy asystenta / miesiąc dla właścicieli firm i numerów firmowych — 49,00 zł / miesiąc.',
+      'Wszystkie opcje, suwaki, certyfikaty dowodowe SHA-256 i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'
+    ],
+    legalBasis:
+      'Zapewnienie powszechnego, bezpłatnego dostępu do ochrony konstytucyjnych praw konsumenta (art. 76 Konstytucji RP).',
+    telemarketerReaction:
+      'Niezależnie czy korzystasz z pakietu darmowego czy płatnego, asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE.',
+    tip: 'Jeśli nie odbierasz setek telefonów miesięcznie, pakiet darmowy z 3 minutami w zupełności Ci wystarczy!'
   }
 };
 

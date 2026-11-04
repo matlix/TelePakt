@@ -58,9 +58,11 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
     const outcome = await install();
     if (outcome === 'accepted') {
       setInstallStatusMsg('success');
-    } else if (outcome === 'dismissed') {
-      setInstallStatusMsg('dismissed');
     } else {
+      // In incognito mode or browsers without direct auto-prompt:
+      // Open the interactive installation guide modal immediately!
+      setDownloadModalTab('pwa');
+      setIsDownloadModalOpen(true);
       setInstallStatusMsg('manual');
     }
   };
@@ -980,24 +982,42 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             <h2 className="text-2xl sm:text-4xl font-black text-white">
               Przejrzysty Cennik Subskrypcji
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
-              Płatności obsługiwane w 100% przez oficjalne sklepy Google Play, Apple App Store, Samsung Galaxy Store i Huawei AppGallery.
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto">
+              W TelePakt <strong>wszystkie funkcje prawne i dowodowe są w 100% odblokowane dla każdego</strong>. Pakiety różnią się wyłącznie miesięczną pulą minut rozmowy asystenta na linii.
             </p>
+
+            {/* Feature Equality Guarantee Banner */}
+            <div className="p-3 sm:p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 max-w-3xl mx-auto text-cyan-200 text-xs flex items-center gap-3 text-left">
+              <span className="text-2xl leading-none">🛡️</span>
+              <div className="space-y-0.5">
+                <strong className="text-white block">Gwarancja Pełnej Ochrony:</strong>
+                <span>Auto-Sprzeciw (art. 398 PKE), Dowód Audio SHA-256, Wnioski UKE, Baza Offline i Zero-Storage działają w każdym planie bez dodatkowych opłat.</span>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs max-w-5xl mx-auto">
             
-            {/* Free Tier */}
+            {/* Free Tier: 3 minutes */}
             <div className="p-6 rounded-3xl bg-slate-950 border border-slate-800 space-y-4 flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="font-bold text-slate-300 text-sm">Pakiet Podstawowy</div>
-                <div className="text-3xl font-black text-white font-mono">0 zł</div>
-                <p className="text-slate-400 text-xs">Do okazjonalnej ochrony i testów.</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-300 text-sm">Pakiet Darmowy</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    3 minuty / mies.
+                  </span>
+                </div>
+                <div className="text-3xl font-black text-white font-mono">0 zł <span className="text-xs font-normal text-slate-500">/ na zawsze</span></div>
+                <p className="text-slate-400 text-xs">Wystarcza na ok. 5–6 zneutralizowanych połączeń marketingowych po ~30 sekund.</p>
                 
                 <ul className="space-y-2 text-slate-300 border-t border-slate-800/80 pt-4">
-                  <li className="flex items-center gap-2">✓ Identyfikacja spamu na ekranie</li>
-                  <li className="flex items-center gap-2">✓ 2 darmowe interwencje asystenta w miesiącu</li>
-                  <li className="flex items-center gap-2">✓ Wyszukiwarka numerów marketingowych</li>
+                  <li className="flex items-center gap-2 text-emerald-400">✓ <strong>3 minuty</strong> rozmowy bota asystenta co miesiąc</li>
+                  <li className="flex items-center gap-2">✓ <strong>Wszystkie opcje odblokowane</strong></li>
+                  <li className="flex items-center gap-2">✓ Sprzeciw z art. 398 PKE i art. 21 RODO</li>
+                  <li className="flex items-center gap-2">✓ Dowód Audio z sumą kontrolną SHA-256</li>
+                  <li className="flex items-center gap-2">✓ Generator zawiadomień do Prezesa UKE</li>
+                  <li className="flex items-center gap-2">✓ Baza numerów offline i wskaźnik Tellows</li>
+                  <li className="flex items-center gap-2">✓ 100% Zero-Storage w pamięci Twojego telefonu</li>
                 </ul>
               </div>
 
@@ -1005,29 +1025,35 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 onClick={onOpenApp}
                 className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-colors cursor-pointer"
               >
-                Uruchom w Aplikacji (0 zł)
+                Uruchom za Darmo (0 zł)
               </button>
             </div>
 
-            {/* Popular Tier */}
+            {/* Popular Tier: 30 minutes */}
             <div className="p-6 rounded-3xl bg-gradient-to-b from-indigo-950/60 to-slate-950 border border-cyan-500/50 space-y-4 flex flex-col justify-between relative shadow-xl shadow-cyan-500/10 ring-1 ring-cyan-500/30">
               <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500 text-slate-950 uppercase tracking-wide">
-                Najczęściej Wybierany
+                Najczęściej Wybierany • 10x Więcej Minut
               </span>
               
               <div className="space-y-3">
-                <div className="font-bold text-white text-sm">Tarcza Osobista / Rodzina</div>
-                <div className="text-3xl font-black text-cyan-400 font-mono">
-                  19,99 zł <span className="text-xs font-normal text-slate-400">/ mies.</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-sm">Pakiet Pełna Tarcza (PRO)</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                    30 minut / mies.
+                  </span>
                 </div>
-                <p className="text-slate-300 text-xs">Kompletna ochrona dla Ciebie i Twoich bliskich.</p>
+                <div className="text-3xl font-black text-cyan-400 font-mono">
+                  14,99 zł <span className="text-xs font-normal text-slate-400">/ mies.</span>
+                </div>
+                <p className="text-slate-300 text-xs">Wystarcza na ok. 50–60 zneutralizowanych połączeń lub dłuższe rozmowy dowodowe.</p>
                 
                 <ul className="space-y-2 text-slate-200 border-t border-slate-800/80 pt-4">
-                  <li className="flex items-center gap-2">✓ Nielimitowane suwaki sprzeciwu RODO i PKE</li>
-                  <li className="flex items-center gap-2">✓ Tarcza na oszusta bankowego (Anti-spoofing)</li>
-                  <li className="flex items-center gap-2">✓ Polski numer telekonferencji asystenta (+48)</li>
-                  <li className="flex items-center gap-2">✓ Gotowe zawiadomienie / skarga do Prezesa UKE (art. 445 PKE)</li>
-                  <li className="flex items-center gap-2">✓ 100% Zero-Storage (zapis tylko w telefonie / Twojej chmurze)</li>
+                  <li className="flex items-center gap-2 text-cyan-300 font-bold">✓ <strong>30 minut</strong> rozmowy asystenta co miesiąc</li>
+                  <li className="flex items-center gap-2">✓ <strong>Wszystkie opcje odblokowane</strong></li>
+                  <li className="flex items-center gap-2">✓ Dedykowana linia telekonferencji (+48) z priorytetem</li>
+                  <li className="flex items-center gap-2">✓ Auto-Sprzeciw PKE i certyfikaty SHA-256</li>
+                  <li className="flex items-center gap-2">✓ Nielimitowane zawiadomienia do Prezesa UKE i UODO</li>
+                  <li className="flex items-center gap-2">✓ Spokój i ochrona telefonu przez cały rok</li>
                 </ul>
               </div>
 
@@ -1035,24 +1061,30 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 onClick={onOpenApp}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-center block shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
               >
-                Aktywuj w Aplikacji
+                Aktywuj Pełną Tarczę (30 min)
               </button>
             </div>
 
-            {/* Pro B2B Tier */}
+            {/* Pro B2B Tier: 120 minutes */}
             <div className="p-6 rounded-3xl bg-slate-950 border border-slate-800 space-y-4 flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="font-bold text-slate-300 text-sm">Biznes B2B & Freelance</div>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-300 text-sm">Biznes B2B & Firma</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    120 minut / mies.
+                  </span>
+                </div>
                 <div className="text-3xl font-black text-emerald-400 font-mono">
                   49,00 zł <span className="text-xs font-normal text-slate-400">/ mies.</span>
                 </div>
-                <p className="text-slate-400 text-xs">Dla właścicieli firm i jednoosobowych działalności.</p>
+                <p className="text-slate-400 text-xs">Dla właścicieli firm, handlowców i jednoosobowych działalności gospodarczych.</p>
                 
                 <ul className="space-y-2 text-slate-300 border-t border-slate-800/80 pt-4">
-                  <li className="flex items-center gap-2">✓ Rejestr ustaleń i protokół audio z rozmów handlowych</li>
-                  <li className="flex items-center gap-2">✓ Własne nagrane formuły firmowe</li>
-                  <li className="flex items-center gap-2">✓ Zabezpieczone archiwum dowodowe audio w telefonie</li>
-                  <li className="flex items-center gap-2">✓ Faktura VAT 23% wystawiana przez sklep</li>
+                  <li className="flex items-center gap-2 text-emerald-400 font-bold">✓ <strong>120 minut</strong> rozmowy asystenta co miesiąc</li>
+                  <li className="flex items-center gap-2">✓ <strong>Wszystkie opcje odblokowane</strong></li>
+                  <li className="flex items-center gap-2">✓ Obsługa windykacji, ofert B2B i ustaleń handlowych</li>
+                  <li className="flex items-center gap-2">✓ Ochrona wielu numerów firmowych</li>
+                  <li className="flex items-center gap-2">✓ Faktura VAT 23%</li>
                 </ul>
               </div>
 
@@ -1060,7 +1092,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 onClick={onOpenApp}
                 className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-colors cursor-pointer"
               >
-                Wybierz w Aplikacji
+                Wybierz Pakiet B2B (120 min)
               </button>
             </div>
 
@@ -1068,7 +1100,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
           {/* Fair Use Policy Note */}
           <p className="text-[11px] text-slate-400 text-center max-w-2xl mx-auto">
-            * Pakiety Tarcza i B2B obejmują nielimitowane sprawdzanie numerów oraz 60 minut połączeń telekonferencyjnych z asystentem miesięcznie w ramach polityki uczciwego korzystania (Fair-Use, co odpowiada ok. 60–90 interwencjom anty-spamowym).
+            * Wszystkie pakiety odnawiają się comiesięcznie. Minuty nieprzeprowadzone w danym miesiącu nie przepadają i kumulują się na koncie abonenta.
           </p>
 
           {/* Trust Banner: Merchant of Record */}
@@ -1501,16 +1533,19 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     )}
 
                     {installStatusMsg === 'manual' && (
-                      <div className="p-3 bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-200 text-xs animate-in fade-in space-y-1">
-                        <div className="font-bold flex items-center gap-1.5">
+                      <div className="p-3.5 bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-200 text-xs animate-in fade-in space-y-2">
+                        <div className="font-bold flex items-center gap-1.5 text-amber-300">
                           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                           <span>Instalacja w Twojej przeglądarce:</span>
                         </div>
                         <p className="text-[11px] leading-relaxed">
                           {isIOS
                             ? 'Na iPhone (Safari): Dotknij ikonę Udostępnij (kwadrat ze strzałką) i wybierz „Do ekranu początkowego”.'
-                            : 'W Chrome na Androidzie: Dotknij 3 pionowe kropki (⋮) w prawym górnym rogu i wybierz „Zainstaluj aplikację” (zobacz zrzut ekranu poniżej).'}
+                            : 'W Chrome na Androidzie: Dotknij 3 pionowe kropki (⋮) w prawym górnym rogu i wybierz „Zainstaluj aplikację” (lub „Dodaj do ekranu głównego”).'}
                         </p>
+                        <div className="p-2.5 rounded-lg bg-slate-950/80 border border-amber-500/30 text-[10px] text-amber-300/90 leading-relaxed">
+                          🔒 <strong>Jesteś w trybie incognito / prywatnym?</strong> Przeglądarki mobilne (Chrome, Safari) ze względów bezpieczeństwa celowo wyłączają bezpośredni instalator w oknach incognito. Otwórz stronę w normalnej karcie przeglądarki, aby zainstalować aplikację 1 kliknięciem!
+                        </div>
                       </div>
                     )}
 

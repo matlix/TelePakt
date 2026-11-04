@@ -5,7 +5,7 @@ import {
   Globe, CheckCircle2, AlertTriangle, ArrowRight, Volume2, Search,
   Copy, Check, Info, RefreshCw, Zap, Sparkles, ExternalLink,
   ChevronRight, Lock, PhoneOff, User, LogOut, Key, Eye, EyeOff,
-  Bell, FileText, ToggleLeft, ToggleRight
+  Bell, FileText, ToggleLeft, ToggleRight, Clock
 } from 'lucide-react';
 import { InCallSimulator } from './InCallSimulator';
 import { CallHistoryView } from './CallHistoryView';
@@ -68,10 +68,11 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   const [authError, setAuthError] = useState<string | null>(null);
   const [appleRelayOption, setAppleRelayOption] = useState(true);
 
-  // User Panel State (Protected Phone Number Editor)
+  // User Panel State (Protected Phone Number Editor & Subscription Plan)
   const [phoneInput, setPhoneInput] = useState(currentUser?.phoneProtected || '+48 500 123 456');
   const [phoneSaveSuccess, setPhoneSaveSuccess] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
+  const [activePlan, setActivePlan] = useState<'free' | 'pro'>('free');
 
   // Android Quick Settings Toggles
   const [autoRejectSpam, setAutoRejectSpam] = useState(true);
@@ -385,12 +386,24 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
 
           {/* Guest Mode Explorer Option */}
           <div className="pt-2 border-t border-slate-800/80 text-center space-y-2">
-            <button
-              onClick={handleEnterGuestMode}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4 cursor-pointer"
-            >
-              Przejdź do aplikacji jako gość (Tryb natychmiastowy) ➔
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={handleEnterGuestMode}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4 cursor-pointer"
+              >
+                Przejdź do aplikacji jako gość (Tryb natychmiastowy) ➔
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFeatureInfo('tryb_goscia')}
+                className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-400/40 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer shrink-0"
+                title="Co to jest Tryb Gościa?"
+                aria-label="Informacje o Trybie Gościa"
+              >
+                <Info className="w-2.5 h-2.5" />
+                <span>INFO</span>
+              </button>
+            </div>
             <p className="text-[10px] text-slate-500">
               Bezpieczeństwo Zero-Storage: Twoje nagrania i dane nie są wysyłane na serwery zewnętrzne.
             </p>
@@ -666,9 +679,21 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
             {/* Direct Gateway Hotline Card */}
             <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3">
               <div className="space-y-0.5 min-w-0">
-                <span className="text-[10px] font-mono text-cyan-400 font-bold block uppercase">
-                  Numer Asystenta Prawnego
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-mono text-cyan-400 font-bold block uppercase">
+                    Numer Asystenta Prawnego
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFeatureInfo('numer_asystenta')}
+                    className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-400/40 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer shrink-0"
+                    title="Co to jest numer asystenta prawnego?"
+                    aria-label="Informacje o numerze asystenta prawnego"
+                  >
+                    <Info className="w-2.5 h-2.5" />
+                    <span>INFO</span>
+                  </button>
+                </div>
                 <div className="text-sm font-black text-white font-mono">{ASSISTANT_GATEWAY_NUMBER}</div>
                 <p className="text-[10px] text-slate-400">Dołącz asystenta jednym kliknięciem podczas rozmowy</p>
               </div>
@@ -774,9 +799,21 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
 
               {/* Protected Phone Configuration */}
               <form onSubmit={handleSavePhone} className="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2.5">
-                <label className="block text-xs font-semibold text-slate-300">
-                  Chroniony numer telefonu w bazie TelePakt:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-300">
+                    Chroniony numer telefonu w bazie TelePakt:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFeatureInfo('chroniony_numer')}
+                    className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-400/40 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer shrink-0"
+                    title="Po co podawać chroniony numer telefonu?"
+                    aria-label="Informacje o chronionym numerze"
+                  >
+                    <Info className="w-2.5 h-2.5" />
+                    <span>INFO</span>
+                  </button>
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="tel"
@@ -803,29 +840,103 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
             </div>
 
             {/* Subscription & Legal Shield Tier */}
-            <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-3">
+            <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white">Twój Pakiet Ochrony</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">Twój Pakiet Ochrony</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFeatureInfo('subskrypcja_minuty')}
+                    className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-400/40 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+                    title="Informacje o pakietach i minutach"
+                    aria-label="Informacje o pakietach i minutach"
+                  >
+                    <Info className="w-2.5 h-2.5" />
+                    <span>INFO</span>
+                  </button>
+                </div>
                 <span className="text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                  0,00 zł / Testy Beta
+                  {activePlan === 'free' ? '0,00 zł / Darmowy' : '14,99 zł / PRO'}
                 </span>
               </div>
 
-              <div className="space-y-1.5 text-xs text-slate-300">
-                <div className="font-bold text-cyan-400 text-sm">Plan Tarcza Osobista (Wczesny Dostęp)</div>
-                <p className="text-[11px] text-slate-400">
-                  Bezpłatny dostęp do sprzeciwu prawnego z art. 398 PKE, generatora zawiadomień do Prezesa UKE i sumy kontrolnej SHA-256.
-                </p>
+              {/* Interactive Plan Selector */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setActivePlan('free')}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                    activePlan === 'free'
+                      ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-md'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-emerald-400 text-xs">Darmowy</span>
+                    {activePlan === 'free' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                  </div>
+                  <div className="text-lg font-black font-mono">0 zł</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">3 minuty rozmów / mies.</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePlan('pro')}
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                    activePlan === 'pro'
+                      ? 'bg-cyan-500/15 border-cyan-500 text-white shadow-md'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-cyan-400 text-xs">Tarcza PRO</span>
+                    {activePlan === 'pro' && <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />}
+                  </div>
+                  <div className="text-lg font-black font-mono">14,99 zł</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">30 minut rozmów / mies.</div>
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px]">
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-0.5">
-                  <span className="text-slate-500 block">Zablokowane połączenia:</span>
-                  <strong className="text-white font-mono text-sm">12</strong>
+              {/* Monthly Minutes Usage Progress Bar */}
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300 font-semibold flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                    Wykorzystanie minut w tym miesiącu:
+                  </span>
+                  <span className="font-mono text-cyan-300 font-bold text-xs">
+                    {activePlan === 'free' ? '0:34 / 3:00 min' : '0:34 / 30:00 min'}
+                  </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-0.5">
-                  <span className="text-slate-500 block">Wnioski UKE:</span>
-                  <strong className="text-white font-mono text-sm">{calls.length}</strong>
+
+                <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      activePlan === 'free' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-cyan-500 to-indigo-500'
+                    }`}
+                    style={{ width: activePlan === 'free' ? '19%' : '2%' }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                  <span>Pozostało: {activePlan === 'free' ? '2 min 26 sek (~5 rozmów)' : '29 min 26 sek (~58 rozmów)'}</span>
+                  <span className="text-emerald-400 font-bold">Odnawia się co miesiąc</span>
+                </div>
+              </div>
+
+              {/* Feature Equality Notice */}
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-[11px]">
+                <div className="font-bold text-slate-200 flex items-center gap-1.5 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Wszystkie opcje odblokowane dla Ciebie:</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 text-slate-300 text-[10px]">
+                  <div className="flex items-center gap-1">✓ Sprzeciw z art. 398 PKE</div>
+                  <div className="flex items-center gap-1">✓ Dowód Audio SHA-256</div>
+                  <div className="flex items-center gap-1">✓ Generator pism do UKE</div>
+                  <div className="flex items-center gap-1">✓ Baza numerów offline</div>
+                  <div className="flex items-center gap-1">✓ Głosy Tomasz i Joanna</div>
+                  <div className="flex items-center gap-1">✓ 100% Zero-Storage</div>
                 </div>
               </div>
             </div>
