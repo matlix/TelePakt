@@ -170,6 +170,16 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
             </p>
           </div>
         </div>
+
+        {/* Anti-spam Economics Note */}
+        <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/20 rounded-xl flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-indigo-200">
+            <Server className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span>
+              <strong>Podział ról:</strong> Twilio służy <em>wyłącznie</em> do zestawiania telekonferencji trójstronnych (SIP Trunking, 0,08 zł/min). Do sprawdzania spamu NIE używamy Twilio Lookup ($0.02/zapytanie), lecz pobieraną hurtowo bazę <strong>Tellows Scorelist (PL 7-9) + Rejestr UKE</strong> przechowywaną w pamięci telefonu (0 ms, 0 zł za zapytanie).
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Interactive Webhook Simulator */}

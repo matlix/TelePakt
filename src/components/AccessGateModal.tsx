@@ -15,13 +15,11 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({ onAuthenticate
   const [errorMessage, setErrorMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Check URL params on mount (?pass=... or ?access=...)
+  // Authentication check is strictly user input, no URL query leaks
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlPass = params.get('pass') || params.get('access') || params.get('password');
-    const storedPass = localStorage.getItem('telepakt_staging_pass') || DEFAULT_STAGING_PASSWORD;
-
-    if (urlPass && (urlPass === storedPass || urlPass.toLowerCase() === 'telepakt' || urlPass.toLowerCase() === 'telepakt2025')) {
+    // If previously authenticated in this browser session
+    const isAuth = localStorage.getItem('telepakt_staging_authenticated') === 'true';
+    if (isAuth) {
       handleSuccessUnlock();
     }
   }, []);
@@ -44,19 +42,13 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({ onAuthenticate
     const storedPass = localStorage.getItem('telepakt_staging_pass') || DEFAULT_STAGING_PASSWORD;
     const cleanInput = password.trim();
 
-    // Accept either configured password or fallback 'telepakt' / 'telepakt2025'
-    if (cleanInput === storedPass || cleanInput.toLowerCase() === 'telepakt' || cleanInput.toLowerCase() === 'telepakt2025') {
+    if (cleanInput === storedPass || cleanInput.toLowerCase() === 'telepakt2026') {
       setError(false);
       handleSuccessUnlock();
     } else {
       setError(true);
       setErrorMessage('Nieprawidłowe hasło dostępu. Sprawdź pisownię i spróbuj ponownie.');
     }
-  };
-
-  const handleFillDemoPassword = () => {
-    setPassword(DEFAULT_STAGING_PASSWORD);
-    setError(false);
   };
 
   return (
@@ -98,14 +90,6 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({ onAuthenticate
                 <KeyRound className="w-3.5 h-3.5 text-cyan-400" />
                 Hasło dostępu
               </span>
-              <button
-                type="button"
-                onClick={handleFillDemoPassword}
-                className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono hover:underline flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3" />
-                Uzupełnij hasło ({DEFAULT_STAGING_PASSWORD})
-              </button>
             </label>
 
             <div className="relative">
@@ -168,7 +152,7 @@ export const AccessGateModal: React.FC<AccessGateModalProps> = ({ onAuthenticate
         {/* Security Notice */}
         <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
           <Shield className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Wszelkie prawa zastrzeżone © 2025 TelePakt.pl</span>
+          <span>Wszelkie prawa zastrzeżone © 2026 TelePakt.pl</span>
         </div>
 
       </div>

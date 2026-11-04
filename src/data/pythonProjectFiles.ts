@@ -314,9 +314,9 @@ class CallLog(models.Model):
     recording_url = models.URLField(blank=True, null=True, verbose_name="Zabezpieczony link do nagrania")
     
     # Zero-Storage i RODO
-    downloaded_locally = models.BooleanField(default=False, verbose_name="Pobrano na urządzenie użytkownika")
-    deleted_from_server = models.BooleanField(default=False, verbose_name="Usunięto z serwerów (Zero-Storage)")
-    retention_expiry = models.DateTimeField(verbose_name="Termin automatycznego usunięcia z serwera")
+    downloaded_locally = models.BooleanField(default=True, verbose_name="Pobrano na urządzenie użytkownika")
+    deleted_from_server = models.BooleanField(default=True, verbose_name="Zero-Storage (Brak na serwerze)")
+    retention_expiry = models.DateTimeField(blank=True, null=True, verbose_name="Brak retencji - natychmiastowe usunięcie")
 
     class Meta:
         ordering = ['-timestamp']
@@ -324,9 +324,8 @@ class CallLog(models.Model):
         verbose_name_plural = "Rejestr Połączeń Dowodowych"
 
     def save(self, *args, **kwargs):
-        if not self.retention_expiry:
-            # Domyślnie 30 dni retencji na serwerze podczas aktywnej subskrypcji
-            self.retention_expiry = timezone.now() + timedelta(days=30)
+        # Bezwzględna zasada Zero-Storage: brak przechowywania nagrań na serwerach
+        self.deleted_from_server = True
         super().save(*args, **kwargs)
 
     def __str__(self):

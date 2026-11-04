@@ -26,6 +26,8 @@ import { AdminPanelHub } from './components/AdminPanelHub';
 import { AccessGateModal } from './components/AccessGateModal';
 import { GlobalStrategyView } from './components/GlobalStrategyView';
 import { PublicWebsite } from './components/PublicWebsite';
+import { TelePaktMobileApp } from './components/TelePaktMobileApp';
+import { authService } from './services/authService';
 import { Shield, Sparkles, Scale, Terminal, CheckCircle2, ArrowLeft } from 'lucide-react';
 
 export default function App() {
@@ -37,22 +39,56 @@ export default function App() {
   const [selectedCallForComplaint, setSelectedCallForComplaint] = useState<CallLog | null>(null);
   const [preselectedScriptForSimulator, setPreselectedScriptForSimulator] = useState<LegalScript | null>(null);
 
-  // View Mode: 'website' (Official Public Website for www.telepakt.pl) vs 'studio' (Developer Studio & Admin)
-  const [viewMode, setViewMode] = useState<'website' | 'studio'>(() => {
+  // View Mode: 'app' (Mobile Application / PWA), 'website' (Landing Page), 'studio' (Internal Admin)
+  const [viewMode, setViewMode] = useState<'website' | 'app' | 'studio'>(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('mode') === 'studio' || params.get('admin') === 'true' || params.get('dev') === 'true') {
+    // Strict internal-only secret key required to access developer studio
+    if (params.get('internal_admin_key') === 'telepakt_adm_dev_secure_2026') {
       return 'studio';
     }
-    return 'website'; // STRICT DEFAULT FOR WWW.TELEPAKT.PL IS THE PUBLIC WEBSITE
+
+    // Check if launched via PWA standalone mode (installed to phone home screen)
+    const isPwaStandalone =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true);
+
+    if (params.get('mode') === 'app' || params.get('app') === 'true' || isPwaStandalone) {
+      return 'app';
+    }
+
+    // If already logged in, launch directly into the app
+    if (typeof window !== 'undefined' && authService.getCurrentUser()) {
+      return 'app';
+    }
+
+    // Check if user previously switched to app in this browser
+    const saved = localStorage.getItem('telepakt_active_view');
+    if (saved === 'app') {
+      return 'app';
+    }
+
+    return 'website';
   });
+
+  const handleSwitchToApp = () => {
+    localStorage.setItem('telepakt_active_view', 'app');
+    setViewMode('app');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSwitchToWebsite = () => {
+    localStorage.setItem('telepakt_active_view', 'website');
+    setViewMode('website');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Staging Password Protection State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    // Check if previously authenticated in this browser
     return localStorage.getItem('telepakt_staging_authenticated') === 'true';
   });
   const [isGateEnabled, setIsGateEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('telepakt_staging_gate_enabled') !== 'false';
+    return localStorage.getItem('telepakt_staging_gate_enabled') === 'true';
   });
 
   const handleLockApp = () => {
@@ -81,24 +117,33 @@ export default function App() {
     setCalls(prev => prev.map(c => c.id === updatedCall.id ? updatedCall : c));
   };
 
-  // 1. PUBLIC WEBSITE MODE (Default for www.telepakt.pl)
+  // 1. MOBILE APP MODE (TelePakt PWA & Native Phone Application)
+  if (viewMode === 'app') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-600 selection:text-white">
+        <TelePaktMobileApp
+          appName={selectedName}
+          scripts={scripts}
+          calls={calls}
+          onCallLogged={handleCallLogged}
+          onOpenComplaint={handleOpenComplaint}
+          selectedCallForComplaint={selectedCallForComplaint}
+          onUpdateScript={handleUpdateScript}
+          onAddCustomScript={handleAddCustomScript}
+          onUpdateCall={handleUpdateCall}
+          onSwitchToWebsite={handleSwitchToWebsite}
+        />
+      </div>
+    );
+  }
+
+  // 2. PUBLIC WEBSITE MODE (Strict and clean for visitors wanting information)
   if (viewMode === 'website') {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-600 selection:text-white">
-        {/* Staging Early Access Password Gate */}
-        {isGateEnabled && !isAuthenticated && (
-          <AccessGateModal
-            onAuthenticated={() => setIsAuthenticated(true)}
-          />
-        )}
         <PublicWebsite
           appName={selectedName}
-          onOpenStudio={() => setViewMode('studio')}
-          onOpenSimulator={() => {
-            setViewMode('studio');
-            setActiveTab('simulator');
-          }}
-          onLockApp={handleLockApp}
+          onOpenApp={handleSwitchToApp}
         />
       </div>
     );

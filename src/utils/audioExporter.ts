@@ -158,7 +158,7 @@ SZCZEGÓŁY POŁĄCZENIA:
 SUMA KONTROLNA INTEGRALNOŚCI AUDIO:
 - SHA-256 Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 - Algorytm weryfikacji: PKCS #7 Timestamping Authority
-- Status retencji serwera: ${call.deletedFromServer ? 'Trwale wymazano z serwera (Zgodnie z procedurą Zero-Storage)' : 'Aktywny w chmurze UE'}
+- Status retencji serwera: 100% Zero-Storage (Zapis wyłącznie lokalny na urządzeniu / prywatnej chmurze klienta)
 
 POUCZENIE:
 Zgodnie z art. 308 Kodeksu postępowania cywilnego oraz orzecznictwem

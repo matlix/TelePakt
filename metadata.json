@@ -1,6 +1,6 @@
 {
-  "name": "TelePakt (telepakt.pl) - Legalna Ochrona, Pakt i Własne Odpowiedzi w Rozmowie",
-  "description": "Oficjalny system TelePakt dla domeny telepakt.pl: weto na telemarketerów i oszustwa bankowe, ustalenia B2B, generator skarg oraz własne nagrane i syntetyzowane odpowiedzi suwakiem w trakcie rozmowy.",
+  "name": "TelePakt (telepakt.pl) - Prawna Tarcza Anty-Spam i Sprzeciw z Art. 398 PKE",
+  "description": "Prawna ochrona przed niechcianym telemarketingiem (Art. 398 PKE, Art. 21 RODO). Automatyczny sprzeciw bota, nagrywanie dowodowe i generator zawiadomień do Prezesa UKE.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

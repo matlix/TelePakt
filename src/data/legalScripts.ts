@@ -232,9 +232,9 @@ export const INITIAL_CALL_LOGS = [
     status: 'objection_delivered' as const,
     complaintFiled: false,
     downloadedLocally: false,
-    deletedFromServer: false,
+    deletedFromServer: true,
     cloudSyncedProvider: null,
-    serverRetentionExpiry: 'Za 29 dni (aktywny abonament)'
+    serverRetentionExpiry: 'Brak na serwerze (Zero-Storage)'
   },
   {
     id: 'call-102',
@@ -250,10 +250,10 @@ export const INITIAL_CALL_LOGS = [
     complaintFiled: true,
     downloadedLocally: true,
     downloadTimestamp: 'Wczoraj, 16:20',
-    deletedFromServer: false,
+    deletedFromServer: true,
     cloudSyncedProvider: 'google-drive' as const,
     cloudSyncTimestamp: 'Wczoraj, 16:21',
-    serverRetentionExpiry: 'Za 28 dni (aktywny abonament)'
+    serverRetentionExpiry: 'Brak na serwerze (Tylko w Twojej chmurze)'
   },
   {
     id: 'call-103',
@@ -272,7 +272,7 @@ export const INITIAL_CALL_LOGS = [
     deletedFromServer: true,
     deletedFromServerTimestamp: '25 paź, 09:36 (Tryb Zero-Storage)',
     cloudSyncedProvider: null,
-    serverRetentionExpiry: 'Trwale usunięte z serwera (Tylko w telefonie)'
+    serverRetentionExpiry: 'Brak na serwerze (Tylko w telefonie)'
   }
 ];
 

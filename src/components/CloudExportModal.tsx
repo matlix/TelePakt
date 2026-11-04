@@ -139,24 +139,17 @@ export const CloudExportModal: React.FC<CloudExportModalProps> = ({
             </p>
           </div>
 
-          {/* Zero-Storage Server Checkbox */}
-          <div className="p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30">
-            <label className="flex items-start gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={deleteAfterUpload}
-                onChange={(e) => setDeleteAfterUpload(e.target.checked)}
-                className="mt-0.5 rounded border-slate-700 text-rose-500 focus:ring-rose-500 h-4 w-4 bg-slate-900"
-              />
-              <div className="text-xs">
-                <span className="font-bold text-white block">
-                  Usuń to nagranie z serwerów {brandName} natychmiast po wysłaniu do mojej chmury (Zero-Storage)
-                </span>
-                <span className="text-[11px] text-slate-400 leading-snug block mt-0.5">
-                  Gwarantuje, że plik nie pozostanie w chmurze operatora telefonii – będziesz jedynym dysponentem nagrania na własnym koncie chmurowym.
-                </span>
-              </div>
-            </label>
+          {/* Zero-Storage Server Banner */}
+          <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <span className="font-bold text-white block">
+                Bezwzględna zasada Zero-Storage (Brak plików na serwerach)
+              </span>
+              <span className="text-[11px] text-slate-300 leading-snug block mt-0.5">
+                Nagranie trafia bezpośrednio do Twojego prywatnego folderu w chmurze. Serwery {brandName} nie przetrzymują żadnej kopii rozmowy.
+              </span>
+            </div>
           </div>
 
         </div>

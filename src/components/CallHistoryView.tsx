@@ -3,7 +3,7 @@ import { CallLog, AppNameOption, CloudProvider } from '../types';
 import {
   ShieldAlert, FileText, CheckCircle2, Play, Pause, Trash2, ArrowRight,
   Download, Cloud, HardDrive, ShieldCheck, Clock, AlertTriangle,
-  FolderDown, ExternalLink, RefreshCw, FileCheck2, Info, Lock
+  FolderDown, ExternalLink, RefreshCw, FileCheck2, Info, Lock, Check
 } from 'lucide-react';
 import { downloadRecordingLocally, downloadEvidenceCertificate, CLOUD_PROVIDERS } from '../utils/audioExporter';
 import { CloudExportModal } from './CloudExportModal';
@@ -149,7 +149,7 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
               Baza Nagrań Dowodowych & Polityka Retencji Danych
             </h2>
             <p className="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
-              Pobieraj pliki audio bezpośrednio na komputer lub telefon, synchronizuj z <strong>Google Drive / Nextcloud / Dropbox</strong> oraz kontroluj czas przechowywania nagrań na serwerach w chmurze.
+              Pobieraj pliki audio bezpośrednio na telefon lub komputer, synchronizuj z <strong>Google Drive / iCloud / Dropbox</strong> – TelePakt realizuje bezwzględną zasadę Zero-Storage (zero nagrań na serwerach centralnych).
             </p>
           </div>
 
@@ -160,66 +160,55 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
           </div>
         </div>
 
-        {/* Official Server Retention Policy & Zero-Storage Controls */}
+        {/* Zero-Storage Guarantee Policy & Controls */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2">
           
-          {/* Retention Rules Box */}
+          {/* Zero-Storage Guarantee Box */}
           <div className="lg:col-span-7 p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-2">
-            <div className="flex items-center gap-2 text-indigo-300 font-bold">
-              <Clock className="w-4 h-4 text-indigo-400" />
-              <span>Zasady retencji nagrań na serwerach {appName.name} (UE / RODO)</span>
+            <div className="flex items-center gap-2 text-emerald-300 font-bold">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Gwarancja Zero-Storage: 0 plików na serwerach {appName.name}</span>
             </div>
             <p className="text-slate-300 leading-relaxed text-[11px]">
-              Nagrania audio są przechowywane na bezpiecznych, szyfrowanych serwerach w Europejskim Obszarze Gospodarczym (EOG) <strong>wyłącznie w trakcie opłacania aktywnego abonamentu</strong>.
+              Dla Twojej maksymalnej prywatności TelePakt <strong>nigdy nie przechowuje nagrań na własnych serwerach</strong>. Plik dowodowy trafia wyłącznie do pamięci Twojego telefonu lub na Twój prywatny dysk w chmurze.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px]">
               <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                <span className="font-bold text-amber-400 block mb-0.5">Automatyczne usuwanie (30 dni)</span>
+                <span className="font-bold text-rose-400 block mb-0.5">Natychmiastowy shredding</span>
                 <span className="text-slate-400 leading-snug block">
-                  Po wygaśnięciu subskrypcji lub po 30 dniach od połączenia pliki są bezpowrotnie usuwane.
+                  Tymczasowy strumień audio węzła telekomunikacyjnego jest bezpowrotnie niszczony po zakończeniu połączenia.
                 </span>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-                <span className="font-bold text-emerald-400 block mb-0.5">Własność i Kopia Zapasowa</span>
+                <span className="font-bold text-emerald-400 block mb-0.5">Tylko Twoja własność</span>
                 <span className="text-slate-400 leading-snug block">
-                  Pobierz pliki na telefon lub Google Drive przed upływem okresu retencji.
+                  Zapis w telefonie lub na Twoim koncie Google Drive / iCloud / Dropbox. Nikt poza Tobą nie ma dostępu.
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Zero-Storage Immediate Delete Toggle */}
-          <div className="lg:col-span-5 p-4 rounded-xl bg-gradient-to-br from-rose-950/25 via-slate-950 to-slate-950 border border-rose-500/30 text-xs flex flex-col justify-between">
+          {/* Zero-Storage Status Box */}
+          <div className="lg:col-span-5 p-4 rounded-xl bg-gradient-to-br from-emerald-950/25 via-slate-950 to-slate-950 border border-emerald-500/30 text-xs flex flex-col justify-between">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-rose-300 flex items-center gap-1.5">
-                  <Lock className="w-4 h-4 text-rose-400" />
+                <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                  <Lock className="w-4 h-4 text-emerald-400" />
                   Tryb Zero-Storage (Brak śladu)
                 </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                  autoDeleteAfterDownload 
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
-                    : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {autoDeleteAfterDownload ? 'AKTYWNY' : 'WYŁĄCZONY'}
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  ZAWSZE AKTYWNY
                 </span>
               </div>
               <p className="text-[11px] text-slate-300 leading-snug">
-                Gdy włączone: zaraz po pobraniu nagrania na Twój telefon lub komputer, <strong>serwer natychmiast wymazuje kopię ze swoich dysków</strong>.
+                Pliki audio i protokoły dowodowe istnieją <strong>wyłącznie na Twoim urządzeniu lub w Twojej prywatnej chmurze</strong>.
               </p>
             </div>
 
-            <label className="flex items-center gap-2 mt-3 cursor-pointer pt-2 border-t border-slate-800/80">
-              <input
-                type="checkbox"
-                checked={autoDeleteAfterDownload}
-                onChange={(e) => setAutoDeleteAfterDownload(e.target.checked)}
-                className="rounded border-slate-700 text-rose-500 focus:ring-rose-500 h-4 w-4 bg-slate-900"
-              />
-              <span className="text-[11px] font-semibold text-white">
-                Usuwaj nagranie z serwera od razu po zapisaniu na urządzeniu
-              </span>
-            </label>
+            <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-emerald-400 font-semibold">
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Brak centralnego przechowywania danych przez TelePakt</span>
+            </div>
           </div>
 
         </div>
@@ -264,7 +253,7 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
-            Usunięte z serwera ({calls.filter(c => c.deletedFromServer).length})
+            Zero-Storage (Prywatne) ({calls.filter(c => c.deletedFromServer).length})
           </button>
         </div>
 
@@ -316,16 +305,10 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
                     </span>
                   )}
 
-                  {call.deletedFromServer ? (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" />
-                      Usunięte z serwera (Zero-Storage)
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 bg-slate-800 border border-slate-700">
-                      Serwer: {call.serverRetentionExpiry || 'Wygasa za 30 dni'}
-                    </span>
-                  )}
+                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    Zero-Storage: Tylko u Ciebie
+                  </span>
                 </div>
 
                 <p className="text-xs text-slate-400">

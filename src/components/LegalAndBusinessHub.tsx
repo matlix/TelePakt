@@ -5,6 +5,12 @@ import {
   Download, Copy, Check, DollarSign, Users, Award, BookOpen,
   ArrowRight, Landmark, Lock, HelpCircle, ExternalLink, Zap
 } from 'lucide-react';
+import {
+  TERMS_OF_SERVICE_TEXT as termsOfServiceText,
+  PRIVACY_POLICY_TEXT as privacyPolicyText,
+  RODO_CLAUSE_TEXT as rodoClauseText,
+  USER_MANUAL_TEXT as userManualText
+} from '../data/legalDocuments';
 
 interface LegalAndBusinessHubProps {
   appName: AppNameOption;
@@ -38,110 +44,7 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  // --- Document texts ---
 
-  const termsOfServiceText = `REGULAMIN ŚWIADCZENIA USŁUG DROGĄ ELEKTRONICZNĄ SERWISU I APLIKACJI TELEPAKT (telepakt.pl)
-Wersja obowiązująca od: 10 listopada 2024 r. (zgodna z ustawą Prawo komunikacji elektronicznej)
-
-§ 1. POSTANOWIENIA OGÓLNE
-1. Niniejszy Regulamin określa zasady korzystania z aplikacji mobilnej i serwisu internetowego TelePakt (dalej: "Aplikacja" lub "Serwis"), dostępnego pod adresem https://telepakt.pl.
-2. Usługodawcą jest operator platformy TelePakt (dalej: "Usługodawca").
-3. Aplikacja służy do ochrony abonentów telekomunikacyjnych przed niechcianymi połączeniami bezpośrednimi (spam, telemarketing niezamówiony), realizacji uprawnień wynikających z art. 398 ustawy z dnia 12 lipca 2024 r. – Prawo komunikacji elektronicznej (PKE) oraz art. 17 i 21 Rozporządzenia Parlamentu Europejskiego i Rady (UE) 2016/679 (RODO).
-4. Warunkiem korzystania z Aplikacji jest zapoznanie się z niniejszym Regulaminem i akceptacja jego postanowień.
-
-§ 2. ZASADA DZIAŁANIA I CHARAKTER USŁUGI
-1. Aplikacja realizuje połączenia w architekturze telekonferencji (3-way call) lub przekierowania połączeń za pośrednictwem bezpiecznego węzła SIP/VoIP.
-2. W trakcie trwania połączenia przychodzącego Użytkownik ma możliwość aktywowania modułu oświadczenia woli, który odtwarza uprawnioną formułę prawną sprzeciwu wobec marketingu bezpośredniego oraz żądania usunięcia danych osobowych (numeru telefonu) z bazy dzwoniącego.
-3. Nagranie rozmowy realizowane jest na żądanie Użytkownika będącego stroną połączenia, na podstawie art. 308 ustawy z dnia 17 listopada 1964 r. – Kodeks postępowania cywilnego w celu zabezpieczenia materiału dowodowego na wypadek dochodzenia roszczeń lub złożenia zawiadomienia do Prezesa Urzędu Komunikacji Elektronicznej (UKE) lub Prezesa Urzędu Ochrony Danych Osobowych (UODO).
-
-§ 3. OBOWIĄZKI UŻYTKOWNIKA I DOZWOLONY UŻYTEK
-1. Użytkownik zobowiązuje się do korzystania z Aplikacji wyłącznie w celach zgodnych z powszechnie obowiązującym prawem, zasadami współżycia społecznego i dobrymi obyczajami.
-2. Zabrania się wykorzystywania Aplikacji do nękania osób trzecich, podsłuchiwania rozmówców, w których Użytkownik nie bierze bezpośredniego udziału, ani rejestrowania rozmów w zamiarze popełnienia czynu zabronionego.
-3. Użytkownik ponosi pełną odpowiedzialność za wykorzystanie zgromadzonych nagrań, w szczególności za ich ewentualne publiczne rozpowszechnianie bez zgody rozmówcy (co może stanowić naruszenie dóbr osobistych z art. 23 i 24 Kodeksu cywilnego). Rekomendowanym i prawnie chronionym przeznaczeniem nagrania jest wykorzystanie go w postępowaniu przed organami ścigania, sądami lub organami nadzorczymi (UKE, UODO).
-
-§ 4. WARUNKI TECHNICZNE
-1. Do prawidłowego działania Aplikacji wymagane jest:
-   a) Posiadanie urządzenia z systemem Android (wersja 10.0+) lub iOS (wersja 15.0+);
-   b) Aktywna karta SIM z włączoną przez operatora telekomunikacyjnego obsługą połączeń konferencyjnych (tzw. połączenia trójstronne / telekonferencja);
-   c) Dostęp do sieci Internet (LTE/5G/Wi-Fi) na potrzeby synchronizacji statusu i pobierania certyfikatów.
-
-§ 5. PŁATNOŚCI I SUBSKRYPCJE
-1. Korzystanie z Aplikacji w wersji podstawowej (do 3 interwencji miesięcznie) jest bezpłatne.
-2. Dostęp do pakietu PRO (nielimitowane interwencje, certyfikaty SHA-256, własny klon głosu, integracja z chmurą) realizowany jest w modelu subskrypcyjnym (miesięcznym lub rocznym) zgodnie z aktualnym Cennikiem w Aplikacji.
-3. Konsument ma prawo odstąpić od umowy zawartej na odległość w terminie 14 dni bez podawania przyczyny, chyba że wyraził wyraźną zgodę na rozpoczęcie świadczenia usługi przed upływem tego terminu.
-
-§ 6. REKLAMACJE I KONTAKT
-1. Wszelkie reklamacje dotyczące funkcjonowania Aplikacji można zgłaszać pod adresem: kontakt@telepakt.pl.
-2. Usługodawca rozpatruje reklamację w terminie 14 dni od dnia jej otrzymania.`;
-
-  const privacyPolicyText = `POLITYKA PRYWATNOŚCI I KLAUZULA OCHRONY DANYCH OSOBOWYCH (telepakt.pl)
-Ochrona prywatności i procedura „Zero-Storage”
-
-1. ADMINISTRATOR DANYCH
-Administratorem danych osobowych Użytkowników serwisu telepakt.pl oraz aplikacji TelePakt jest TelePakt Polska.
-Kontakt w sprawach związanych z danymi: iod@telepakt.pl.
-
-2. JAKIE DANE PRZETWARZAMY?
-a) Dane konta Użytkownika: adres e-mail, identyfikator użytkownika, typ subskrypcji;
-b) Dane techniczne połączenia: data, godzina nawiązania połączenia, czas trwania, numer dzwoniący (caller ID) – wyłącznie w celach technicznej realizacji telekonferencji i wystawienia certyfikatu dowodowego;
-c) Pliki audio z nagrań rozmów: przetwarzane wyłącznie na bezpośrednie polecenie Użytkownika.
-
-3. UNIKALNA PROCEDURA „ZERO-STORAGE” (BEZWZGLĘDNA PRYWATNOŚĆ)
-Aplikacja TelePakt została zaprojektowana zgodnie z zasadą Privacy by Design (art. 25 RODO):
-- Po zakończeniu połączenia i pobraniu pliku audio przez telefon Użytkownika, serwer może natychmiast trwale usunąć plik audio z chmury (opcja Zero-Storage włączona domyślnie lub jednym kliknięciem).
-- Jeżeli Użytkownik wybierze opcję archiwizacji chmurowej, plik przechowywany jest przez maksymalnie 30 dni w szyfrowanym magazynie (AES-256), po czym ulega automatycznemu, nieodwracalnemu skasowaniu.
-- Żaden pracownik ani podmiot trzeci nie ma wglądu do treści nagrań Użytkownika.
-
-4. PODSTAWA PRAWNA PRZETWARZANIA
-- Art. 6 ust. 1 lit. b RODO – niezbędność do wykonania umowy o świadczenie usługi telekomunikacyjnej;
-- Art. 6 ust. 1 lit. f RODO – prawnie uzasadniony interes Administratora (ochrona przed nadużyciami, realizacja prawa obrony przed roszczeniami);
-- Motyw 18 RODO (Zwolnienie domowe): Zgodnie z motywem 18 RODO przetwarzanie danych przez osobę fizyczną w działalności czysto osobistej lub domowej (w tym nagranie rozmówcy naruszającego spokój) wyłączone jest spod rygorów nakładanych na administratorów komercyjnych.
-
-5. ODBIORCY DANYCH
-Dane telemetryczne połączeń przekazywane są wyłącznie licencjonowanym operatorom telekomunikacyjnym (SIP trunking providers, np. Twilio Ireland Ltd.) w minimalnym zakresie niezbędnym do zestawienia telekonferencji.
-
-6. PRAWA UŻYTKOWNIKA
-Użytkownik posiada prawo dostępu do swoich danych, ich sprostowania, żądania ich usunięcia („prawo do bycia zapomnianym”), ograniczenia przetwarzania oraz przenoszenia danych.`;
-
-  const rodoClauseText = `KLAUZULA INFORMACYJNA DLA ROZMÓWCÓW (ART. 13 i 14 RODO)
-Do wykorzystania w procedurze zgłoszenia naruszenia do Prezesa UODO / UKE
-
-Zgodnie z art. 13 ust. 1 i 2 oraz art. 14 Rozporządzenia Parlamentu Europejskiego i Rady (UE) 2016/679 (RODO):
-1. Podmiot dzwoniący (agencja telemarketingowa / call center / zlecający kampanię) jest Administratorem Danych Osobowych w zakresie numeru telefonu abonenta, na który wykonano połączenie.
-2. Zgodnie z art. 398 ust. 1 ustawy z dnia 12 lipca 2024 r. – Prawo komunikacji elektronicznej (PKE), używanie telekomunikacyjnych urządzeń końcowych i automatycznych systemów wywołujących dla celów marketingu bezpośredniego wymaga uprzedniej, wyraźnej zgody abonenta lub użytkownika końcowego.
-3. Wobec braku uprzedniej zgody, przetwarzanie numeru telefonu nastąpiło bez podstawy prawnej z art. 6 ust. 1 RODO.
-4. Złożenie przez abonenta oświadczenia za pośrednictwem systemu TelePakt stanowi:
-   a) Sprzeciw wobec przetwarzania danych w celach marketingu bezpośredniego na podstawie art. 21 ust. 2 RODO (skutkujący bezwzględnym zakazem dalszego przetwarzania numeru w celach marketingowych);
-   b) Żądanie niezwłocznego usunięcia danych ze wszystkich zbiorów danych i systemów CRM na podstawie art. 17 ust. 1 lit. d RODO;
-   c) Wniosek o udzielenie informacji o źródle pozyskania danych na podstawie art. 15 ust. 1 lit. g RODO.
-5. Naruszenie powyższych praw stanowi podstawę do nałożenia administracyjnej kary pieniężnej przez Prezesa UODO (do 20 mln EUR lub 4% obrotu) oraz przez Prezesa UKE na podstawie art. 445 PKE (do 3% przychodu lub 1 000 000 PLN).`;
-
-  const userManualText = `OFICJALNA INSTRUKCJA UŻYTKOWANIA APLIKACJI TELEPAKT (telepakt.pl)
-Przewodnik szybkiego startu dla sieci Play, Plus, Orange i T-Mobile
-
-KROK 1: WŁĄCZENIE POŁĄCZEŃ TRÓJSTRONNYCH (TELEKONFERENCJI) U OPERATORA
-Aplikacja TelePakt działa w niezawodnej architekturze 3-way conference. Większość polskich operatorów ma tę funkcję włączoną domyślnie. Jeśli nie:
-• ORANGE: Włącz usługę w aplikacji „Mój Orange” lub wpisz kod: *110*00# i zatwierdź zieloną słuchawką.
-• PLAY: Funkcja jest domyślnie aktywna na wszystkich kartach SIM (abonament i na kartę). W razie wątpliwości sprawdź w aplikacji „Play24”.
-• PLUS: Aktywuj w aplikacji „iPlus” lub zadzwoń pod bezpłatny numer obsługi klienta.
-• T-MOBILE: Aktywuj w aplikacji „Mój T-Mobile” w zakładce „Usługi dodatkowe -> Połączenia konferencyjne”.
-
-KROK 2: ODEBRANIE POŁĄCZENIA OD TELEMARKETERA
-1. Gdy dzwoni natrętny numer, odbierz połączenie normalnie.
-2. Gdy słyszysz, że to oferta handlowa (fotowoltaika, garnki, inwestycje, telekomunikacja), dotknij pływającego suwaka TelePakt na ekranie (lub otwórz aplikację TelePakt).
-3. Wybierz odpowiednią formułę (np. „Telemarketer – Pełny sprzeciw art. 398 PKE”).
-
-KROK 3: DOŁĄCZENIE BOTA I ROZŁĄCZENIE
-• NA IPHONE: Telefon zadzwoni na Twój dedykowany numer chmurowy TelePakt. Na ekranie iPhone'a kliknij przycisk „Połącz rozmowy” (Merge calls).
-• NA ANDROID: Jeśli TelePakt jest ustawiony jako domyślny dialer, połączenie zostanie połączone w konferencję całkowicie automatycznie!
-• Bot oficjalnym tonem odczyta formułę prawną.
-• Telemarketer w 95% przypadków rozłącza się sam w ciągu 10-25 sekund.
-• Jeśli wybrałeś opcję „Automatyczne rozłączenie”, TelePakt sam zakończy rozmowę po wygłoszeniu formuły.
-
-KROK 4: CERTYFIKAT I ZERO-STORAGE
-• Po zakończeniu połączenia otrzymasz powiadomienie: „Rozmowa zabezpieczona”.
-• Możesz pobrać certyfikat dowodowy dla UKE z sumą SHA-256.
-• W opcjach możesz jednym kliknięciem wybrać „Pobierz na telefon i skasuj z serwera” (procedura Zero-Storage).`;
 
   return (
     <div className="space-y-8">
@@ -550,7 +453,7 @@ KROK 4: CERTYFIKAT I ZERO-STORAGE
                 Polityka Prywatności & Ochrony Danych Osobowych
               </h3>
               <p className="text-xs text-slate-400">
-                Zawiera procedurę Zero-Storage, brak profilowania oraz 30-dniową retencję
+                Gwarancja 100% Zero-Storage: brak przechowywania nagrań na serwerach, zapis wyłącznie w telefonie lub Twojej chmurze
               </p>
             </div>
             <div className="flex items-center gap-2">

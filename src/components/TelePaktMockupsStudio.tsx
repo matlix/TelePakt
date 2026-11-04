@@ -204,7 +204,7 @@ export const TelePaktMockupsStudio: React.FC<TelePaktMockupsStudioProps> = ({ ap
                   TELEPAKT
                 </h3>
                 <p className="text-xs text-cyan-300 font-mono">
-                  telepakt.pl • LegalTech & Voice Shield
+                  telepakt.pl • Tarcza Prawna i Ochrona Połączeń
                 </p>
               </div>
 
@@ -262,7 +262,7 @@ export const TelePaktMockupsStudio: React.FC<TelePaktMockupsStudioProps> = ({ ap
                 <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
                   <span className="font-bold text-white">Dlaczego ta stylistyka budzi respekt?</span>
                   <p className="text-slate-300 leading-relaxed text-[11px]">
-                    Zestawienie głębokiego granatu z neonowym turkusem i szmaragdem to standard nowoczesnych systemów <em>Cybersecurity & LegalTech</em>. Sprawia, że konsultanci call center natychmiast wyczuwają technologiczną i prawną przewagę.
+                    Zestawienie głębokiego granatu z neonowym turkusem i szmaragdem to standard nowoczesnych systemów bezpieczeństwa i technologii ochrony prawnej. Sprawia, że konsultanci telemarketingu natychmiast wyczuwają technologiczną i prawną przewagę.
                   </p>
                 </div>
               </div>
@@ -466,7 +466,7 @@ export const TelePaktMockupsStudio: React.FC<TelePaktMockupsStudioProps> = ({ ap
                   <div className="p-3 rounded-2xl bg-blue-950/60 border border-blue-500/40 text-center space-y-1.5 animate-in zoom-in-95">
                     <div className="text-xs font-bold text-white flex items-center justify-center gap-1.5">
                       <PhoneCall className="w-3.5 h-3.5 text-blue-400" />
-                      Scal rozmowy (Merge calls)
+                      Scal rozmowy (Połącz)
                     </div>
                     <p className="text-[10px] text-slate-300 leading-tight">
                       Kliknij systemowy przycisk na iPhonie, aby wpuścić bota TelePakt do rozmowy.

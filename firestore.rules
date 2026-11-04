@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default deny all unspecified collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['id', 'email', 'name', 'provider']) &&
+        data.keys().hasOnly(['id', 'email', 'name', 'provider', 'subscriptionPlan', 'createdAt', 'phoneProtected', 'isVerified', 'appleRelayEmail']) &&
+        data.id == userId &&
+        data.email is string && data.email.size() <= 256 &&
+        data.name is string && data.name.size() <= 128 &&
+        data.provider in ['email', 'google', 'apple'] &&
+        (!('subscriptionPlan' in data) || data.subscriptionPlan in ['free', 'shield', 'b2b']) &&
+        (!('phoneProtected' in data) || (data.phoneProtected is string && data.phoneProtected.size() <= 32));
+    }
+
+    function isValidBetaSignup(data) {
+      return data.keys().hasAll(['id', 'email', 'platform', 'rodoConsent']) &&
+        data.keys().hasOnly(['id', 'email', 'platform', 'createdAt', 'rodoConsent']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.email is string && data.email.size() <= 256 &&
+        data.platform in ['android', 'ios'] &&
+        data.rodoConsent == true;
+    }
+
+    // User profile documents - strictly restricted to owner
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidUser(incoming(), userId);
+      allow update: if isOwner(userId) && isValidUser(incoming(), userId) && incoming().id == existing().id;
+      allow delete: if isOwner(userId);
+    }
+
+    // Beta signup collection
+    match /betaSignups/{signupId} {
+      allow create: if isValidBetaSignup(incoming()) && isValidId(signupId);
+      allow read, update, delete: if false;
+    }
+
+  }
+}

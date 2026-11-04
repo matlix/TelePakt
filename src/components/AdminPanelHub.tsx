@@ -10,8 +10,9 @@ import {
   Edit3, Key, Lock, RefreshCw, Send, Smartphone, Globe,
   Server, MessageSquare, UserCheck, Users, HelpCircle,
   ExternalLink, Sparkles, Plus, Eye, EyeOff, Save, ShoppingBag,
-  CreditCard, ArrowRight, CornerDownRight, ThumbsUp
+  CreditCard, ArrowRight, CornerDownRight, ThumbsUp, Database, Gauge, Zap, Search, PhoneCall
 } from 'lucide-react';
+import { spamDatabaseService, SpamRecord, DatabaseStats, LookupResult } from '../services/spamDatabaseService';
 
 interface AdminPanelHubProps {
   appName: AppNameOption;
@@ -19,7 +20,7 @@ interface AdminPanelHubProps {
 }
 
 export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWebsiteView }) => {
-  const [activeTab, setActiveTab] = useState<'reviews' | 'credentials' | 'users' | 'payments_architecture'>('reviews');
+  const [activeTab, setActiveTab] = useState<'reviews' | 'credentials' | 'users' | 'payments_architecture' | 'spam_database'>('reviews');
 
   // Reviews State
   const [reviews, setReviews] = useState<CustomerReview[]>(INITIAL_CUSTOMER_REVIEWS);
@@ -87,6 +88,60 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
     };
     setSimulatedReceiptResult(result);
     showToast(`Zweryfikowano zakup z ${storeNames[storeId]}!`);
+  };
+
+  // Spam Database & Tellows Integration State
+  const [spamStats, setSpamStats] = useState<DatabaseStats>(() => spamDatabaseService.getDatabaseStats());
+  const [isSyncingTellows, setIsSyncingTellows] = useState(false);
+  const [adminSearchNumber, setAdminSearchNumber] = useState('+48 22 104 39 88');
+  const [adminSearchResult, setAdminSearchResult] = useState<LookupResult | null>(() => {
+    return spamDatabaseService.lookupNumber('+48 22 104 39 88');
+  });
+  const [manualNum, setManualNum] = useState('');
+  const [manualName, setManualName] = useState('');
+  const [manualCategory, setManualCategory] = useState<'Fotowoltaika' | 'Spoofing Bankowy' | 'Windykacja' | 'Pokazy Handlowe' | 'Giełda i Krypto' | 'Premium Rate UKE' | 'Telekomunikacja' | 'Inne'>('Fotowoltaika');
+  const [manualScore, setManualScore] = useState(9);
+  const [manualDelict, setManualDelict] = useState('Cold calling bez zgody abonenta (art. 398 PKE)');
+
+  const handleSyncTellows = async () => {
+    setIsSyncingTellows(true);
+    try {
+      const res = await spamDatabaseService.syncTellowsScorelist();
+      setSpamStats(spamDatabaseService.getDatabaseStats());
+      showToast(`Zsynchronizowano deltę Tellows Scorelist! Pobrano ${res.newEntries} nowych wpisów (Score 7-9).`);
+    } finally {
+      setIsSyncingTellows(false);
+    }
+  };
+
+  const handleAdminSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminSearchNumber.trim()) {
+      const res = spamDatabaseService.lookupNumber(adminSearchNumber.trim());
+      setAdminSearchResult(res);
+    }
+  };
+
+  const handleAddManualSpam = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualNum.trim() || !manualName.trim()) return;
+
+    spamDatabaseService.reportNumber({
+      number: manualNum.trim(),
+      name: manualName.trim(),
+      category: manualCategory,
+      tellowsScore: manualScore,
+      riskLevel: manualScore >= 7 ? 'critical' : manualScore >= 5 ? 'suspicious' : 'safe',
+      reportsCount: 1,
+      lastReported: 'Dzisiaj (Wpis administratora)',
+      delictDescription: manualDelict.trim() || 'Naruszenie art. 398 PKE',
+      legalBasis: 'Art. 398 ust. 1 PKE, art. 21 RODO',
+    });
+
+    setSpamStats(spamDatabaseService.getDatabaseStats());
+    showToast(`Numer ${manualNum} został dodany do lokalnej czarnej listy bota!`);
+    setManualNum('');
+    setManualName('');
   };
 
   const showToast = (msg: string) => {
@@ -293,6 +348,21 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
         >
           <ShoppingBag className="w-4 h-4 text-purple-300" />
           Płatności: Google Play / Apple vs Własny System
+        </button>
+
+        <button
+          onClick={() => setActiveTab('spam_database')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            activeTab === 'spam_database'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+              : 'bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
+          }`}
+        >
+          <Database className="w-4 h-4 text-cyan-300" />
+          Baza Anty-Spam & Tellows API
+          <span className="px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 font-mono rounded-full text-[10px] border border-cyan-500/30">
+            34.8k (0 zł)
+          </span>
         </button>
       </div>
 
@@ -1100,6 +1170,333 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* TAB 5: SPAM DATABASE & TELLOWS API (ARCHITEKTURA EKONOMICZNA) */}
+      {activeTab === 'spam_database' && (
+        <div className="space-y-6">
+          
+          {/* Header & Economic Rationale Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 mb-2 font-mono">
+                  <Database className="w-3.5 h-3.5" />
+                  Strategia Ekonomiczna: Tellows Scorelist + UKE + Zero-Storage
+                </div>
+                <h3 className="text-xl font-black text-white tracking-tight">
+                  Architektura Bazy Anty-Spam: Dlaczego nie płacimy za zapytania API?
+                </h3>
+                <p className="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+                  Zamiast płacić <strong>Twilio Lookup API ($0.015 – $0.03 za każde zapytanie)</strong>, TelePakt pobiera hurtową listę numerów o wysokim ryzyku (Tellows Score 7–9) w zryczałtowanej rocznej opłacie partnerskiej (~50 EUR/rok). Baza jest przechowywana <strong>lokalnie na smartfonie klienta</strong>, co zapewnia <strong>0 ms opóźnienia, 0 zł kosztów per-call i 100% zgodności z Zero-Storage</strong>.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSyncTellows}
+                disabled={isSyncingTellows}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all active:scale-95 disabled:opacity-50 shrink-0 cursor-pointer"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncingTellows ? 'animate-spin' : ''}`} />
+                {isSyncingTellows ? 'Pobieranie delty...' : 'Synchronizuj Deltę Tellows'}
+              </button>
+            </div>
+
+            {/* Economic comparison card */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs">
+              <div className="p-3.5 bg-slate-950/80 rounded-xl border border-rose-500/30 space-y-1">
+                <div className="text-rose-400 font-bold flex items-center justify-between">
+                  <span>Twilio Lookup API (Odrzucone)</span>
+                  <span className="text-[10px] font-mono bg-rose-500/20 px-1.5 py-0.5 rounded">Nieopłacalne</span>
+                </div>
+                <div className="text-lg font-mono font-bold text-white">~0,08 – 0,14 zł / zapytanie</div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Przy 25 000 połączeń miesięcznie koszt wynosiłby ponad <strong>2 500 – 3 500 zł / mies.</strong>, a baza Twilio dla polskich numerów ma znikome pokrycie spamu marketingowego.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/80 rounded-xl border border-cyan-500/40 space-y-1">
+                <div className="text-cyan-300 font-bold flex items-center justify-between">
+                  <span>Tellows Scorelist (Wdrożone)</span>
+                  <span className="text-[10px] font-mono bg-cyan-500/20 px-1.5 py-0.5 rounded font-bold">Ryczałt Partnerski</span>
+                </div>
+                <div className="text-lg font-mono font-bold text-cyan-300">~220 zł / CAŁY ROK (flat)</div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Hurtowy eksport CSV/JSON numerów Score 7–9. Nielimitowana liczba użytkowników TelePakt pobiera deltę raz na dobę bez żadnych opłat za pojedyncze połączenia.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/80 rounded-xl border border-emerald-500/40 space-y-1">
+                <div className="text-emerald-400 font-bold flex items-center justify-between">
+                  <span>Lokalny Cache Telefonu (TelePakt)</span>
+                  <span className="text-[10px] font-mono bg-emerald-500/20 px-1.5 py-0.5 rounded font-bold">0 ms • Zero-Storage</span>
+                </div>
+                <div className="text-lg font-mono font-bold text-emerald-400">0,00 zł / 0 ms opóźnienia</div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Aplikacja sprawdza numer w pamięci RAM/IndexedDB telefonu zanim połączenie zadzwoni. Dane abonenta nigdy nie są wysyłane na serwer zewnętrzny.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Database Metrics Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+              <span className="text-slate-400 text-[11px] block">Łącznie w bazie TelePakt:</span>
+              <div className="text-2xl font-black text-white font-mono">
+                {spamStats.totalNumbers.toLocaleString('pl-PL')}
+              </div>
+              <span className="text-[10px] text-cyan-400 font-medium">Numery zidentyfikowane</span>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+              <span className="text-slate-400 text-[11px] block">Tellows Scorelist (PL 7-9):</span>
+              <div className="text-2xl font-black text-indigo-400 font-mono">
+                {spamStats.tellowsScorelistEntries.toLocaleString('pl-PL')}
+              </div>
+              <span className="text-[10px] text-slate-400">Score 7 (Groźny) do 9 (Krytyczny)</span>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+              <span className="text-slate-400 text-[11px] block">Rejestr UKE Premium (7xx):</span>
+              <div className="text-2xl font-black text-rose-400 font-mono">
+                {spamStats.ukePremiumEntries.toLocaleString('pl-PL')}
+              </div>
+              <span className="text-[10px] text-slate-400">Połączenia o podwyższonej opłacie</span>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-1">
+              <span className="text-slate-400 text-[11px] block">Zaoszczędzono vs Twilio Lookup:</span>
+              <div className="text-2xl font-black text-emerald-400 font-mono">
+                +{spamStats.savedVsTwilioLookupPLN.toLocaleString('pl-PL')} zł
+              </div>
+              <span className="text-[10px] text-emerald-300">Brak narzutu za zapytania per-call</span>
+            </div>
+          </div>
+
+          {/* Two-Column: API Settings & Admin Tester */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Tellows API Endpoint Configuration */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Database className="w-4 h-4 text-cyan-400" />
+                  <h4 className="font-bold text-white text-sm">Konfiguracja Połączenia Tellows Scorelist</h4>
+                </div>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono border border-emerald-500/30">
+                  Status: Aktywna (200 OK)
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Partner Scorelist Feed URL (Polska):</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value="https://www.tellows.pl/stats/partnerscoredata?country=pl&minscore=7"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 font-mono text-[11px] text-slate-300"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Filtr minimalnego ryzyka:</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value="minscore=7 (Spam uciążliwy / nielegalny)"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-[11px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Częstotliwość delty:</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value="Codziennie o 04:00 CET"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5 text-[11px] text-slate-300">
+                  <div className="font-bold text-slate-200">Rola Twilio w systemie TelePakt:</div>
+                  <p className="text-slate-400 leading-relaxed">
+                    Twilio jest wykorzystywane <strong>wyłącznie jako nośnik telekomunikacyjny (SIP Trunking)</strong> do zestawiania telekonferencji trójstronnych (3-way call) w cenie 0,08 zł/min. Twilio NIE otrzymuje numerów dzwoniących do weryfikacji antyspamowej, co chroni budżet i prywatność abonentów.
+                  </p>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between text-slate-400 text-[11px]">
+                  <span>Ostatnia synchronizacja:</span>
+                  <span className="font-mono text-cyan-300">{spamStats.lastSyncDate}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Real-Time Database Tester */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-indigo-400" />
+                  <h4 className="font-bold text-white text-sm">Tester Bazy i Oceny Ryzyka Tellows</h4>
+                </div>
+                <span className="text-[10px] text-slate-400">Podgląd w czasie rzeczywistym</span>
+              </div>
+
+              <form onSubmit={handleAdminSearch} className="flex gap-2">
+                <input
+                  type="text"
+                  value={adminSearchNumber}
+                  onChange={(e) => setAdminSearchNumber(e.target.value)}
+                  placeholder="Wpisz numer, np. +48 22 104 39 88 lub 708..."
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all cursor-pointer"
+                >
+                  Sprawdź
+                </button>
+              </form>
+
+              {adminSearchResult && (
+                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-white font-mono text-sm">{adminSearchResult.record.number}</div>
+                      <div className="text-cyan-300 font-medium text-[11px]">{adminSearchResult.record.name}</div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                        adminSearchResult.record.tellowsScore >= 7 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}>
+                        Tellows Score: {adminSearchResult.record.tellowsScore} / 9
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2 bg-slate-900 rounded-lg">
+                      <span className="text-slate-500 block">Kategoria:</span>
+                      <strong className="text-slate-200">{adminSearchResult.record.category}</strong>
+                    </div>
+                    <div className="p-2 bg-slate-900 rounded-lg">
+                      <span className="text-slate-500 block">Źródło weryfikacji:</span>
+                      <strong className="text-indigo-300 font-mono">{adminSearchResult.source}</strong>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-rose-500/5 rounded-xl border border-rose-500/20 text-[11px] text-slate-300 leading-relaxed">
+                    <strong>Podstawa prawna:</strong> {adminSearchResult.record.legalBasis}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                    <span>Opóźnienie wyszukiwania: {adminSearchResult.responseTimeMs} ms</span>
+                    <span className="text-emerald-400 font-bold">Koszt zapytania: 0,00 zł</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Form: Ręczne dodanie numeru do bazy spamu */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Plus className="w-4 h-4 text-cyan-400" />
+                <h4 className="font-bold text-white text-sm">Ręczne Zgłoszenie Numeru do Czarnej Listy TelePakt</h4>
+              </div>
+              <span className="text-slate-400 text-[11px]">Wymuszenie interwencji bota</span>
+            </div>
+
+            <form onSubmit={handleAddManualSpam} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Numer telefonu (+48):</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="+48 22 999 88 77"
+                    value={manualNum}
+                    onChange={(e) => setManualNum(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Identyfikator / Podmiot:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="np. Agresywny Bot Fotowoltaiczny"
+                    value={manualName}
+                    onChange={(e) => setManualName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Kategoria deliktu:</label>
+                  <select
+                    value={manualCategory}
+                    onChange={(e) => setManualCategory(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="Fotowoltaika">Fotowoltaika</option>
+                    <option value="Spoofing Bankowy">Spoofing Bankowy</option>
+                    <option value="Windykacja">Windykacja</option>
+                    <option value="Pokazy Handlowe">Pokazy Handlowe</option>
+                    <option value="Giełda i Krypto">Giełda i Krypto</option>
+                    <option value="Premium Rate UKE">Premium Rate UKE</option>
+                    <option value="Telekomunikacja">Telekomunikacja</option>
+                    <option value="Inne">Inne</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="sm:col-span-1">
+                  <label className="block text-slate-300 font-semibold mb-1">Ocena Tellows Score:</label>
+                  <select
+                    value={manualScore}
+                    onChange={(e) => setManualScore(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value={9}>9 - Krytyczny (Art. 398 PKE / Oszustwo)</option>
+                    <option value={8}>8 - Niebezpieczny (Natrętny telemarketing)</option>
+                    <option value={7}>7 - Uciążliwy (Cold call)</option>
+                    <option value={5}>5 - Neutralny / Niezweryfikowany</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-slate-300 font-semibold mb-1">Uzasadnienie deliktu prawnego:</label>
+                  <input
+                    type="text"
+                    value={manualDelict}
+                    onChange={(e) => setManualDelict(e.target.value)}
+                    placeholder="Opis zachowania telemarketera, naruszenia RODO lub PKE"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl shadow-lg transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Dodaj numer do bazy bota
+                </button>
+              </div>
+            </form>
+          </div>
+
         </div>
       )}
 

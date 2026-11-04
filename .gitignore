@@ -33,3 +33,4 @@ staticfiles/
 # Temporary files
 *.tmp
 .cache
+.aistudio/

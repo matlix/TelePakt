@@ -62,8 +62,8 @@ Tradycyjna aplikacja mobilna zainstalowana ze sklepu nie jest w stanie bezpośre
 1. Własne odpowiedzi użytkownika i edytor formuł prawnych.
 2. Opcja automatycznego rozłączania połączenia po wygłoszeniu formuły (lub pozostania na linii).
 3. Personalizacja kolejności odpowiedzi na liście (góra/dół) i wyłączanie zbędnych scenariuszy.
-4. Eksport nagrań lokalnie na komputer/telefon (WAV) oraz synchronizacja z Google Drive, Dropbox, OneDrive, Nextcloud, iCloud.
-5. Unikalna procedura **Zero-Storage** – automatyczne, bezpowrotne kasowanie nagrań z serwerów chmurowych po ich zapisaniu przez użytkownika.
+4. Eksport nagrań lokalnie na komputer/telefon (WAV) oraz bezpośrednia synchronizacja z Google Drive, Dropbox, OneDrive, Nextcloud, iCloud.
+5. Bezkompromisowa zasada **Zero-Storage** – brak jakiegokolwiek przechowywania nagrań na serwerach TelePakt; zapis wyłącznie w urządzeniu lub prywatnej chmurze klienta.
 6. Komplet dokumentacji: Regulamin Serwisu, Polityka Prywatności, Klauzule RODO, Instrukcje dla operatorów (Play, Orange, Plus, T-Mobile).
 7. Interaktywne studio animacji i wideo instruktażowych (TikTok 9:16, YouTube 16:9, Feed 1:1) z polskim lektorem i scenariuszami dla twórców.
 `;
@@ -318,9 +318,10 @@ b) Dane techniczne połączenia: data, godzina, czas trwania, caller ID dzwonią
 c) Pliki audio z nagrań rozmów: przetwarzane wyłącznie na bezpośrednie polecenie Użytkownika.
 
 3. PROCEDURA „ZERO-STORAGE” (BEZWZGLĘDNA PRYWATNOŚĆ)
-Aplikacja TelePakt została zaprojektowana zgodnie z zasadą Privacy by Design (art. 25 RODO):
-- Po zakończeniu połączenia i pobraniu pliku audio przez telefon Użytkownika, serwer może natychmiast trwale usunąć plik audio z chmury.
-- W planie chmurowym plik jest przechowywany maksymalnie przez 30 dni w szyfrowanym magazynie (AES-256), po czym następuje nieodwracalne skasowanie.
+Aplikacja TelePakt została zaprojektowana zgodnie z rygorystyczną zasadą Privacy by Design (art. 25 RODO):
+- Po zakończeniu połączenia nagranie i pismo dowodowe trafiają wyłącznie do pamięci telefonu Użytkownika lub na jego prywatną chmurę (Google Drive, iCloud, Dropbox).
+- Serwery TelePakt w ogóle NIE przechowują nagrań użytkownika – dane w buforze węzła telekomunikacyjnego są natychmiast trwale niszczone (shredding).
+- Żaden pracownik ani podmiot trzeci nie ma wglądu do treści nagrań Użytkownika.
 
 4. PODSTAWA PRAWNA
 - Art. 6 ust. 1 lit. b RODO (wykonanie umowy);
@@ -341,7 +342,7 @@ KROK 2: ODEBRANIE POŁĄCZENIA
 2. Gdy słyszysz ofertę handlową, dotknij suwaka TelePakt.
 
 KROK 3: DOŁĄCZENIE BOTA
-• iPhone: Kliknij przycisk „Połącz rozmowy” (Merge calls).
+• iPhone: Kliknij przycisk „Połącz rozmowy” (Scal połączenia).
 • Android: Połączenie telekonferencji scala się automatycznie.
 • Bot odczytuje formułę art. 398 PKE / RODO.
 • Telemarketer rozłącza się w panice.

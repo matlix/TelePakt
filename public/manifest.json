@@ -1,9 +1,9 @@
 {
-  "id": "/",
+  "id": "/?mode=app",
   "name": "TelePakt.pl - Tarcza Prawna Anty-Spam",
   "short_name": "TelePakt",
   "description": "Polska Tarcza Anty-Spam i Prawny Asystent Połączeń. Zgodność z art. 398 PKE i RODO.",
-  "start_url": "/",
+  "start_url": "/?mode=app",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

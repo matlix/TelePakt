@@ -140,13 +140,13 @@ export const INITIAL_INTEGRATION_CREDENTIALS: IntegrationCredential[] = [
   {
     id: 'cred-s3-r2',
     category: 'cloud_storage',
-    name: 'Cloudflare R2 / AWS S3 Zero-Storage Retention Bucket',
-    key: 'AWS_S3_EVIDENCE_BUCKET',
-    valueMasked: 'telepakt-evidence-vault-eu (Endpoint: eu-frankfurt.r2.cloudflarestorage.com)',
+    name: 'Zero-Storage Instant Shredder & Ephemeral Relay',
+    key: 'ZERO_STORAGE_ENFORCED',
+    valueMasked: 'STATUS_TRUE (Brak zapisu na serwerach centralnych)',
     status: 'active',
-    lastTested: 'Dzisiaj, 20:00 (Szyfrowanie AES-256 aktywne)',
-    description: 'Zaszyfrowany magazyn tymczasowy dla nagrań i sum SHA-256 z automatyczną regułą cyklu życia (auto-delete po 30 dniach).',
-    instructions: 'Reguła Object Lifecycle Rule ustawiona na 30 dni zgodnie z RODO i polityką Zero-Storage.'
+    lastTested: 'Dzisiaj, 20:00 (Polityka 100% Zero-Storage aktywna)',
+    description: 'Brak centralnego przechowywania nagrań. Pliki trafiają wyłącznie do telefonu lub prywatnej chmury użytkownika.',
+    instructions: 'Zgodnie z zasadą Zero-Storage bufor węzła telekomunikacyjnego jest natychmiast niszczony po przesłaniu pliku.'
   }
 ];
 

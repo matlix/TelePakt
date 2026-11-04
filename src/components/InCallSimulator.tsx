@@ -3,7 +3,7 @@ import { LegalScript, AppNameOption, CallLog } from '../types';
 import { LEGAL_SCRIPTS } from '../data/legalScripts';
 import { PolishVoiceSynthesizer } from '../utils/speech';
 import {
-  Phone, PhoneOff, PhoneCall, Volume2, VolumeX, ShieldAlert,
+  Phone, PhoneOff, PhoneCall, Volume2, VolumeX, ShieldAlert, ShieldCheck,
   Mic, Radio, Sliders, CheckCircle2, AlertTriangle, Play,
   Pause, RotateCcw, Smartphone, ArrowRight, FileText, Sparkles, Check, Plus,
   Download, Cloud, HardDrive, Lock, Settings2
@@ -11,6 +11,7 @@ import {
 import { CustomAnswerModal } from './CustomAnswerModal';
 import { ResponseOrderManagerModal } from './ResponseOrderManagerModal';
 import { CloudExportModal } from './CloudExportModal';
+import { FakeCallModal } from './FakeCallModal';
 import { downloadRecordingLocally } from '../utils/audioExporter';
 
 interface InCallSimulatorProps {
@@ -89,6 +90,7 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
   const [zeroStorageOnDownload, setZeroStorageOnDownload] = useState(true);
   const [postCallFeedback, setPostCallFeedback] = useState<string | null>(null);
+  const [isFakeCallModalOpen, setIsFakeCallModalOpen] = useState(false);
 
   // Compute effective autoHangup: uses user's live override if set, else script default (defaults to true)
   const effectiveAutoHangup = overrideAutoHangup !== null ? overrideAutoHangup : (activeScript.autoHangup ?? true);
@@ -109,11 +111,7 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
     setLastLoggedCall(updated);
     onCallLogged(updated);
 
-    if (zeroStorageOnDownload) {
-      setPostCallFeedback(`Pobrano ${res.filename} na telefon i usunięto z serwera (Zero-Storage)!`);
-    } else {
-      setPostCallFeedback(`Pobrano ${res.filename} na telefon (${res.sizeKb} KB).`);
-    }
+    setPostCallFeedback(`Pobrano ${res.filename} do pamięci telefonu (100% Zero-Storage)!`);
 
     setTimeout(() => setPostCallFeedback(null), 4000);
   };
@@ -384,13 +382,23 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                   </div>
                 </div>
 
-                <button
-                  onClick={handleStartIncomingCall}
-                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
-                >
-                  <PhoneCall className="w-4 h-4 animate-bounce" />
-                  Symuluj to połączenie przychodzące
-                </button>
+                <div className="space-y-2 w-full">
+                  <button
+                    onClick={handleStartIncomingCall}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <PhoneCall className="w-4 h-4 animate-bounce" />
+                    <span>Symuluj połączenie w tym oknie</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsFakeCallModalOpen(true)}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-600 via-amber-600 to-emerald-600 hover:from-rose-500 hover:to-emerald-500 text-white font-black text-xs shadow-lg shadow-rose-600/25 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Smartphone className="w-4 h-4 text-white" />
+                    <span>Pełnoekranowa Próbna Rozmowa (Dzwonek)</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -533,7 +541,7 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                       className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg shadow-lg shadow-blue-600/30 flex items-center justify-center gap-1.5 active:scale-95"
                     >
                       <PhoneCall className="w-4 h-4" />
-                      Scal rozmowy (Merge calls)
+                      Scal rozmowy (Połącz)
                     </button>
                   </div>
                 )}
@@ -852,18 +860,13 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                       Pobierz nagranie na telefon (WAV)
                     </button>
 
-                    <label className="flex items-start gap-2 text-left p-2 bg-slate-950/80 rounded-xl border border-slate-800 text-[10px] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={zeroStorageOnDownload}
-                        onChange={(e) => setZeroStorageOnDownload(e.target.checked)}
-                        className="mt-0.5 rounded border-slate-700 text-rose-500 focus:ring-rose-500 h-3.5 w-3.5 bg-slate-900"
-                      />
+                    <div className="flex items-start gap-2 text-left p-2.5 bg-emerald-950/20 rounded-xl border border-emerald-500/30 text-[10px]">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                       <span className="text-slate-300 leading-tight">
-                        <strong className="text-white block">Tryb Zero-Storage:</strong>
-                        Usuń nagranie z serwera zaraz po zapisaniu na telefonie
+                        <strong className="text-emerald-300 block">Zasada Zero-Storage:</strong>
+                        Zapis wyłącznie w telefonie lub Twojej chmurze (0 nagrań na serwerach).
                       </span>
-                    </label>
+                    </div>
 
                     <button
                       onClick={() => setIsCloudModalOpen(true)}
@@ -1099,6 +1102,13 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
             onCallLogged(updated);
           }
         }}
+      />
+
+      {/* Fake Call Modal */}
+      <FakeCallModal
+        isOpen={isFakeCallModalOpen}
+        onClose={() => setIsFakeCallModalOpen(false)}
+        onCallLogged={onCallLogged}
       />
     </div>
   );

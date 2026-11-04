@@ -140,3 +140,19 @@ export interface UserCredentialItem {
   totalMinutes: number;
   provider: 'Google Play IAP' | 'Google Play Store' | 'Apple App Store' | 'Samsung Galaxy Store' | 'Huawei AppGallery' | 'Google Play B2B' | 'Web Direct (telepakt.pl)';
 }
+
+export type AuthProvider = 'email' | 'google' | 'apple';
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  name: string;
+  provider: AuthProvider;
+  photoUrl?: string;
+  appleRelayEmail?: boolean;
+  subscriptionPlan: 'free' | 'shield' | 'b2b';
+  createdAt: string;
+  isVerified: boolean;
+  phoneProtected?: string;
+}
+
