@@ -17,7 +17,8 @@ import {
   UserCheck,
   Smartphone,
   Zap,
-  Phone
+  Phone,
+  MessageSquare
 } from 'lucide-react';
 
 export type FeatureInfoKey =
@@ -34,7 +35,8 @@ export type FeatureInfoKey =
   | 'numer_asystenta'
   | 'tryb_goscia'
   | 'chroniony_numer'
-  | 'subskrypcja_minuty';
+  | 'subskrypcja_minuty'
+  | 'sprzeciw_sms';
 
 interface FeatureDetail {
   id: FeatureInfoKey;
@@ -334,6 +336,27 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     telemarketerReaction:
       'Niezależnie czy korzystasz z pakietu darmowego czy płatnego, asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE.',
     tip: 'Jeśli nie odbierasz setek telefonów miesięcznie, pakiet darmowy z 3 minutami w zupełności Ci wystarczy!'
+  },
+  sprzeciw_sms: {
+    id: 'sprzeciw_sms',
+    badge: 'Forma Dokumentowa • Art. 77² K.c.',
+    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+    icon: <MessageSquare className="w-7 h-7 text-cyan-400" />,
+    title: 'Wysyłka Sprzeciwu SMS (Twilio)',
+    subtitle: 'Oficjalny sprzeciw SMS, gdy telemarketer rozłączy się przed wysłuchaniem bota',
+    whatIsIt:
+      'Wielu telemarketerów i botów natychmiast odkłada słuchawkę, gdy usłyszy formułę prawną. Wysłanie sprzeciwu SMS na numer, z którego dzwoniono, stanowi prawnie wiążące doręczenie oświadczenia woli w formie dokumentowej (art. 77² Kodeksu cywilnego).',
+    howItWorks: [
+      'Wybierasz jeden z 5 gotowych szablonów prawnych (Art. 398 PKE, Art. 15 RODO, po zerwanej rozmowie, windykacja, lub ekspresowy 1 SMS).',
+      'Wysyłasz wiadomość bezpośrednio przez chmurową bramkę Twilio (+48 22 104 39 80) lub otwierasz ją w swojej aplikacji SMS w telefonie.',
+      'Twilio generuje unikalny identyfikator Message SID (np. SM3f9...), który rejestruje dokładny czas doręczenia w sieci komórkowej operatora.',
+      'Identyfikator ten dołączany jest do skargi dla Prezesa UKE / UODO, dowodząc, że firma otrzymała sprzeciw i nie może powoływać się na brak wiedzy.'
+    ],
+    legalBasis:
+      'Art. 77² Kodeksu cywilnego (oświadczenie w formie dokumentowej) oraz Art. 398 ustawy Prawo Komunikacji Elektronicznej (zakaz kontaktu bez uprzedniej zgody).',
+    telemarketerReaction:
+      'Call center zostaje pozbawione jedynej linii obrony ("klient się rozłączył / połączenie zerwane"). Dalszy kontakt skutkuje wnioskiem o nałożenie kary do 1 000 000 zł.',
+    tip: 'Możesz wysłać SMS zarówno bezpłatnie ze swojego telefonu (klikając "Otwórz w SMS telefonu"), jak i bezpośrednio przez bezpieczną bramkę Twilio API.'
   }
 };
 

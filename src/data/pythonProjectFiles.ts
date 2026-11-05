@@ -442,6 +442,7 @@ from django.utils import timezone
 from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse, Dial
 from .models import CallLog, LegalScript, UkeComplaint, CustomerReview, InAppPurchaseReceipt, IntegrationCredential
 
@@ -603,6 +604,47 @@ def zero_storage_delete(request):
         return Response({"error": "Połączenie nie istnieje w rejestrze"}, status=404)
 
 
+@api_view(['POST'])
+def send_sms_objection(request):
+    """
+    Wysyła formalny sprzeciw prawny SMS (art. 398 PKE / art. 21 RODO) przez Twilio Messaging API.
+    Stanowi doręczenie oświadczenia woli w formie dokumentowej (art. 77² K.c.).
+    Zwraca Twilio Message SID jako dowód doręczenia dla Prezesa UKE / UODO.
+    """
+    to_number = request.data.get('to')
+    body = request.data.get('body')
+    related_call_id = request.data.get('related_call_id')
+
+    if not to_number or not body:
+        return Response({"error": "Pola 'to' oraz 'body' są wymagane."}, status=400)
+
+    account_sid = os.environ.get('TWILIO_ACCOUNT_SID', 'AC_TELEPAKT_PROD')
+    auth_token = os.environ.get('TWILIO_AUTH_TOKEN', 'SECRET_AUTH_TOKEN')
+    from_number = os.environ.get('TWILIO_SMS_SENDER', '+48221043980')
+
+    client = Client(account_sid, auth_token)
+
+    try:
+        message = client.messages.create(
+            to=to_number.strip(),
+            from_=from_number,
+            body=body.strip()
+        )
+        return Response({
+            "status": "delivered",
+            "message_sid": message.sid,
+            "to": to_number,
+            "from": from_number,
+            "num_segments": getattr(message, 'num_segments', 1),
+            "date_created": str(message.date_created or timezone.now()),
+            "legal_basis": "Art. 398 PKE / Art. 77(2) K.c. (forma dokumentowa)",
+            "related_call_id": related_call_id
+        })
+    except Exception as exc:
+        return Response({"error": f"Twilio API Error: {str(exc)}"}, status=500)
+
+
+
 @api_view(['GET', 'POST'])
 def reviews_api(request):
     """
@@ -707,6 +749,7 @@ urlpatterns = [
     path('play-formula/', views.twilio_play_legal_formula, name='twilio_play'),
     path('recording-callback/', views.twilio_recording_callback, name='recording_callback'),
     path('zero-storage-delete/', views.zero_storage_delete, name='zero_storage_delete'),
+    path('send-sms/', views.send_sms_objection, name='send_sms_objection'),
     path('reviews/', views.reviews_api, name='reviews_api'),
     path('verify-purchase/', views.verify_iap_purchase, name='verify_purchase'),
     path('health/', views.health_check, name='health_check'),

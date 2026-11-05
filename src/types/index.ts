@@ -156,3 +156,26 @@ export interface UserAccount {
   phoneProtected?: string;
 }
 
+export interface PredefinedSmsTemplate {
+  id: string;
+  title: string;
+  category: 'objection-pke' | 'data-source-rodo' | 'interrupted-call' | 'debt-harassment' | 'short-express';
+  badge: string;
+  text: string;
+  legalBasis: string;
+}
+
+export interface TwilioSmsLog {
+  id: string;
+  messageSid: string;
+  to: string;
+  from: string;
+  body: string;
+  timestamp: string;
+  status: 'delivered' | 'sent' | 'queued' | 'failed';
+  segmentCount: number;
+  templateUsed?: string;
+  relatedCallId?: string;
+}
+
+

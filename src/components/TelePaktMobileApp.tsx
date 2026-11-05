@@ -5,7 +5,7 @@ import {
   Globe, CheckCircle2, AlertTriangle, ArrowRight, Volume2, Search,
   Copy, Check, Info, RefreshCw, Zap, Sparkles, ExternalLink,
   ChevronRight, Lock, PhoneOff, User, LogOut, Key, Eye, EyeOff,
-  Bell, FileText, ToggleLeft, ToggleRight, Clock
+  Bell, FileText, ToggleLeft, ToggleRight, Clock, MessageSquare
 } from 'lucide-react';
 import { InCallSimulator } from './InCallSimulator';
 import { CallHistoryView } from './CallHistoryView';
@@ -13,6 +13,7 @@ import { ComplaintGenerator } from './ComplaintGenerator';
 import { FakeCallModal } from './FakeCallModal';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import { FeatureInfoModal, FeatureInfoKey } from './FeatureInfoModal';
+import { TwilioSmsModal } from './TwilioSmsModal';
 import { authService } from '../services/authService';
 import { spamDatabaseService, LookupResult } from '../services/spamDatabaseService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -97,6 +98,10 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<LookupResult | null>(null);
   const [copiedNumber, setCopiedNumber] = useState(false);
+
+  // Twilio SMS Modal State
+  const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
+  const [smsTargetNumber, setSmsTargetNumber] = useState('');
 
   // PWA install state
   const { isInstalled, isInstallable, install } = usePWAInstall();
@@ -662,15 +667,41 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
               </form>
 
               {searchResult && (
-                <div className={`p-3 rounded-2xl border text-xs space-y-1 ${
+                <div className={`p-3.5 rounded-2xl border text-xs space-y-2 ${
                   searchResult.isValid && searchResult.record.riskLevel !== 'safe'
                     ? 'bg-rose-500/10 border-rose-500/30 text-rose-200'
                     : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                 }`}>
-                  <div className="font-bold font-mono">{searchResult.record.number}</div>
-                  <div>{searchResult.record.name}</div>
-                  <div className="text-[10px] opacity-80">
-                    Wskaźnik Tellows: {searchResult.record.tellowsScore}/9 • Kategoria: {searchResult.record.category}
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold font-mono text-white text-sm">{searchResult.record.number}</span>
+                    <span className="text-[10px] opacity-80">
+                      Tellows: {searchResult.record.tellowsScore}/9
+                    </span>
+                  </div>
+                  <div>{searchResult.record.name} • <span className="opacity-80">{searchResult.record.category}</span></div>
+
+                  <div className="pt-1 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSmsTargetNumber(searchResult.record.number);
+                        setIsSmsModalOpen(true);
+                      }}
+                      className="flex-1 py-2 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Wyślij Sprzeciw SMS (Twilio)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFeatureInfo('sprzeciw_sms')}
+                      className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                      title="Wyjaśnienie: Dlaczego warto wysłać sprzeciw SMS?"
+                      aria-label="Informacje o Sprzeciwie SMS"
+                    >
+                      <Info className="w-3 h-3" />
+                      <span>INFO</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -1254,6 +1285,14 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
         isOpen={Boolean(activeFeatureInfo)}
         featureKey={activeFeatureInfo}
         onClose={() => setActiveFeatureInfo(null)}
+      />
+
+      {/* Twilio SMS Objection Modal */}
+      <TwilioSmsModal
+        isOpen={isSmsModalOpen}
+        onClose={() => setIsSmsModalOpen(false)}
+        initialRecipient={smsTargetNumber}
+        initialTemplateId="pke-rodo-full"
       />
 
     </div>

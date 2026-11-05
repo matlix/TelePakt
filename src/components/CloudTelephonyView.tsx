@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppNameOption } from '../types';
-import { Radio, PhoneForwarded, Clock, CreditCard, Play, Server, CheckCircle2, Copy, Check } from 'lucide-react';
+import { Radio, PhoneForwarded, Clock, CreditCard, Play, Server, CheckCircle2, Copy, Check, MessageSquare, Send, Sparkles } from 'lucide-react';
+import { TwilioSmsModal } from './TwilioSmsModal';
 
 interface CloudTelephonyViewProps {
   appName: AppNameOption;
@@ -11,6 +12,7 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
   const [testCaller, setTestCaller] = useState('+48601234567');
   const [simulatedXml, setSimulatedXml] = useState<string | null>(null);
   const [copiedXml, setCopiedXml] = useState(false);
+  const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
 
   const handleTestWebhook = () => {
     if (selectedEndpoint === '/api/telephony/conference-bridge') {
@@ -36,6 +38,19 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
         Dzień dobry. Informuję, że ta rozmowa jest nagrywana. Nie wyraziłem zgody na kontakt marketingowy, a zgodnie z art. 398 ustawy Prawo komunikacji elektronicznej taki kontakt wymaga uprzedniej zgody...
     </Say>
 </Response>`);
+    } else if (selectedEndpoint === '/api/telephony/send-sms') {
+      setSimulatedXml(`// Odpowiedź JSON z Twilio Messaging REST API (POST /api/telephony/send-sms)
+{
+  "status": "delivered",
+  "message_sid": "SM3f9a7b21c4084f67b5894121e7d0139b",
+  "date_created": "2026-11-05T14:02:18+01:00",
+  "to": "${testCaller}",
+  "from": "+48221043980",
+  "body": "TELEPAKT: Niniejszym wnoszę bezwzględny sprzeciw z art. 398 PKE oraz art. 21 RODO wobec marketingu bezpośredniego. Żądam natychmiastowego usunięcia mojego numeru z Państwa bazy i CRM...",
+  "num_segments": 2,
+  "legal_basis": "Art. 398 PKE & Art. 77(2) K.c. (forma dokumentowa)",
+  "evidence_weight": "Niepodważalny dowód doręczenia dla Prezesa UKE / UODO"
+}`);
     } else {
       setSimulatedXml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -70,69 +85,118 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
       </div>
 
       {/* Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Card 1: 3-Way Conference */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-base flex items-center gap-2">
-              <PhoneForwarded className="w-5 h-5 text-indigo-400" />
-              Model 1: Scalenie do 3-way conference
-            </h3>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              Główny tryb
-            </span>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <PhoneForwarded className="w-5 h-5 text-indigo-400" />
+                Model 1: 3-Way Conference
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Głosowy
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Dzwoni marketer, Ty odbierasz, a gdy okazuje się, że to spam, wciskasz suwak w {appName.name}. Telefon łączy się z Twoim numerem Twilio, scala rozmowę w ułamku sekundy, a bot wypowiada formułę prawną.
+            </p>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Dzwoni marketer, Ty odbierasz, a gdy okazuje się, że to spam, wciskasz suwak w {appName.name}. Telefon łączy się z Twoim numerem Twilio, scala rozmowę w ułamku sekundy, a bot wypowiada formułę prawną.
-          </p>
-
-          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-xs">
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-xs mt-2">
             <div className="flex justify-between text-slate-400">
-              <span>Czas zestawienia (Polska VoLTE):</span>
+              <span>Czas zestawienia (VoLTE):</span>
               <span className="text-emerald-400 font-bold font-mono">2 - 5 sekund</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>Android:</span>
-              <span className="text-white">Auto-merge (1-kliknięcie w dialerze)</span>
+              <span className="text-white">Auto-merge (1-klik w dialerze)</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>iPhone (iOS):</span>
-              <span className="text-white">Przycisk „Scal rozmowy” na ekranie</span>
+              <span className="text-white">Przycisk „Scal rozmowy”</span>
             </div>
           </div>
         </div>
 
         {/* Card 2: Busy Forwarding */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-base flex items-center gap-2">
-              <Radio className="w-5 h-5 text-indigo-400" />
-              Model 2: Odrzuć z przekierowaniem (Busy Forward)
-            </h3>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              Dla natrętnych botów
-            </span>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <Radio className="w-5 h-5 text-indigo-400" />
+                Model 2: Busy Forward
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                Dla botów
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Gdy widzisz na ekranie oznaczony spam (np. fotowoltaika), po prostu klikasz „Odrzuć”. Sieć komórkowa przekierowuje zajęty numer do Twojego bota, który natychmiast odtwarza sprzeciw i nagrywa telemarketera.
+            </p>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Gdy widzisz na ekranie oznaczony spam (np. fotowoltaika), po prostu klikasz „Odrzuć”. Sieć komórkowa przekierowuje zajęty numer do Twojego bota, który natychmiast odtwarza sprzeciw i nagrywa telemarketera.
-          </p>
-
-          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-xs">
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-xs mt-2">
             <div className="flex justify-between text-slate-400">
-              <span>Twój czas zaangażowania:</span>
-              <span className="text-emerald-400 font-bold font-mono">0 sekund (pełna automatyzacja)</span>
+              <span>Zaangażowanie:</span>
+              <span className="text-emerald-400 font-bold font-mono">0 sekund (automat)</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Konfiguracja u operatora:</span>
-              <span className="text-white">Kod USSD: **67*NUMER_BOTA#</span>
+              <span>Kod u operatora:</span>
+              <span className="text-white font-mono">**67*NUMER_BOTA#</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Obsługa sieci w Polsce:</span>
+              <span>Obsługa sieci:</span>
               <span className="text-white">Play, Orange, T-Mobile, Plus</span>
             </div>
+          </div>
+        </div>
+
+        {/* Card 3: Programmable SMS */}
+        <div className="bg-slate-900 border border-cyan-500/30 rounded-2xl p-6 space-y-4 flex flex-col justify-between shadow-lg shadow-cyan-500/5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-white text-base flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-cyan-400" />
+                Model 3: Twilio SMS API
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                Art. 77² K.c.
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Gdy telemarketer natychmiast się rozłączy, wyślij urzędowy sprzeciw SMS przez bramkę Twilio (+48 22 104 39 80). Zwraca unikalny <strong>Twilio Message SID</strong> potwierdzający doręczenie oświadczenia woli.
+            </p>
+          </div>
+
+          <div className="space-y-3 mt-2">
+            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-400">
+                <span>Forma prawna:</span>
+                <span className="text-cyan-300 font-semibold">Forma dokumentowa (K.c.)</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Dowód dla UKE:</span>
+                <span className="text-emerald-400 font-mono font-bold">Message SID w logach</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Wzorce prawne:</span>
+                <span className="text-white font-semibold">5 gotowych szablonów</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSmsModalOpen(true)}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-cyan-500/20 transition-all active:scale-95"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Otwórz Bramkę SMS (Twilio)</span>
+            </button>
           </div>
         </div>
 
@@ -206,9 +270,10 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
                 }}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               >
-                <option value="/api/telephony/conference-bridge">POST /api/telephony/conference-bridge</option>
-                <option value="/api/telephony/play-legal-script">POST /api/telephony/play-legal-script</option>
-                <option value="/api/telephony/reject-forward-bot">POST /api/telephony/reject-forward-bot</option>
+                <option value="/api/telephony/conference-bridge">POST /api/telephony/conference-bridge (Konferencja 3-stronna)</option>
+                <option value="/api/telephony/play-legal-script">POST /api/telephony/play-legal-script (Głos Polly TTS)</option>
+                <option value="/api/telephony/reject-forward-bot">POST /api/telephony/reject-forward-bot (Odrzucenie zajętego)</option>
+                <option value="/api/telephony/send-sms">POST /api/telephony/send-sms (Twilio SMS REST API)</option>
               </select>
             </div>
 
@@ -224,7 +289,7 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
 
             <button
               onClick={handleTestWebhook}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
             >
               <Play className="w-4 h-4 fill-current" />
               Wyślij testowy webhook POST
@@ -233,7 +298,7 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
 
           <div className="md:col-span-8 bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 mb-2">
-              <span className="text-xs font-mono text-indigo-400">Odpowiedź TwiML (XML)</span>
+              <span className="text-xs font-mono text-indigo-400">Odpowiedź TwiML / JSON</span>
               {simulatedXml && (
                 <button
                   onClick={() => {
@@ -241,7 +306,7 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
                     setCopiedXml(true);
                     setTimeout(() => setCopiedXml(false), 2000);
                   }}
-                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
                 >
                   {copiedXml ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   {copiedXml ? 'Skopiowano' : 'Kopiuj'}
@@ -250,11 +315,20 @@ export const CloudTelephonyView: React.FC<CloudTelephonyViewProps> = ({ appName 
             </div>
 
             <pre className="text-xs font-mono text-emerald-400/90 overflow-x-auto whitespace-pre leading-relaxed min-h-[140px]">
-              {simulatedXml || 'Kliknij „Wyślij testowy webhook POST”, aby zobaczyć odpowiedź TwiML serwera Python...'}
+              {simulatedXml || 'Kliknij „Wyślij testowy webhook POST”, aby zobaczyć odpowiedź TwiML lub JSON serwera Python...'}
             </pre>
           </div>
         </div>
       </div>
+
+      {/* Twilio SMS Modal */}
+      <TwilioSmsModal
+        isOpen={isSmsModalOpen}
+        onClose={() => setIsSmsModalOpen(false)}
+        initialRecipient={testCaller}
+        initialTemplateId="pke-rodo-full"
+      />
+
     </div>
   );
 };

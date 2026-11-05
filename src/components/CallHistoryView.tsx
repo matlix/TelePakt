@@ -3,10 +3,12 @@ import { CallLog, AppNameOption, CloudProvider } from '../types';
 import {
   ShieldAlert, FileText, CheckCircle2, Play, Pause, Trash2, ArrowRight,
   Download, Cloud, HardDrive, ShieldCheck, Clock, AlertTriangle,
-  FolderDown, ExternalLink, RefreshCw, FileCheck2, Info, Lock, Check
+  FolderDown, ExternalLink, RefreshCw, FileCheck2, Info, Lock, Check,
+  MessageSquare
 } from 'lucide-react';
 import { downloadRecordingLocally, downloadEvidenceCertificate, CLOUD_PROVIDERS } from '../utils/audioExporter';
 import { CloudExportModal } from './CloudExportModal';
+import { TwilioSmsModal } from './TwilioSmsModal';
 import confetti from 'canvas-confetti';
 
 interface CallHistoryViewProps {
@@ -26,6 +28,8 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
 }) => {
   const [selectedCallForCloud, setSelectedCallForCloud] = useState<CallLog | null>(null);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  const [selectedCallForSms, setSelectedCallForSms] = useState<CallLog | null>(null);
+  const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'downloaded' | 'cloud' | 'server_deleted'>('all');
   const [autoDeleteAfterDownload, setAutoDeleteAfterDownload] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
@@ -73,6 +77,11 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
   const handleOpenCloudModal = (call: CallLog) => {
     setSelectedCallForCloud(call);
     setIsCloudModalOpen(true);
+  };
+
+  const handleOpenSmsModal = (call: CallLog) => {
+    setSelectedCallForSms(call);
+    setIsSmsModalOpen(true);
   };
 
   const handleConfirmCloudSync = (callId: string, provider: CloudProvider, deleteFromServer: boolean) => {
@@ -365,6 +374,16 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
                   </button>
                 )}
 
+                {/* Send Twilio SMS Objection */}
+                <button
+                  onClick={() => handleOpenSmsModal(call)}
+                  title="Wyślij formalny sprzeciw SMS (Twilio) z art. 398 PKE / RODO"
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-cyan-600/30 text-cyan-200 hover:text-white font-semibold text-xs flex items-center gap-1.5 border border-slate-700 hover:border-cyan-500/40 transition-all active:scale-95"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Sprzeciw SMS</span>
+                </button>
+
                 {/* Open UKE/UODO complaint */}
                 <button
                   onClick={() => onOpenComplaint(call)}
@@ -387,6 +406,15 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
         call={selectedCallForCloud}
         brandName={appName.name}
         onConfirmSync={handleConfirmCloudSync}
+      />
+
+      {/* Twilio SMS Modal */}
+      <TwilioSmsModal
+        isOpen={isSmsModalOpen}
+        onClose={() => setIsSmsModalOpen(false)}
+        initialRecipient={selectedCallForSms?.callerNumber || ''}
+        relatedCallId={selectedCallForSms?.id}
+        initialTemplateId="pke-rodo-full"
       />
 
     </div>
