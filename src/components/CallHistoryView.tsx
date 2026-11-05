@@ -4,9 +4,9 @@ import {
   ShieldAlert, FileText, CheckCircle2, Play, Pause, Trash2, ArrowRight,
   Download, Cloud, HardDrive, ShieldCheck, Clock, AlertTriangle,
   FolderDown, ExternalLink, RefreshCw, FileCheck2, Info, Lock, Check,
-  MessageSquare
+  MessageSquare, UploadCloud, Volume2, HelpCircle
 } from 'lucide-react';
-import { downloadRecordingLocally, downloadEvidenceCertificate, CLOUD_PROVIDERS } from '../utils/audioExporter';
+import { downloadRecordingLocally, downloadEvidenceCertificate, CLOUD_PROVIDERS, createWavAudioBlob } from '../utils/audioExporter';
 import { CloudExportModal } from './CloudExportModal';
 import { TwilioSmsModal } from './TwilioSmsModal';
 import confetti from 'canvas-confetti';
@@ -34,9 +34,112 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
   const [autoDeleteAfterDownload, setAutoDeleteAfterDownload] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
 
+  // In-app Audio Player State
+  const [playingCallId, setPlayingCallId] = useState<string | null>(null);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  const [playbackProgress, setPlaybackProgress] = useState<number>(0);
+  const [showCloudEducation, setShowCloudEducation] = useState(false);
+
   const showToast = (msg: string) => {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 3500);
+  };
+
+  const getCloudProviderUrl = (provider: CloudProvider) => {
+    switch (provider) {
+      case 'google-drive':
+        return 'https://drive.google.com/drive/my-drive';
+      case 'dropbox':
+        return 'https://www.dropbox.com/home';
+      case 'onedrive':
+        return 'https://onedrive.live.com';
+      case 'icloud':
+        return 'https://www.icloud.com/iclouddrive';
+      case 'nextcloud':
+        return 'https://cloud.nextcloud.com';
+      default:
+        return 'https://drive.google.com';
+    }
+  };
+
+  const handleTogglePlay = (call: CallLog) => {
+    if (playingCallId === call.id) {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+      setPlayingCallId(null);
+      setPlaybackProgress(0);
+      return;
+    }
+
+    if (currentAudio) {
+      currentAudio.pause();
+    }
+
+    try {
+      const blob = createWavAudioBlob(call);
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+
+      audio.ontimeupdate = () => {
+        if (audio.duration) {
+          setPlaybackProgress((audio.currentTime / audio.duration) * 100);
+        }
+      };
+
+      audio.onended = () => {
+        setPlayingCallId(null);
+        setPlaybackProgress(0);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setPlayingCallId(null);
+        setPlaybackProgress(0);
+        showToast('Nie można odtworzyć pliku audio.');
+      };
+
+      audio.play().then(() => {
+        setCurrentAudio(audio);
+        setPlayingCallId(call.id);
+        showToast(`Odtwarzanie dowodu audio dla połączenia ${call.callerNumber}...`);
+      }).catch(() => {
+        showToast('Włącz dźwięk w przeglądarce, aby odsłuchać nagranie.');
+      });
+    } catch {
+      showToast('Błąd generowania odtwarzacza audio.');
+    }
+  };
+
+  const handleFileImport = (callId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const targetCall = calls.find(c => c.id === callId);
+    if (!targetCall) return;
+
+    const updated: CallLog = {
+      ...targetCall,
+      downloadedLocally: true,
+      downloadTimestamp: 'Wczytano z dysku / chmury (' + file.name + ')'
+    };
+
+    if (onUpdateCall) {
+      onUpdateCall(updated);
+    }
+
+    showToast(`Pomyślnie wczytano plik ${file.name}. Możesz go teraz odsłuchać w rejestrze!`);
+
+    try {
+      const fileUrl = URL.createObjectURL(file);
+      const audio = new Audio(fileUrl);
+      if (currentAudio) currentAudio.pause();
+      audio.play().then(() => {
+        setCurrentAudio(audio);
+        setPlayingCallId(callId);
+      }).catch(() => {});
+    } catch {}
   };
 
   const handleDownloadAudio = (call: CallLog) => {
@@ -222,6 +325,36 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
 
         </div>
 
+        {/* Cloud & Two-Way Sync Educational FAQ Box */}
+        <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/30 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs">
+              <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>Częste Pytanie: Jak działa zapis w chmurze i czy połączenie jest dwustronne?</span>
+            </div>
+            <button
+              onClick={() => setShowCloudEducation(!showCloudEducation)}
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-mono font-bold cursor-pointer"
+            >
+              {showCloudEducation ? '▲ Zwiń wyjaśnienie' : '▼ Jak to działa w praktyce?'}
+            </button>
+          </div>
+
+          {showCloudEducation && (
+            <div className="text-xs text-slate-300 space-y-2 pt-2 border-t border-slate-800/80 animate-in fade-in duration-200 leading-relaxed font-sans">
+              <p>
+                <strong>1. Zapis od razu po dokonanej rozmowie:</strong> Tak! Zaraz po zakończeniu połączenia wpis pojawia się w rejestrze. Masz przycisk <strong>„Pobierz na urządzenie”</strong> (plik .wav w pamięci telefonu/komputera) oraz <strong>„Wyślij do chmury”</strong> (synchronizacja z Google Drive, iCloud, Dropbox, Nextcloud).
+              </p>
+              <p>
+                <strong>2. Czy po usunięciu z komórki da się odtworzyć?</strong> Zgodnie z zasadą <strong>Zero-Storage</strong> plik nie wisi na naszych serwerach (nikt Cię nie podsłucha). W rejestrze <strong>ZAWSZE zostaje nienaruszona metryka i suma SHA-256</strong> (klucz dowodowy dla UKE i Sądu). Sam plik audio bezpiecznie leży na Twoim koncie (np. <code>Google Drive / TelePakt_Dowody /</code>). Możesz go w każdej chwili otworzyć bezpośrednio na Dysku Google.
+              </p>
+              <p>
+                <strong>3. Czy połączenie z chmurą jest dwustronne?</strong> <strong>TAK!</strong> Obok każdej zsynchronizowanej rozmowy masz przycisk <strong>„Otwórz w chmurze”</strong> (odsłuchanie na Dysku Google w 1 kliknięcie) oraz przycisk <strong>„Wczytaj z powrotem”</strong> (możesz wczytać plik audio z dysku do aplikacji i odsłuchać go bezpośrednio wbudowanym odtwarzaczem rejestru).
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Filter Tabs */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-800 overflow-x-auto no-scrollbar">
           <button
@@ -328,6 +461,78 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
                   <span>Wygłoszona formuła: <strong>{call.scriptUsed}</strong></span>
                   <span>•</span>
                   <span>Czas bota: <strong>{call.botConnectedSeconds}s</strong></span>
+                </div>
+
+                {/* In-App Audio Player Console */}
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <button
+                    onClick={() => handleTogglePlay(call)}
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 ${
+                      playingCallId === call.id
+                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/30 animate-pulse'
+                        : 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950'
+                    }`}
+                    title={playingCallId === call.id ? 'Zatrzymaj odtwarzanie nagrania' : 'Odsłuchaj dowód audio'}
+                  >
+                    {playingCallId === call.id ? (
+                      <>
+                        <Pause className="w-3.5 h-3.5 fill-current" />
+                        <span>Pauza</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Odsłuchaj nagranie</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Playback progress & time display */}
+                  <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-xl border border-slate-800 text-[11px] font-mono min-w-[160px]">
+                    <Volume2 className={`w-3.5 h-3.5 ${playingCallId === call.id ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
+                    <div className="flex-1 space-y-0.5">
+                      <div className="flex justify-between text-[9px] text-slate-400">
+                        <span>{playingCallId === call.id ? 'Gra' : 'WAV'}</span>
+                        <span>{call.durationSeconds}s</span>
+                      </div>
+                      <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-cyan-400 rounded-full transition-all duration-200"
+                          style={{ width: playingCallId === call.id ? `${playbackProgress}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cloud direct open and re-import buttons */}
+                  {call.cloudSyncedProvider && (
+                    <div className="flex items-center gap-1.5">
+                      <a
+                        href={getCloudProviderUrl(call.cloudSyncedProvider)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-[10px] font-semibold flex items-center gap-1 transition-colors"
+                        title={`Otwórz w ${CLOUD_PROVIDERS.find(p => p.id === call.cloudSyncedProvider)?.name || 'Chmurze'}`}
+                      >
+                        <ExternalLink className="w-3 h-3 text-indigo-400" />
+                        <span>Otwórz w chmurze</span>
+                      </a>
+
+                      <label
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Wczytaj z powrotem plik z dysku / chmury do rejestru"
+                      >
+                        <UploadCloud className="w-3 h-3 text-cyan-400" />
+                        <span>Wczytaj z chmury/dysku</span>
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={(e) => handleFileImport(call.id, e)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
 
