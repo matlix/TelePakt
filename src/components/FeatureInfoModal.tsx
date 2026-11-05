@@ -321,21 +321,21 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     badge: '100% Funkcji Odblokowanych',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     icon: <Zap className="w-7 h-7 text-amber-400" />,
-    title: 'Zasady Subskrypcji i Minuty Asystenta',
-    subtitle: 'Wszystkie funkcje prawne dla każdego • Różnica polega wyłącznie na puli minut w miesiącu',
+    title: 'Dwa Proste Plany i Pakiety Minut',
+    subtitle: 'Wszystkie funkcje prawne dla każdego • Wybór między subskrypcją a pakietem bezterminowym (30 lub 60 min)',
     whatIsIt:
       'W TelePakt nie blokujemy żadnych funkcji obronnych za paywallem. Każdy użytkownik ma pełny dostęp do Auto-Sprzeciwu, Dowodu Audio SHA-256 i pism do UKE.',
     howItWorks: [
-      'Pakiet Darmowy (Free): 3 minuty rozmowy asystenta / miesiąc (wystarcza na ok. 5–6 zneutralizowanych spamów po 30s) — 0 zł na zawsze.',
-      'Pakiet Pełna Tarcza (PRO): 30 minut rozmowy asystenta / miesiąc (wystarcza na ok. 50–60 zneutralizowanych połączeń) — 14,99 zł / miesiąc.',
-      'Pakiet Biznes (B2B): 120 minut rozmowy asystenta / miesiąc dla właścicieli firm i numerów firmowych — 49,00 zł / miesiąc.',
-      'Wszystkie opcje, suwaki, certyfikaty dowodowe SHA-256 i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'
+      'Pakiet Startowy (Darmowy): 3 minuty rozmowy asystenta (wystarcza na ok. 5–6 zneutralizowanych spamów po 30s) — 0 zł na zawsze.',
+      'Pakiet Pełna Tarcza (PRO): do wyboru comiesięczny abonament 14,99 zł (30 min / mies.) LUB jednorazowy pakiet minut bez abonamentu (30 min za 19 zł lub 60 min za 29 zł).',
+      'Pakiety Bezterminowe (Prepaid): minuty z pakietu jednorazowego nigdy nie przepadają pod koniec miesiąca i schodzą wyłącznie wtedy, gdy bot rozmawia z telemarketerem.',
+      'Wszystkie opcje, suwaki, certyfikaty dowodowe SHA-256, bramka SMS i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'
     ],
     legalBasis:
       'Zapewnienie powszechnego, bezpłatnego dostępu do ochrony konstytucyjnych praw konsumenta (art. 76 Konstytucji RP).',
     telemarketerReaction:
-      'Niezależnie czy korzystasz z pakietu darmowego czy płatnego, asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE.',
-    tip: 'Jeśli nie odbierasz setek telefonów miesięcznie, pakiet darmowy z 3 minutami w zupełności Ci wystarczy!'
+      'Niezależnie czy korzystasz z pakietu darmowego, abonamentu czy doładowania minut, asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE.',
+    tip: 'Jeśli nie chcesz comiesięcznego abonamentu, wybierz jednorazowy pakiet 30 lub 60 minut — płacisz raz i minuty czekają na Twoim koncie bez limitu czasu!'
   },
   sprzeciw_sms: {
     id: 'sprzeciw_sms',

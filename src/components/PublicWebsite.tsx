@@ -44,6 +44,10 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
+  // Pricing & Billing Selector State (Monthly Subscription vs One-Time Minutes Package)
+  const [billingMode, setBillingMode] = useState<'monthly' | 'time_package'>('monthly');
+  const [timePackageOption, setTimePackageOption] = useState<'30min' | '60min'>('30min');
+
   useEffect(() => {
     return authService.subscribe((u) => {
       setCurrentUser(u);
@@ -977,130 +981,267 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           
           <div className="text-center space-y-2">
             <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest font-mono">
-              Brak ukrytych opłat • Anuluj w dowolnym momencie
+              Dwa Proste Plany • Bez Ukrytych Opłat
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-white">
-              Przejrzysty Cennik Subskrypcji
+              Cennik TelePakt: Wybierz Jak Wolisz Płacić
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto">
-              W TelePakt <strong>wszystkie funkcje prawne i dowodowe są w 100% odblokowane dla każdego</strong>. Pakiety różnią się wyłącznie miesięczną pulą minut rozmowy asystenta na linii.
+              W TelePakt <strong>wszystkie funkcje prawne i dowodowe są w 100% odblokowane dla każdego</strong>. Wybierz comiesięczną subskrypcję lub jednorazowy pakiet minut bezterminowych.
             </p>
 
             {/* Feature Equality Guarantee Banner */}
             <div className="p-3 sm:p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 max-w-3xl mx-auto text-cyan-200 text-xs flex items-center gap-3 text-left">
               <span className="text-2xl leading-none">🛡️</span>
               <div className="space-y-0.5">
-                <strong className="text-white block">Gwarancja Pełnej Ochrony:</strong>
-                <span>Auto-Sprzeciw (art. 398 PKE), Dowód Audio SHA-256, Wnioski UKE, Baza Offline i Zero-Storage działają w każdym planie bez dodatkowych opłat.</span>
+                <strong className="text-white block">Gwarancja 100% Odblokowanych Funkcji:</strong>
+                <span>Auto-Sprzeciw (art. 398 PKE), Dowód Audio SHA-256, Wnioski UKE, Baza Offline, Sprzeciw SMS Twilio i Zero-Storage działają bez żadnych ograniczeń w każdym planie.</span>
+              </div>
+            </div>
+
+            {/* Billing Mode Interactive Switcher (Monthly vs One-Time Time Package) */}
+            <div className="pt-4 flex justify-center">
+              <div className="inline-flex p-1.5 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setBillingMode('monthly')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                    billingMode === 'monthly'
+                      ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Abonament Miesięczny</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-black/30 text-cyan-200">
+                    Odnawialny
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBillingMode('time_package')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                    billingMode === 'time_package'
+                      ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Pakiety Minut (Prepaid)</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/30 text-emerald-300">
+                    BEZTERMINOWE
+                  </span>
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs max-w-5xl mx-auto">
+          {/* EXACTLY TWO PRICING CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs max-w-4xl mx-auto">
             
-            {/* Free Tier: 3 minutes */}
-            <div className="p-6 rounded-3xl bg-slate-950 border border-slate-800 space-y-4 flex flex-col justify-between">
-              <div className="space-y-3">
+            {/* Card 1: Free Starter Tier */}
+            <div className="p-6 rounded-3xl bg-slate-950 border border-slate-800 space-y-5 flex flex-col justify-between hover:border-slate-700 transition-colors shadow-lg">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-300 text-sm">Pakiet Darmowy</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    3 minuty / mies.
+                  <div>
+                    <span className="font-bold text-slate-300 text-sm block">Pakiet Startowy (Darmowy)</span>
+                    <span className="text-[10px] text-slate-500">Dla każdego nowego użytkownika</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    3 minuty rozmów
                   </span>
                 </div>
-                <div className="text-3xl font-black text-white font-mono">0 zł <span className="text-xs font-normal text-slate-500">/ na zawsze</span></div>
-                <p className="text-slate-400 text-xs">Wystarcza na ok. 5–6 zneutralizowanych połączeń marketingowych po ~30 sekund.</p>
+
+                <div className="space-y-1">
+                  <div className="text-3xl font-black text-white font-mono">
+                    0 zł <span className="text-xs font-normal text-slate-500">/ na zawsze</span>
+                  </div>
+                  <p className="text-slate-400 text-xs">
+                    Wystarcza na neutralizację ok. 5–6 połączeń marketingowych po ~30 sekund.
+                  </p>
+                </div>
                 
-                <ul className="space-y-2 text-slate-300 border-t border-slate-800/80 pt-4">
-                  <li className="flex items-center gap-2 text-emerald-400">✓ <strong>3 minuty</strong> rozmowy bota asystenta co miesiąc</li>
-                  <li className="flex items-center gap-2">✓ <strong>Wszystkie opcje odblokowane</strong></li>
-                  <li className="flex items-center gap-2">✓ Sprzeciw z art. 398 PKE i art. 21 RODO</li>
-                  <li className="flex items-center gap-2">✓ Dowód Audio z sumą kontrolną SHA-256</li>
-                  <li className="flex items-center gap-2">✓ Generator zawiadomień do Prezesa UKE</li>
-                  <li className="flex items-center gap-2">✓ Baza numerów offline i wskaźnik Tellows</li>
-                  <li className="flex items-center gap-2">✓ 100% Zero-Storage w pamięci Twojego telefonu</li>
+                <ul className="space-y-2.5 text-slate-300 border-t border-slate-800/80 pt-4">
+                  <li className="flex items-center gap-2 text-emerald-400">
+                    ✓ <strong>3 minuty</strong> asystenta prawnego na start (lub co miesiąc)
+                  </li>
+                  <li className="flex items-center gap-2 text-white font-semibold">
+                    ✓ <strong>100% funkcji odblokowanych</strong>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Automatyczny sprzeciw z art. 398 PKE i art. 21 RODO
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Dowód Audio z kryptograficzną sumą SHA-256
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Generator formalnych zawiadomień do Prezesa UKE
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Baza numerów spamowych offline i ocena Tellows
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Bramka SMS (art. 77² K.c.) z gotowymi wzorcami
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Zero-Storage: nagrania wyłącznie w Twoim telefonie
+                  </li>
                 </ul>
               </div>
 
-              <button
-                onClick={onOpenApp}
-                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-colors cursor-pointer"
-              >
-                Uruchom za Darmo (0 zł)
-              </button>
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onOpenApp}
+                  className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-colors cursor-pointer border border-slate-700"
+                >
+                  Uruchom za Darmo (0 zł)
+                </button>
+                <div className="text-[10px] text-center text-slate-500">
+                  Bez podawania karty kredytowej
+                </div>
+              </div>
             </div>
 
-            {/* Popular Tier: 30 minutes */}
-            <div className="p-6 rounded-3xl bg-gradient-to-b from-indigo-950/60 to-slate-950 border border-cyan-500/50 space-y-4 flex flex-col justify-between relative shadow-xl shadow-cyan-500/10 ring-1 ring-cyan-500/30">
-              <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500 text-slate-950 uppercase tracking-wide">
-                Najczęściej Wybierany • 10x Więcej Minut
+            {/* Card 2: PRO Tier (Dynamic: Monthly Subscription OR One-Time Minutes Package) */}
+            <div className="p-6 rounded-3xl bg-gradient-to-b from-indigo-950/70 via-slate-900 to-slate-950 border border-cyan-500/50 space-y-5 flex flex-col justify-between relative shadow-2xl shadow-cyan-500/10 ring-1 ring-cyan-500/30">
+              <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[10px] font-bold bg-cyan-400 text-slate-950 uppercase tracking-wide shadow-md">
+                {billingMode === 'monthly' ? 'Abonament PRO • Najpopularniejszy' : 'Pakiet Minut • Bez Abonamentu'}
               </span>
               
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-sm">Pakiet Pełna Tarcza (PRO)</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                    30 minut / mies.
+                  <div>
+                    <span className="font-bold text-white text-sm block">Pakiet Pełna Tarcza (PRO)</span>
+                    <span className="text-[10px] text-cyan-300/80">
+                      {billingMode === 'monthly' ? 'Subskrypcja comiesięczna' : 'Doładowanie jednorazowe'}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                    {billingMode === 'monthly'
+                      ? '30 minut / mies.'
+                      : timePackageOption === '30min'
+                      ? '30 minut (Prepaid)'
+                      : '60 minut (Prepaid)'}
                   </span>
                 </div>
-                <div className="text-3xl font-black text-cyan-400 font-mono">
-                  14,99 zł <span className="text-xs font-normal text-slate-400">/ mies.</span>
+
+                {/* If One-Time Package Mode: Provide Sub-Option (30 min vs 60 min) */}
+                {billingMode === 'time_package' && (
+                  <div className="p-2 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase font-mono block text-center">
+                      Wybierz wielkość pakietu minut:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setTimePackageOption('30min')}
+                        className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
+                          timePackageOption === '30min'
+                            ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <div className="font-mono text-xs font-bold">30 minut</div>
+                        <div className="text-[10px] text-cyan-300">19,00 zł</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTimePackageOption('60min')}
+                        className={`p-2 rounded-xl text-center border transition-all cursor-pointer relative ${
+                          timePackageOption === '60min'
+                            ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[8px] bg-emerald-500 text-slate-950 font-bold uppercase">
+                          -25%
+                        </span>
+                        <div className="font-mono text-xs font-bold">60 minut</div>
+                        <div className="text-[10px] text-emerald-400 font-bold">29,00 zł</div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Price Display */}
+                <div className="space-y-1">
+                  {billingMode === 'monthly' ? (
+                    <>
+                      <div className="text-3xl font-black text-cyan-400 font-mono">
+                        14,99 zł <span className="text-xs font-normal text-slate-400">/ mies.</span>
+                      </div>
+                      <p className="text-slate-300 text-xs">
+                        30 minut co miesiąc (wystarcza na ok. 50–60 zneutralizowanych połączeń). Minuty kumulują się i przechodzą na kolejny miesiąc!
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-3xl font-black text-emerald-400 font-mono">
+                        {timePackageOption === '30min' ? '19,00 zł' : '29,00 zł'}{' '}
+                        <span className="text-xs font-normal text-slate-400">jednorazowo</span>
+                      </div>
+                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-300 font-medium">
+                        ✨ <strong>Minuty BEZTERMINOWE:</strong> Nie przepadają pod koniec miesiąca! Płacisz raz BLIK-iem i minuty czekają na Twoim koncie.
+                      </div>
+                    </>
+                  )}
                 </div>
-                <p className="text-slate-300 text-xs">Wystarcza na ok. 50–60 zneutralizowanych połączeń lub dłuższe rozmowy dowodowe.</p>
                 
-                <ul className="space-y-2 text-slate-200 border-t border-slate-800/80 pt-4">
-                  <li className="flex items-center gap-2 text-cyan-300 font-bold">✓ <strong>30 minut</strong> rozmowy asystenta co miesiąc</li>
-                  <li className="flex items-center gap-2">✓ <strong>Wszystkie opcje odblokowane</strong></li>
-                  <li className="flex items-center gap-2">✓ Dedykowana linia telekonferencji (+48) z priorytetem</li>
-                  <li className="flex items-center gap-2">✓ Auto-Sprzeciw PKE i certyfikaty SHA-256</li>
-                  <li className="flex items-center gap-2">✓ Nielimitowane zawiadomienia do Prezesa UKE i UODO</li>
-                  <li className="flex items-center gap-2">✓ Spokój i ochrona telefonu przez cały rok</li>
+                <ul className="space-y-2.5 text-slate-200 border-t border-slate-800/80 pt-4">
+                  <li className="flex items-center gap-2 text-cyan-300 font-bold">
+                    ✓ {billingMode === 'monthly'
+                      ? '30 minut rozmowy asystenta co miesiąc'
+                      : timePackageOption === '30min'
+                      ? '30 minut rozmowy bez terminu ważności'
+                      : '60 minut rozmowy bez terminu ważności'}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ <strong>Wszystkie opcje odblokowane</strong>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Dedykowana linia telekonferencji (+48) z priorytetem
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Auto-Sprzeciw PKE i certyfikaty dowodowe SHA-256
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Nielimitowane zawiadomienia do Prezesa UKE i UODO
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ Bramka SMS (art. 77² K.c.) i natychmiastowe doręczenie
+                  </li>
+                  <li className="flex items-center gap-2">
+                    ✓ {billingMode === 'monthly' ? 'Możliwość anulowania w 1 kliknięcie' : 'Płatność jednorazowa (BLIK, Karta, Sklep)'}
+                  </li>
                 </ul>
               </div>
 
-              <button
-                onClick={onOpenApp}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-center block shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
-              >
-                Aktywuj Pełną Tarczę (30 min)
-              </button>
-            </div>
-
-            {/* Pro B2B Tier: 120 minutes */}
-            <div className="p-6 rounded-3xl bg-slate-950 border border-slate-800 space-y-4 flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-300 text-sm">Biznes B2B & Firma</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    120 minut / mies.
-                  </span>
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onOpenApp}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-center block shadow-lg shadow-cyan-500/25 transition-all cursor-pointer active:scale-95"
+                >
+                  {billingMode === 'monthly'
+                    ? 'Włącz Subskrypcję PRO (14,99 zł / mies.)'
+                    : timePackageOption === '30min'
+                    ? 'Kup Pakiet 30 min (19 zł jednorazowo)'
+                    : 'Kup Pakiet 60 min (29 zł jednorazowo)'}
+                </button>
+                <div className="text-[10px] text-center text-slate-400">
+                  {billingMode === 'monthly'
+                    ? 'Subskrypcja Google Play / Apple App Store • Anuluj kiedy chcesz'
+                    : 'Jednorazowa opłata • Zero cyklicznych obciążeń karty'}
                 </div>
-                <div className="text-3xl font-black text-emerald-400 font-mono">
-                  49,00 zł <span className="text-xs font-normal text-slate-400">/ mies.</span>
-                </div>
-                <p className="text-slate-400 text-xs">Dla właścicieli firm, handlowców i jednoosobowych działalności gospodarczych.</p>
-                
-                <ul className="space-y-2 text-slate-300 border-t border-slate-800/80 pt-4">
-                  <li className="flex items-center gap-2 text-emerald-400 font-bold">✓ <strong>120 minut</strong> rozmowy asystenta co miesiąc</li>
-                  <li className="flex items-center gap-2">✓ <strong>Wszystkie opcje odblokowane</strong></li>
-                  <li className="flex items-center gap-2">✓ Obsługa windykacji, ofert B2B i ustaleń handlowych</li>
-                  <li className="flex items-center gap-2">✓ Ochrona wielu numerów firmowych</li>
-                  <li className="flex items-center gap-2">✓ Faktura VAT 23%</li>
-                </ul>
               </div>
-
-              <button
-                onClick={onOpenApp}
-                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-colors cursor-pointer"
-              >
-                Wybierz Pakiet B2B (120 min)
-              </button>
             </div>
 
           </div>
 
-          {/* Fair Use Policy Note */}
+          {/* Guarantee / Fairness Note */}
           <p className="text-[11px] text-slate-400 text-center max-w-2xl mx-auto">
-            * Wszystkie pakiety odnawiają się comiesięcznie. Minuty nieprzeprowadzone w danym miesiącu nie przepadają i kumulują się na koncie abonenta.
+            * Zasada uczciwości TelePakt: Niezależnie od wybranego wariantu, minuty nieprzeprowadzone nigdy nie przepadają. Jeśli telemarketer rozłączy się w ułamku sekundy po odebraniu, nie tracisz cennych minut!
           </p>
 
           {/* Trust Banner: Merchant of Record */}

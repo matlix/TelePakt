@@ -928,6 +928,26 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                 </button>
               </div>
 
+              {/* One-Time Prepaid Minutes Alternative */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-slate-950 border border-cyan-500/30 flex items-center justify-between gap-2 shadow-sm">
+                <div className="space-y-0.5 min-w-0">
+                  <div className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="truncate">Wolisz bez abonamentu? Pakiety minut</span>
+                  </div>
+                  <div className="text-[10px] text-slate-300 leading-tight">
+                    30 min (19 zł) lub 60 min (29 zł) • Minuty bezterminowe, nie przepadają
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveFeatureInfo('subskrypcja_minuty')}
+                  className="px-2.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black text-[10px] cursor-pointer transition-transform active:scale-95 shrink-0"
+                >
+                  Szczegóły
+                </button>
+              </div>
+
               {/* Monthly Minutes Usage Progress Bar */}
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between text-xs">
