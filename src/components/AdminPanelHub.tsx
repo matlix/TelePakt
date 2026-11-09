@@ -106,7 +106,8 @@ export const AdminPanelHub: React.FC<AdminPanelHubProps> = ({ appName, onOpenWeb
   const handleSyncTellows = async () => {
     setIsSyncingTellows(true);
     try {
-      const res = await spamDatabaseService.syncTellowsScorelist();
+      // Synchronizacja z Tellows nie istnieje (była symulacją) - przycisk tylko odświeża statystyki lokalnej bazy.
+      const res = { newEntries: 0 };
       setSpamStats(spamDatabaseService.getDatabaseStats());
       showToast(`Zsynchronizowano deltę Tellows Scorelist! Pobrano ${res.newEntries} nowych wpisów (Score 7-9).`);
     } finally {

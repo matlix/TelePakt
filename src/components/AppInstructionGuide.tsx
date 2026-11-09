@@ -37,7 +37,7 @@ const STEPS: StepData[] = [
     ],
     screenState: {
       callerName: 'Podejrzenie Spamu: Call Center',
-      callerNumber: '+48 22 104 39 88',
+      callerNumber: '+48 22 000 00 88',
       callStatus: 'Połączenie aktywne (00:04)',
       statusColor: 'text-amber-400',
       bannerText: 'Rozmówca oferuje instalację fotowoltaiczną',
@@ -58,7 +58,7 @@ const STEPS: StepData[] = [
     ],
     screenState: {
       callerName: 'Call Center • Fotowoltaika',
-      callerNumber: '+48 22 104 39 88',
+      callerNumber: '+48 22 000 00 88',
       callStatus: 'Aktywacja Tarczy Prawnej TelePakt...',
       statusColor: 'text-cyan-400',
       bannerText: 'Zestawianie telekonferencji z węzłem prawnym SIP',
@@ -71,7 +71,7 @@ const STEPS: StepData[] = [
     title: 'Węzeł SIP & Formuła Prawna',
     badge: 'KROK 3 • AUTOMATYCZNA TELEKONFERENCJA',
     subtitle: 'Węzeł w ułamku sekundy wygłasza sprzeciw z art. 398 PKE',
-    description: 'TelePakt zestawia połączenie trójstronne (3-way conference). Spokojny, oficjalny głos odczytuje bezwzględny sprzeciw z art. 398 PKE oraz art. 21 RODO, żądając podania NIP firmy dzwoniącej i ostrzegając o karze do 1 000 000 zł.',
+    description: 'TelePakt zestawia połączenie trójstronne (3-way conference). Spokojny, oficjalny głos odczytuje bezwzględny sprzeciw z art. 398 PKE oraz art. 21 RODO, żądając podania NIP firmy dzwoniącej.',
     technicalDetails: [
       'Oficjalne, bezdyskusyjne oświadczenie woli o zakazie kontaktu',
       '95% telemarketerów i botów rozłącza się samo w 10–20 sekund',
@@ -82,7 +82,7 @@ const STEPS: StepData[] = [
       callerNumber: 'Formuła: Art. 398 PKE / RODO',
       callStatus: 'Lektor wygłasza formalny sprzeciw (00:18)',
       statusColor: 'text-indigo-400',
-      bannerText: '„Żądam natychmiastowego usunięcia numeru z bazy pod rygorem kary do 1 mln zł...”',
+      bannerText: '„Żądam natychmiastowego usunięcia numeru z bazy zgodnie z art. 398 PKE...”',
       speakerWave: true,
       evidenceReady: false
     }
@@ -100,7 +100,7 @@ const STEPS: StepData[] = [
     ],
     screenState: {
       callerName: 'Połączenie Zakończone • Sukces!',
-      callerNumber: '+48 22 104 39 88 (Zablokowany)',
+      callerNumber: '+48 22 000 00 88 (Zablokowany)',
       callStatus: 'Protokół dowodowy wygenerowany',
       statusColor: 'text-emerald-400',
       bannerText: 'Plik audio zapisany w telefonie • Węzeł wyczyszczony (Zero-Storage)',

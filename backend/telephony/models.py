@@ -45,8 +45,8 @@ class CallLog(models.Model):
     recipient_number = models.CharField(max_length=32, verbose_name="Numer chroniony klienta")
     timestamp = models.DateTimeField(default=timezone.now, verbose_name="Czas połączenia")
     duration_seconds = models.PositiveIntegerField(default=0, verbose_name="Czas trwania (sekundy)")
-    recording_url = models.URLField(max_length=500, blank=True, null=True, verbose_name="Tymczasowy URL nagrania Twilio")
-    sha256_hash = models.CharField(max_length=64, blank=True, verbose_name="Suma kontrolna dowodu SHA-256")
+    recording_url = models.URLField(max_length=500, blank=True, null=True, verbose_name="Tymczasowy URL nagrania Twilio (kasowany po pobraniu)")
+    recording_sid = models.CharField(max_length=64, blank=True, verbose_name="Twilio Recording SID (do skasowania nagrania)")
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='initiated')
     downloaded_locally = models.BooleanField(default=False, verbose_name="Zapisano na urządzeniu klienta")
     deleted_from_server = models.BooleanField(default=False, verbose_name="Usunięto z serwerów (Zero-Storage)")
@@ -71,8 +71,8 @@ class UkeComplaint(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Wniosek do Prezesa UKE (Art. 445 PKE)"
-        verbose_name_plural = "Wnioski do Prezesa UKE (Art. 445 PKE)"
+        verbose_name = "Wniosek do Prezesa UKE"
+        verbose_name_plural = "Wnioski do Prezesa UKE"
 
 
 class CustomerReview(models.Model):

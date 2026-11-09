@@ -1,4 +1,5 @@
 import { PredefinedSmsTemplate, TwilioSmsLog } from '../types';
+import { ASSISTANT_NUMBER } from '../config';
 
 export const PREDEFINED_SMS_TEMPLATES: PredefinedSmsTemplate[] = [
   {
@@ -6,8 +7,8 @@ export const PREDEFINED_SMS_TEMPLATES: PredefinedSmsTemplate[] = [
     title: 'Pełny Sprzeciw Art. 398 PKE & Art. 21 RODO',
     category: 'objection-pke',
     badge: 'Art. 398 PKE • Rekomendowany',
-    legalBasis: 'Art. 398 PKE (kara do 3% przychodu) & Art. 21 RODO (sprzeciw bezwzględny)',
-    text: 'TELEPAKT: Niniejszym wnoszę bezwzględny sprzeciw z art. 398 PKE oraz art. 21 RODO wobec marketingu bezpośredniego. Żądam natychmiastowego usunięcia mojego numeru z Państwa bazy i CRM. Dalszy kontakt skutkuje wnioskiem o nałożenie kary do 1 000 000 zł przez Prezesa UKE.'
+    legalBasis: 'Art. 398 PKE & Art. 21 RODO (sprzeciw wobec marketingu bezpośredniego)',
+    text: 'TELEPAKT: Niniejszym wnoszę bezwzględny sprzeciw z art. 398 PKE oraz art. 21 RODO wobec marketingu bezpośredniego. Żądam natychmiastowego usunięcia mojego numeru z Państwa bazy i CRM. Dalszy kontakt zgłoszę do Prezesa UKE.'
   },
   {
     id: 'source-rodo',
@@ -23,15 +24,7 @@ export const PREDEFINED_SMS_TEMPLATES: PredefinedSmsTemplate[] = [
     category: 'interrupted-call',
     badge: 'Rozmowa Przerwana • Dowód',
     legalBasis: 'Art. 77(2) K.c. (forma dokumentowa) & Art. 308 K.p.c. (nagranie dowodowe)',
-    text: 'TELEPAKT: W nawiązaniu do wykonanego przed chwilą połączenia oświadczam, że nie wyraziłem zgody na kontakt handlowy. Wnoszę formalny sprzeciw z art. 398 PKE i art. 21 RODO. Próba połączenia została zarejestrowana jako dowód dla Prezesa UKE.'
-  },
-  {
-    id: 'debt-harassment',
-    title: 'Zakaz Nękania (Windykacja / Spory B2B)',
-    category: 'debt-harassment',
-    badge: 'Art. 190a K.k. • Windykacja',
-    legalBasis: 'Art. 190a § 1 K.k. (uporczywe nękanie) & Art. 6 K.c. (ciężar dowodu)',
-    text: 'TELEPAKT: Wzywam do natychmiastowego zaprzestania połączeń i nękania telefonicznego. Kwestionuję roszczenie w całości. Dalszy kontakt telefoniczny zostanie zgłoszony jako stalking z art. 190a K.k. Wszelką korespondencję proszę kierować wyłącznie listownie.'
+    text: 'TELEPAKT: W nawiązaniu do wykonanego przed chwilą połączenia oświadczam, że nie wyraziłem zgody na kontakt handlowy. Wnoszę formalny sprzeciw z art. 398 PKE i art. 21 RODO. Próba połączenia została zarejestrowana.'
   },
   {
     id: 'short-express',
@@ -39,11 +32,11 @@ export const PREDEFINED_SMS_TEMPLATES: PredefinedSmsTemplate[] = [
     category: 'short-express',
     badge: '1 SMS • Szybka Wysyłka',
     legalBasis: 'Art. 398 PKE (bezwzględny zakaz kontaktu bez zgody)',
-    text: 'TELEPAKT: Zakaz kontaktu marketingowego! Wnoszę sprzeciw z art. 398 PKE i art. 21 RODO. Żądam usunięcia numeru z bazy pod rygorem kary do 1 mln zł od Prezesa UKE.'
+    text: 'TELEPAKT: Zakaz kontaktu marketingowego! Wnoszę sprzeciw z art. 398 PKE i art. 21 RODO. Żądam usunięcia numeru z bazy. Dalszy kontakt zgłoszę Prezesowi UKE.'
   }
 ];
 
-export const TWILIO_DEFAULT_SENDER = '+48 22 104 39 80';
+export const TWILIO_DEFAULT_SENDER = ASSISTANT_NUMBER || 'numer niedostępny';
 
 export interface SmsSegmentation {
   charCount: number;

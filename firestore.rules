@@ -53,8 +53,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId) && isValidUser(incoming(), userId);
-      allow update: if isOwner(userId) && isValidUser(incoming(), userId) && incoming().id == existing().id;
+      // Plan płatny (subscriptionPlan) może ustawić tylko serwer (weryfikacja zakupu w sklepie).
+      // Klient może założyć konto wyłącznie z planem 'free' i nie może go później zmienić.
+      allow create: if isOwner(userId) && isValidUser(incoming(), userId)
+        && incoming().get('subscriptionPlan', 'free') == 'free';
+      allow update: if isOwner(userId) && isValidUser(incoming(), userId) && incoming().id == existing().id
+        && incoming().get('subscriptionPlan', 'free') == existing().get('subscriptionPlan', 'free');
       allow delete: if isOwner(userId);
     }
 

@@ -23,8 +23,8 @@ export const FAKE_CALL_SCENARIOS = [
   {
     id: 'fotowoltaika',
     name: 'Fotowoltaika & Dotacje OZE (Bot)',
-    number: '+48 22 104 39 88',
-    location: 'Warszawa • 142 zgłoszenia UKE',
+    number: '+48 22 000 00 88',
+    location: 'Warszawa • numer przykładowy (symulacja)',
     category: 'Niechciany telemarketing',
     botIntro: 'Dzień dobry! Z tej strony Centrum Dotacji OZE. Dzwonię, ponieważ państwa numer został wytypowany do dofinansowania pomp ciepła i paneli fotowoltaicznych...',
     botReaction: 'Eee... przepraszam za kłopot... rozłączam i wykreślam numer z bazy...'
@@ -32,7 +32,7 @@ export const FAKE_CALL_SCENARIOS = [
   {
     id: 'bank_spoofing',
     name: 'Fałszywy Dział Bezpieczeństwa Banku',
-    number: '+48 22 598 40 00',
+    number: '+48 22 000 00 77',
     location: 'Numer podszyty pod infolinię',
     category: 'Próba wyłudzenia AnyDesk / BLIK',
     botIntro: 'Dzień dobry, Departament Bezpieczeństwa Banku. Zarejestrowaliśmy podejrzaną próbę wypłaty środków z pana rachunku na kwotę 4500 złotych...',
@@ -41,7 +41,7 @@ export const FAKE_CALL_SCENARIOS = [
   {
     id: 'windykacja',
     name: 'Kancelaria Prawno-Windykacyjna Sp. k.',
-    number: '+48 71 889 02 11',
+    number: '+48 71 000 00 11',
     location: 'Wrocław • Przedawnione roszczenia',
     category: 'Nękanie telefoniczne',
     botIntro: 'Dzień dobry, wzywam do natychmiastowego uregulowania zaległości finansowej z tytułu przedawnionej umowy telekomunikacyjnej z 2018 roku...',
@@ -706,7 +706,7 @@ export const FakeCallModal: React.FC<FakeCallModalProps> = ({
               Sukces! Rozmowa Zneutralizowana
             </h3>
             <p className="text-xs text-slate-300">
-              Formuła prawna z <strong>art. 398 PKE</strong> została prawidłowo odtworzona. Telemarketer został poinformowany o karze do 1 000 000 zł i rozłączony.
+              Formuła prawna z <strong>art. 398 PKE</strong> została prawidłowo odtworzona. Telemarketer wysłuchał formuły i został rozłączony (symulacja).
             </p>
           </div>
 
@@ -763,7 +763,7 @@ export const FakeCallModal: React.FC<FakeCallModalProps> = ({
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/20 cursor-pointer active:scale-95 transition-all"
             >
               <Download className="w-4 h-4" />
-              <span>Pobierz nagranie audio i certyfikat na telefon</span>
+              <span>Pobierz nagranie audio i zestawienie na telefon</span>
             </button>
 
             {downloadSuccessFeedback && (

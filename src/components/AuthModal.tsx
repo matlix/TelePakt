@@ -69,7 +69,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       // Simulate realistic Google OAuth with a short natural delay
       await new Promise(r => setTimeout(r, 600));
-      const user = await authService.loginWithGoogle(email.includes('@') ? email : 'matlix@gmail.com');
+      const user = await authService.loginWithGoogle();
       handleAuthSuccess(user);
     } catch (err: any) {
       setErrorMsg(err.message || 'Logowanie przez Google nie powiodło się.');

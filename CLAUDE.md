@@ -5,7 +5,8 @@ Polish anti-spam / legal-protection platform (Art. 398 PKE, GDPR): in-call assis
 Originally built in Google AI Studio (Gemini); now maintained with Claude Code. Remote: `https://github.com/matlix/TelePakt` (branch `main`).
 
 ## Layout
-- `src/` – React 19 + TypeScript + Tailwind 4 SPA (Vite). `App.tsx` is the root; `components/` holds large feature modules (PublicWebsite, AdminPanelHub, InCallSimulator, TelePaktMobileApp...), `services/` (Firebase auth, referral, Twilio SMS, spam DB, native overlay bridge), `data/` static content (legal scripts/docs, use cases).
+- `src/` – React 19 + TypeScript + Tailwind 4 SPA (Vite). `App.tsx` picks one of three views: **website** (`PublicWebsite`, default on telepakt.pl), **app** (`AccountApp`: login/registration, profile, settings - nothing else; this is what the Android APK and the PWA show, and it never links to the website) and **studio** (dev-only tools in `StudioApp.tsx`: open `/?studio=1` under `npm run dev`; excluded from the production bundle via `import.meta.env.DEV`, no password in code). `services/` (Firebase auth, Twilio SMS, spam list, native overlay bridge), `data/` static content, `config.ts` (`VITE_ASSISTANT_NUMBER`).
+- `TelePaktMobileApp.tsx` and the other old app screens are no longer used by the production app (kept in git history/for the studio).
 - `backend/` – Django 5 + DRF. Project `telepakt_project`, single app `telephony` (models: LegalScript, CallLog, UkeComplaint, CustomerReview, IntegrationCredential, InAppPurchaseReceipt). Endpoints under `/api/telephony/`: conference-bridge, play-formula, recording-callback, zero-storage-delete, reviews, verify-purchase, health.
 - `android/` + `capacitor.config.ts` – Capacitor Android wrapper; `scripts/package-apk.js`.
 - `deploy_workflows/workflows/` – GitHub Actions templates (ci, build-apk, deploy-render); NOT active until moved to `.github/workflows/`.
@@ -20,6 +21,14 @@ Backend: use the venv at `../.venv`; `cd backend && ../../.venv/Scripts/python m
 Render builds from GitHub `main`: backend via `backend/build.sh` (pip install, collectstatic, migrate). Pushing to `main` likely triggers production/preprod deploys – confirm before pushing.
 Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, never in git. `.env*` is gitignored.
 
+## Product rules (decided with the owner, Nov 2026)
+- Consumer focus. No claims about SHA-256 / 'accepted by courts' / '100% legal'; no threatening scripts (stalking, statute of limitations, fine threats).
+- Payments only through store billing (Google Play, App Store, Galaxy Store, AppGallery) - no BLIK/card/direct payment copy.
+- No sample data in the production client (no fake reviews, report counts, numbers). The 'check number' list starts empty; absence of a report is NOT shown as 'safe'.
+- Assistant phone number comes from `VITE_ASSISTANT_NUMBER` (not set until Twilio exists).
+- Penalties cite art. 444 + 446 PKE (not art. 445, which concerns data-protection duties).
+- Recordings are deleted from Twilio after download (`erase_recording`) and after `RETENTION_DAYS`.
+
 ## Recent fixes (Nov 2026)
 - APK: `public/telepakt.apk` was a fake zip -> "error while parsing". Now a real Gradle build (`npm run build:apk`, needs JDK 21 + Android SDK). Also fixed Kotlin `@Permission(alias=...)` compile error and switched the overlay foreground service to `specialUse` (`phoneCall` type crashes on Android 14 without MANAGE_OWN_CALLS).
 - Backend: `telephony` had NO migrations (tables were never created on Render) -> added `0001_initial`. Twilio webhooks now verify `X-Twilio-Signature`; `DJANGO_SECRET_KEY` is required in prod; IAP receipts are no longer auto-verified; input validation + throttling on reviews; `STORAGES` setting; 14 tests.
@@ -32,3 +41,5 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - `data/pythonProjectFiles.ts` embeds a stale copy of the Python project as strings.
 - APK is debug-signed; set up a release keystore (kept out of git) before Play Store.
 - Windows PowerShell shows Polish text as mojibake; files are valid UTF-8.
+- Firebase: project is `nawiniesie-1486388636550` (AI Studio). Email/Password sign-in must be enabled in the console (Authentication > Sign-in method) or login/registration fail with `auth/operation-not-allowed`. After editing `firestore.rules` deploy them (`firebase deploy --only firestore:rules`): clients may no longer set their own paid plan.
+- Test the APK on the Android emulator (AVD `Pixel_10`; needs free disk space): `adb install -r public/telepakt.apk`.

@@ -117,29 +117,6 @@ export const LEGAL_SCRIPTS: LegalScript[] = [
     ]
   },
   {
-    id: 'script-6-debt-collector',
-    title: 'Obrona Praw Dłużnika (Zarzut Przedawnienia & Poczta)',
-    shortDesc: 'Uciszenie natrętnej windykacji i przeniesienie sprawy wyłącznie na oficjalną drogę pocztową.',
-    category: 'debt-collector',
-    legalAct: 'Art. 190a K.k. + Art. 117 i 118 Kodeksu cywilnego',
-    badge: 'Ochrona przed nękaniem',
-    durationEst: '30 sekund',
-    autoHangup: true,
-    text: `Niniejszym oświadczam, że żądam natychmiastowego zaniechania kontaktu telefonicznego. Na podstawie artykułu 190a Kodeksu karnego ostrzegam, że powtarzające się telefony noszą znamiona uporczywego nękania. Na podstawie artykułu 117 Kodeksu cywilnego podnoszę zarzut przedawnienia ewentualnych roszczeń. Wszelkie wezwania oraz dokumenty źródłowe proszę kierować wyłącznie drogą pisemną, listem poleconym na mój adres korespondencyjny. Ta rozmowa jest nagrywana jako dowód.`,
-    legalBreakdown: [
-      {
-        article: 'Art. 117 § 2 Kodeksu cywilnego (Przedawnienie)',
-        description: 'Po upływie terminu przedawnienia ten, przeciwko komu przysługuje roszczenie, może uchylić się od jego zaspokojenia.',
-        penalty: 'Sąd i komornik oddalają roszczenie.'
-      },
-      {
-        article: 'Art. 190a § 1 K.k. (Stalking windykacyjny)',
-        description: 'Uporczywe dzwonienie i wywieranie presji psychicznej przez windykatora może wypełniać znamiona przestępstwa nękania.',
-        penalty: 'Podstawa do skargi do UOKiK i wniosku o ściganie.'
-      }
-    ]
-  },
-  {
     id: 'script-7-b2b-contract',
     title: 'Potwierdzenie Ustaleń Biznesowych (Ustna umowa B2B)',
     shortDesc: 'Zabezpieczenie ustaleń z klientem/fachowcem: zakres, cena, terminy i dodatkowe koszty.',
@@ -159,24 +136,6 @@ export const LEGAL_SCRIPTS: LegalScript[] = [
         article: 'Art. 308 K.p.c. (Dowód audio w sporze gospodarczym)',
         description: 'W sprawach gospodarczych nagranie ustaleń telefonicznych jest koronnym dowodem na uzgodnienie wynagrodzenia dodatkowego.',
         penalty: 'Eliminuje 90% sporów o niezapłacone faktury.'
-      }
-    ]
-  },
-  {
-    id: 'script-8-harassment',
-    title: 'Zakaz Kontaktu & Stalking (Ochrona Osobista)',
-    shortDesc: 'Stanowcze, niepodważalne wezwanie do zaprzestania nękania ze skutkiem prawno-karnym.',
-    category: 'harassment-stalking',
-    legalAct: 'Art. 190a § 1 Kodeksu karnego (Uporczywe nękanie)',
-    badge: 'Rygor karny',
-    durationEst: '26 sekund',
-    autoHangup: true,
-    text: `Oświadczam stanowczo i jednoznacznie, że kategorycznie nie wyrażam zgody na jakiekolwiek próby kontaktu ze mną – zarówno telefonicznego, jak i za pośrednictwem wiadomości. Kontynuowanie prób kontaktu stanowi przestępstwo stalkingu z artykułu 190a Kodeksu karnego i zostanie niezwłocznie zgłoszone organom ścigania z dołączeniem niniejszego nagrania jako materiału dowodowego. Proszę natychmiast zakończyć połączenie.`,
-    legalBreakdown: [
-      {
-        article: 'Art. 190a § 1 Kodeksu karnego',
-        description: 'Warunkiem skazania za stalking jest wykazanie, że sprawca wiedział o braku woli kontaktu ze strony ofiary. To nagranie stanowi niepodważalny dowód w Prokuraturze.',
-        penalty: 'Kara pozbawienia wolności do 8 lat oraz natychmiastowy sądowy zakaz zbliżania.'
       }
     ]
   },
@@ -221,7 +180,7 @@ export const LEGAL_SCRIPTS: LegalScript[] = [
 export const INITIAL_CALL_LOGS = [
   {
     id: 'call-101',
-    callerNumber: '+48 22 104 39 88',
+    callerNumber: '+48 22 000 00 88',
     callerName: 'Call Center Fotowoltaika (Spam)',
     spamCategory: 'Niechciana oferta / Pokazy',
     spamRisk: 'critical' as const,
@@ -238,7 +197,7 @@ export const INITIAL_CALL_LOGS = [
   },
   {
     id: 'call-102',
-    callerNumber: '+48 71 889 02 11',
+    callerNumber: '+48 71 000 00 11',
     callerName: 'Teleankieter Ubezpieczenia',
     spamCategory: 'Marketing bezpośredni bez zgody',
     spamRisk: 'high' as const,

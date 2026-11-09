@@ -27,12 +27,12 @@ Wersja obowiązująca od: 10 listopada 2024 r. (zgodna z ustawą Prawo komunikac
 1. Do prawidłowego działania Aplikacji wymagane jest:
    a) Posiadanie urządzenia z systemem Android (wersja 10.0+) lub iOS (wersja 15.0+);
    b) Aktywna karta SIM z włączoną przez operatora telekomunikacyjnego obsługą połączeń konferencyjnych (tzw. połączenia trójstronne / telekonferencja);
-   c) Dostęp do sieci Internet (LTE/5G/Wi-Fi) na potrzeby synchronizacji statusu i pobierania certyfikatów.
+   c) Dostęp do sieci Internet (LTE/5G/Wi-Fi) na potrzeby synchronizacji statusu i pobierania nagrań.
 
 § 5. PŁATNOŚCI I SUBSKRYPCJE
 1. Korzystanie z Aplikacji w wersji podstawowej (do 3 interwencji miesięcznie) jest bezpłatne.
-2. Dostęp do pakietu PRO (nielimitowane interwencje, certyfikaty dowodowe, własny głos w formule, integracja z prywatną chmurą) realizowany jest wyłącznie za pośrednictwem oficjalnych sklepów z aplikacjami: Google Play Store, Apple App Store, Samsung Galaxy Store oraz Huawei AppGallery.
-3. Opłaty mogą być regulowane przy użyciu systemów BLIK, kart płatniczych podpiętych w sklepach, Google Pay, Apple Pay lub dopisywane do rachunku operatora (Direct Carrier Billing).
+2. Dostęp do pakietu PRO (nielimitowane interwencje, nagrania do pobrania, własny głos w formule, integracja z prywatną chmurą) realizowany jest wyłącznie za pośrednictwem oficjalnych sklepów z aplikacjami: Google Play Store, Apple App Store, Samsung Galaxy Store oraz Huawei AppGallery.
+3. Opłaty są obsługiwane wyłącznie przez wybrany sklep z aplikacjami, zgodnie z jego regulaminem.
 4. Konsument ma prawo odstąpić od umowy zawartej na odległość w terminie 14 dni bez podawania przyczyny, zgodnie z zasadami danego sklepu mobilnego.
 
 § 6. REKLAMACJE I KONTAKT
@@ -80,7 +80,7 @@ Zgodnie z art. 13 ust. 1 i 2 oraz art. 14 Rozporządzenia Parlamentu Europejskie
    a) Bezwzględny sprzeciw wobec przetwarzania danych w celach marketingu bezpośredniego na podstawie art. 21 ust. 2 RODO (skutkujący natychmiastowym zakazem dalszego przetwarzania numeru w celach marketingowych);
    b) Żądanie niezwłocznego usunięcia danych ze wszystkich zbiorów danych i systemów CRM na podstawie art. 17 ust. 1 lit. d RODO;
    c) Wniosek o udzielenie informacji o źródle pozyskania danych na podstawie art. 15 ust. 1 lit. g RODO (w tym żądanie wskazania pełnej nazwy firmy, adresu siedziby i NIP).
-5. Naruszenie powyższych praw stanowi podstawę do nałożenia administracyjnej kary pieniężnej przez Prezesa UODO (do 20 mln EUR lub 4% obrotu) oraz przez Prezesa UKE na podstawie art. 445 PKE (do 3% rocznego przychodu lub 1 000 000 PLN).`;
+5. Naruszenie powyższych praw stanowi podstawę do nałożenia administracyjnej kary pieniężnej przez Prezesa UODO (do 20 mln EUR lub 4% obrotu) oraz przez Prezesa UKE na podstawie art. 444 i 446 PKE (do 3% rocznego przychodu lub 1 000 000 PLN).`;
 
 export const USER_MANUAL_TEXT = `OFICJALNA INSTRUKCJA UŻYTKOWANIA APLIKACJI TELEPAKT (telepakt.pl)
 Przewodnik szybkiego startu dla sieci Play, Plus, Orange i T-Mobile
@@ -100,13 +100,13 @@ KROK 2: ODEBRANIE POŁĄCZENIA OD TELEMARKETERA
 KROK 3: AUTOMATYCZNA TELEKONFERENCJA I ODTWORZENIE FORMUŁY
 • NA IPHONE: Telefon zadzwoni na Twój dedykowany numer chmurowy TelePakt. Na ekranie iPhone'a kliknij przycisk „Połącz rozmowy” (Scal połączenia).
 • NA ANDROID: Jeśli TelePakt ma nadane uprawnienie asystenta, połączenie konferencyjne zostaje zestawione automatycznie w ułamku sekundy.
-• System oficjalnym, stanowczym tonem wygłasza sprzeciw z art. 398 PKE, żąda podania NIP i adresu siedziby dzwoniącego oraz informuje o karze do 1 000 000 zł.
-• Telemarketer w 95% przypadków rozłącza się sam w ciągu kilkunastu sekund. Jeśli włączyłeś opcję auto-rozłączenia, aplikacja sama zakończy połączenie.
+• System oficjalnym, stanowczym tonem wygłasza sprzeciw z art. 398 PKE, żąda podania NIP i adresu siedziby dzwoniącego oraz informuje o możliwości zgłoszenia sprawy do UKE.
+• Jeśli włączyłeś opcję auto-rozłączenia, aplikacja sama zakończy połączenie.
 
-KROK 4: DOWÓD DLA UKE I BEZWZGLĘDNA ZASADA ZERO-STORAGE
+KROK 4: NAGRANIE I ZASADA ZERO-STORAGE
 • Po zakończeniu połączenia otrzymasz powiadomienie: „Rozmowa zabezpieczona”.
 • Nagranie audio oraz gotowe pismo zawiadomienia do UKE/UODO trafiają wyłącznie do pamięci Twojego telefonu lub na Twoją prywatną chmurę (Google Drive, iCloud, Dropbox).
-• Z serwerów węzła plik jest natychmiast trwale kasowany (cyfrowy shredding). Twoja prywatność jest w 100% bezpieczna!`;
+• Po pobraniu pliku jest on trwale usuwany z naszych serwerów i z serwera operatora telefonii. Niepobrane nagrania usuwamy automatycznie po 30 dniach.`;
 
 export const COOKIES_POLICY_TEXT = `POLITYKA PLIKÓW COOKIES I PAMIĘCI LOKALNEJ (telepakt.pl)
 Zgodna z art. 399 ustawy z dnia 12 lipca 2024 r. – Prawo komunikacji elektronicznej (PKE)
@@ -116,7 +116,7 @@ Serwis telepakt.pl oraz aplikacja PWA wykorzystują technologie przechowywania d
 
 2. DO CZEGO WYKORZYSTUJEMY PAMIĘĆ LOKALNĄ?
 a) Działanie bazy antyspamowej w trybie offline (Zero-Storage):
-   Pobierana hurtowo lista zidentyfikowanych numerów telemarketingowych (Baza Zagrożeń Tellows 7-9 oraz Rejestr UKE) przechowywana jest w pamięci Twojego telefonu, aby identyfikacja i weryfikacja połączeń odbywała się natychmiast (0 ms opóźnienia) i bez wysyłania sprawdzanych numerów na serwery zewnętrzne.
+   Lista numerów zgłoszonych przez Ciebie jako uciążliwe jest przechowywana w pamięci Twojego telefonu (localStorage), a sprawdzanie numeru odbywa się lokalnie, bez wysyłania go na serwery.
 b) Utrzymanie sesji i preferencji użytkownika:
    Zapamiętanie wybranego głosu lektora, ustawień opóźnienia próbnego połączenia, akceptacji banera informacyjnego.
 

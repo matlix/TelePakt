@@ -12,7 +12,7 @@ export const ComplaintGenerator: React.FC<ComplaintGeneratorProps> = ({
   initialCall,
 }) => {
   const [recipient, setRecipient] = useState<'UKE' | 'UODO' | 'UOKIK'>('UKE');
-  const [callerNumber, setCallerNumber] = useState(initialCall?.callerNumber || '+48 22 104 39 88');
+  const [callerNumber, setCallerNumber] = useState(initialCall?.callerNumber || '+48 22 000 00 88');
   const [callDateTime, setCallDateTime] = useState(
     new Date().toLocaleDateString('pl-PL') + ' godz. ' + new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
   );
@@ -51,13 +51,13 @@ II. PODSTAWA PRAWNA
 Zgodnie z art. 398 ust. 1 ustawy z dnia 12 lipca 2024 r. – Prawo komunikacji elektronicznej:
 „Używanie telekomunikacyjnych urządzeń końcowych i automatycznych systemów wywołujących dla celów marketingu bezpośredniego lub przesyłania niezamówionej informacji handlowej wymaga uprzedniej zgody abonenta lub użytkownika końcowego.”
 
-Zgodnie z art. 445 ust. 1 pkt 1 PKE podmiot naruszający ten zakaz podlega karze pieniężnej nakładanej przez Prezesa UKE w wysokości do 3% przychodu ukaranego podmiotu osiągniętego w poprzednim roku kalendarzowym lub do 1 000 000 zł.
+Zgodnie z art. 444 ust. 1 w zw. z art. 446 PKE podmiot naruszający ten zakaz podlega karze pieniężnej nakładanej przez Prezesa UKE w wysokości do 3% przychodu ukaranego podmiotu osiągniętego w poprzednim roku kalendarzowym lub do 1 000 000 zł.
 
 III. WNIOSKI DOWODOWE
 Wnoszę o:
 1. Wszczęcie z urzędu postępowania administracyjnego wobec podmiotu korzystającego z numeru ${callerNumber}.
 2. Dopuszczenie jako dowodu załączonego nagrania audio rozmowy w formacie cyfrowym dokumentującego fakt połączenia oraz treść zgłoszonego sprzeciwu.
-3. Nałożenie na podmiot dopuszczający się naruszenia kary pieniężnej określonej w art. 445 PKE.
+3. Nałożenie na podmiot dopuszczający się naruszenia kary pieniężnej przewidzianej w art. 444 i 446 PKE.
 
 Podpis:
 ${applicantName}

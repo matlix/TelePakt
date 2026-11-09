@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ASSISTANT_NUMBER, HAS_ASSISTANT_NUMBER } from '../config';
 import { AppNameOption, LegalScript, CallLog, UserAccount } from '../types';
 import {
   Shield, Smartphone, PhoneCall, History, Settings,
@@ -114,7 +115,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   const { isInstalled, isInstallable, install } = usePWAInstall();
 
   // Assistant Conference Hotline number
-  const ASSISTANT_GATEWAY_NUMBER = '+48 22 104 39 80';
+  const ASSISTANT_GATEWAY_NUMBER = ASSISTANT_NUMBER;
 
   const handleSearchNumber = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -124,6 +125,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   };
 
   const handleCopyGateway = () => {
+    if (!HAS_ASSISTANT_NUMBER) return;
     navigator.clipboard.writeText(ASSISTANT_GATEWAY_NUMBER.replace(/\s+/g, ''));
     setCopiedNumber(true);
     setTimeout(() => setCopiedNumber(false), 2500);
@@ -607,7 +609,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                     </div>
                     {recordEvidence ? <ToggleRight className="w-5 h-5 text-cyan-400 shrink-0" /> : <ToggleLeft className="w-5 h-5 text-slate-600 shrink-0" />}
                   </div>
-                  <div className="text-xs font-bold text-white">Suma SHA-256</div>
+                  <div className="text-xs font-bold text-white">Nagranie rozmowy</div>
                   <div className="text-[10px] text-slate-400">{recordEvidence ? 'Zero-Storage' : 'Wyłączone'}</div>
                 </div>
               </div>
@@ -657,7 +659,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
               <form onSubmit={handleSearchNumber} className="flex gap-2">
                 <input
                   type="tel"
-                  placeholder="np. 22 104 39 88"
+                  placeholder="np. 22 000 00 88"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -677,12 +679,12 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                 <div className={`p-3.5 rounded-2xl border text-xs space-y-2 ${
                   searchResult.isValid && searchResult.record.riskLevel !== 'safe'
                     ? 'bg-rose-500/10 border-rose-500/30 text-rose-200'
-                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                    : 'bg-slate-800/60 border-slate-700 text-slate-300'
                 }`}>
                   <div className="flex items-center justify-between">
                     <span className="font-bold font-mono text-white text-sm">{searchResult.record.number}</span>
                     <span className="text-[10px] opacity-80">
-                      Tellows: {searchResult.record.tellowsScore}/9
+                      Ocena: {searchResult.record.tellowsScore}/9
                     </span>
                   </div>
                   <div>{searchResult.record.name} • <span className="opacity-80">{searchResult.record.category}</span></div>
@@ -732,13 +734,14 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                     <span>INFO</span>
                   </button>
                 </div>
-                <div className="text-sm font-black text-white font-mono">{ASSISTANT_GATEWAY_NUMBER}</div>
-                <p className="text-[10px] text-slate-400">Dołącz asystenta jednym kliknięciem podczas rozmowy</p>
+                <div className="text-sm font-black text-white font-mono">{HAS_ASSISTANT_NUMBER ? ASSISTANT_GATEWAY_NUMBER : 'Wkrótce'}</div>
+                <p className="text-[10px] text-slate-400">{HAS_ASSISTANT_NUMBER ? 'Dołącz asystenta jednym kliknięciem podczas rozmowy' : 'Numer pojawi się po uruchomieniu usługi'}</p>
               </div>
 
               <button
                 onClick={handleCopyGateway}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                disabled={!HAS_ASSISTANT_NUMBER}
+                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {copiedNumber ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copiedNumber ? 'Skopiowano' : 'Kopiuj'}</span>
@@ -943,7 +946,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                     <span className="leading-snug">Minuty NIGDY nie znikną (Zero abonamentu)</span>
                   </div>
                   <div className="text-[10px] text-slate-300 leading-tight">
-                    Płacisz tylko raz (BLIK, Karta). Minuty czekają na koncie dopóki ich nie zużyjesz!
+                    Płacisz tylko raz w sklepie z aplikacjami. Minuty czekają na koncie dopóki ich nie zużyjesz!
                   </div>
                 </div>
                 <button
@@ -1081,7 +1084,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-1.5 text-slate-300 text-[10px]">
                 <div className="flex items-center gap-1">✓ Sprzeciw z art. 398 PKE</div>
-                <div className="flex items-center gap-1">✓ Dowód Audio SHA-256</div>
+                <div className="flex items-center gap-1">✓ Nagranie rozmowy do pobrania</div>
                 <div className="flex items-center gap-1">✓ Generator pism do UKE</div>
                 <div className="flex items-center gap-1">✓ Baza numerów offline</div>
                 <div className="flex items-center gap-1">✓ Głosy Tomasz i Joanna</div>

@@ -284,7 +284,7 @@ export const TwilioSmsModal: React.FC<TwilioSmsModalProps> = ({
                 <input
                   id="sms-recipient-input"
                   type="tel"
-                  placeholder="np. +48 22 104 39 88 lub 500 123 456"
+                  placeholder="np. +48 22 000 00 88 lub 500 123 456"
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"

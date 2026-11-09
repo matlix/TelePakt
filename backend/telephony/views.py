@@ -7,8 +7,8 @@ Endpointy (prefiks ``/api/telephony/``):
 ========================  ========  ====================================================
 conference-bridge/        POST      Webhook Twilio: mostek 3-stronny z nagrywaniem
 play-formula/             POST      Webhook Twilio: odtwarza formułę prawną (TTS)
-recording-callback/       POST      Webhook Twilio: zapis nagrania + suma SHA-256
-zero-storage-delete/      POST      Usuwa nagranie z serwera po pobraniu przez klienta
+recording-callback/       POST      Webhook Twilio: zapis odnośnika i identyfikatora nagrania
+zero-storage-delete/      POST      Kasuje nagranie u operatora (Twilio) i w bazie po pobraniu przez klienta
 reviews/                  GET/POST  Opinie klientów (POST trafia do moderacji)
 verify-purchase/          POST      Rejestruje paragon IAP (weryfikacja sklepu = TODO)
 health/                   GET       Health check dla Render.com
@@ -20,7 +20,6 @@ Bezpieczeństwo:
     * Endpointy publiczne (``reviews``) są ograniczone throttlingiem DRF
       (``REST_FRAMEWORK`` w ``settings.py``).
 """
-import hashlib
 import logging
 from datetime import timedelta
 from functools import wraps
@@ -36,6 +35,7 @@ from twilio.request_validator import RequestValidator
 from twilio.twiml.voice_response import Dial, VoiceResponse
 
 from .models import CallLog, CustomerReview, InAppPurchaseReceipt, LegalScript
+from .retention import erase_recording, maybe_purge_expired
 
 logger = logging.getLogger(__name__)
 
@@ -145,13 +145,15 @@ def twilio_play_legal_formula(request):
 
 @twilio_webhook
 def twilio_recording_callback(request):
-    """Odbiera nagranie z Twilio i zapisuje sumę kontrolną SHA-256 (dowód dla sądu/UKE).
+    """Odbiera nagranie z Twilio i zapisuje odnośnik oraz identyfikator nagrania.
 
-    Hash obejmuje ``CallSid``, URL nagrania i czas trwania. Zawsze zwraca 200, aby
-    Twilio nie ponawiało żądań (nieznany ``CallSid`` jest tylko logowany).
+    ``RecordingSid`` jest potrzebny, by później skasować nagranie u operatora
+    (:func:`telephony.retention.erase_recording`). Zawsze zwraca 200, aby Twilio nie
+    ponawiało żądań (nieznany ``CallSid`` jest tylko logowany).
     """
     call_sid = request.POST.get('CallSid')
     recording_url = request.POST.get('RecordingUrl')
+    recording_sid = request.POST.get('RecordingSid', '')[:64]
     try:
         duration = max(int(request.POST.get('RecordingDuration', 0)), 0)
     except (TypeError, ValueError):
@@ -164,23 +166,23 @@ def twilio_recording_callback(request):
         return HttpResponse(status=200)
 
     call.recording_url = recording_url
+    call.recording_sid = recording_sid
     call.duration_seconds = duration
     call.status = 'recorded'
-    call.sha256_hash = hashlib.sha256(
-        f"{call_sid}-{recording_url}-{duration}".encode()
-    ).hexdigest()
     call.save()
     return HttpResponse(status=200)
 
 
 @api_view(['POST'])
 def zero_storage_delete(request):
-    """Procedura Zero-Storage: czyści URL nagrania po pobraniu go przez klienta.
+    """Procedura Zero-Storage: kasuje nagranie po pobraniu go przez klienta.
 
-    Body: ``{"call_sid": "CA..."}``. Zachowuje sumę SHA-256 jako dowód integralności.
+    Body: ``{"call_sid": "CA..."}``. Nagranie jest usuwane u operatora (Twilio) i w
+    naszej bazie. Gdy Twilio jest niedostępne, zwracamy 502 i NIE oznaczamy nagrania
+    jako usuniętego - klient może spróbować ponownie, a czyszczenie retencyjne
+    dokończy sprawę.
 
-    TODO: uwierzytelnienie (np. token Firebase) oraz fizyczne usunięcie nagrania
-    po stronie Twilio (``client.recordings(sid).delete()``).
+    TODO: uwierzytelnienie (np. token Firebase) - dziś wystarczy znać ``call_sid``.
     """
     call_sid = request.data.get('call_sid')
     if not call_sid:
@@ -190,15 +192,15 @@ def zero_storage_delete(request):
     except CallLog.DoesNotExist:
         return Response({"error": "Połączenie nie istnieje"}, status=404)
 
-    call.deleted_from_server = True
-    call.recording_url = None
-    call.status = 'deleted'
-    call.save()
+    if not erase_recording(call):
+        return Response(
+            {"error": "Nie udało się usunąć nagrania u operatora telefonii. Spróbuj ponownie później."},
+            status=502,
+        )
     return Response({
         "status": "success",
-        "message": "Nagranie trwale usunięte z serwerów",
+        "message": "Nagranie usunięte z naszych serwerów i z serwera operatora telefonii",
         "call_sid": call_sid,
-        "retained_hash": call.sha256_hash,
     })
 
 
@@ -302,7 +304,12 @@ def verify_iap_purchase(request):
 
 @api_view(['GET'])
 def health_check(request):
-    """Health check dla Render.com (``healthCheckPath`` w ``render.yaml``)."""
+    """Health check dla Render.com (``healthCheckPath`` w ``render.yaml``).
+
+    Przy okazji (najwyżej raz na godzinę) czyści nagrania po terminie retencji - patrz
+    :func:`telephony.retention.maybe_purge_expired`.
+    """
+    maybe_purge_expired()
     return Response({
         "status": "healthy",
         "service": "telepakt-api",

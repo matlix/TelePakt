@@ -30,7 +30,7 @@ export const CALLER_SCENARIOS = [
   {
     id: 'telemarketer',
     name: 'Fotowoltaika / Pokazy (Spam)',
-    number: '+48 22 104 39 88',
+    number: '+48 22 000 00 88',
     location: 'Warszawa • 142 zgłoszenia',
     risk: 'critical' as const,
     badge: 'Niechciany Telemarketing'
@@ -38,7 +38,7 @@ export const CALLER_SCENARIOS = [
   {
     id: 'bank-spoof',
     name: 'Rzekomy Dział Bezpieczeństwa Banku',
-    number: '+48 22 598 40 00',
+    number: '+48 22 000 00 77',
     location: 'Numer podszyty pod infolinię banku',
     risk: 'critical' as const,
     badge: 'Próba Wyłudzenia BLIK / AnyDesk'
@@ -46,7 +46,7 @@ export const CALLER_SCENARIOS = [
   {
     id: 'windykator',
     name: 'Kancelaria Windykacyjna Sp. k.',
-    number: '+48 71 889 02 11',
+    number: '+48 71 000 00 11',
     location: 'Wrocław • Przedawnione roszczenia',
     risk: 'high' as const,
     badge: 'Nękanie Telefoniczne'
@@ -496,7 +496,7 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                 {/* Caller & Timer Header */}
                 <div className="text-center space-y-1">
                   <h3 className="text-lg font-bold text-white tracking-tight">
-                    +48 22 104 39 88
+                    +48 22 000 00 88
                   </h3>
                   <div className="flex items-center justify-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
@@ -1075,7 +1075,7 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
               <span className="font-bold text-amber-400 block mb-1">Nowe Prawo PKE (10.11.2024)</span>
               <p className="text-slate-300 text-[11px]">
-                Art. 398 PKE bezwzględnie wymaga uprzedniej zgody. Konsultant wie, że UKE może nałożyć karę do 1 000 000 zł na firmę.
+                Art. 398 PKE bezwzględnie wymaga uprzedniej zgody.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">

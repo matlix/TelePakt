@@ -12,9 +12,9 @@ class LegalScriptAdmin(admin.ModelAdmin):
 @admin.register(CallLog)
 class CallLogAdmin(admin.ModelAdmin):
     list_display = ('caller_number', 'timestamp', 'duration_seconds', 'status', 'downloaded_locally', 'deleted_from_server')
-    search_fields = ('caller_number', 'call_sid', 'sha256_hash')
+    search_fields = ('caller_number', 'call_sid')
     list_filter = ('status', 'downloaded_locally', 'deleted_from_server')
-    readonly_fields = ('call_sid', 'sha256_hash', 'timestamp')
+    readonly_fields = ('call_sid', 'recording_sid', 'timestamp')
 
 @admin.register(UkeComplaint)
 class UkeComplaintAdmin(admin.ModelAdmin):

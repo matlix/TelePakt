@@ -7,6 +7,7 @@ export interface CapacitorConfig {
   };
   android?: {
     allowMixedContent?: boolean;
+    backgroundColor?: string;
   };
 }
 
@@ -18,7 +19,8 @@ const config: CapacitorConfig = {
     androidScheme: 'https'
   },
   android: {
-    allowMixedContent: true
+    allowMixedContent: true,
+    backgroundColor: '#031634'
   }
 };
 

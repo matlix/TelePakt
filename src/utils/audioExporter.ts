@@ -136,13 +136,13 @@ export function downloadRecordingLocally(call: CallLog, brandName: string = 'Tel
 }
 
 /**
- * Generuje i pobiera metrykę dowodową w pliku tekstowym dla UKE / Sądu
+ * Generuje i pobiera zestawienie danych połączenia w pliku tekstowym (do załączenia do zawiadomienia)
  */
 export function downloadEvidenceCertificate(call: CallLog, brandName: string = 'TelePakt') {
   const content = `=======================================================
-PROTOKÓŁ ZABEZPIECZENIA DOWODU AUDIO
+ZESTAWIENIE DANYCH POŁĄCZENIA I NAGRANIA
 System: ${brandName} (telepakt.pl)
-Podstawa: Art. 308 K.p.c. + Art. 398 ustawy PKE + RODO
+Podstawa: Art. 398 ustawy PKE + RODO
 =======================================================
 
 SZCZEGÓŁY POŁĄCZENIA:
@@ -152,24 +152,21 @@ SZCZEGÓŁY POŁĄCZENIA:
 - Zgłoszona formuła prawna: ${call.scriptUsed}
 - Data i znacznik czasu: ${call.timestamp}
 - Łączny czas połączenia: ${call.durationSeconds} sek.
-- Czas obecności bota certyfikującego: ${call.botConnectedSeconds} sek.
+- Czas obecności asystenta: ${call.botConnectedSeconds} sek.
 - Status oświadczenia: ${call.status}
 
-SUMA KONTROLNA INTEGRALNOŚCI AUDIO:
-- SHA-256 Checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-- Algorytm weryfikacji: PKCS #7 Timestamping Authority
-- Status retencji serwera: 100% Zero-Storage (Zapis wyłącznie lokalny na urządzeniu / prywatnej chmurze klienta)
+RETENCJA NAGRANIA:
+- Plik audio zapisujesz na swoim urządzeniu lub w prywatnej chmurze.
+- Po pobraniu kopia jest usuwana z naszych serwerów i z serwera operatora telefonii.
 
 POUCZENIE:
-Zgodnie z art. 308 Kodeksu postępowania cywilnego oraz orzecznictwem
-Sądu Najwyższego (m.in. wyrok SN z dnia 22 kwietnia 2016 r., II CSK 478/15),
-nagranie rozmowy wykonane przez jej uczestnika stanowi dopuszczalny
-i w pełni wiarygodny dowód w postępowaniu cywilnym, administracyjnym (UKE, UODO)
-oraz karnym.
+Uczestnik rozmowy może co do zasady nagrywać własną rozmowę. To, czy nagranie zostanie
+uznane za dowód w danym postępowaniu, ocenia sąd lub organ prowadzący postępowanie.
+Niniejszy dokument nie jest poradą prawną.
 =======================================================`;
 
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const filename = `${brandName}_Certyfikat_UKE_${call.id}.txt`;
+  const filename = `${brandName}_Zestawienie_${call.id}.txt`;
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

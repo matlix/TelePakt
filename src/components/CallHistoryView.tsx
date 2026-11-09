@@ -261,7 +261,7 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
               Baza Nagrań Dowodowych & Polityka Retencji Danych
             </h2>
             <p className="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
-              Pobieraj pliki audio bezpośrednio na telefon lub komputer, synchronizuj z <strong>Google Drive / iCloud / Dropbox</strong> – TelePakt realizuje bezwzględną zasadę Zero-Storage (zero nagrań na serwerach centralnych).
+              Pobieraj pliki audio bezpośrednio na telefon lub komputer, synchronizuj z <strong>Google Drive / iCloud / Dropbox</strong> – po pobraniu usuwamy kopię z naszych serwerów (Zero-Storage).
             </p>
           </div>
 
@@ -279,7 +279,7 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
           <div className="lg:col-span-7 p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-2">
             <div className="flex items-center gap-2 text-emerald-300 font-bold">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Gwarancja Zero-Storage: 0 plików na serwerach {appName.name}</span>
+              <span>Zero-Storage: po pobraniu kasujemy plik z serwerów {appName.name}</span>
             </div>
             <p className="text-slate-300 leading-relaxed text-[11px]">
               Dla Twojej maksymalnej prywatności TelePakt <strong>nigdy nie przechowuje nagrań na własnych serwerach</strong>. Plik dowodowy trafia wyłącznie do pamięci Twojego telefonu lub na Twój prywatny dysk w chmurze.
@@ -346,7 +346,7 @@ export const CallHistoryView: React.FC<CallHistoryViewProps> = ({
                 <strong>1. Zapis od razu po dokonanej rozmowie:</strong> Tak! Zaraz po zakończeniu połączenia wpis pojawia się w rejestrze. Masz przycisk <strong>„Pobierz na urządzenie”</strong> (plik .wav w pamięci telefonu/komputera) oraz <strong>„Wyślij do chmury”</strong> (synchronizacja z Google Drive, iCloud, Dropbox, Nextcloud).
               </p>
               <p>
-                <strong>2. Czy po usunięciu z komórki da się odtworzyć?</strong> Zgodnie z zasadą <strong>Zero-Storage</strong> plik nie wisi na naszych serwerach (nikt Cię nie podsłucha). W rejestrze <strong>ZAWSZE zostaje nienaruszona metryka i suma SHA-256</strong> (klucz dowodowy dla UKE i Sądu). Sam plik audio bezpiecznie leży na Twoim koncie (np. <code>Google Drive / TelePakt_Dowody /</code>). Możesz go w każdej chwili otworzyć bezpośrednio na Dysku Google.
+                <strong>2. Czy po usunięciu z komórki da się odtworzyć?</strong> Zgodnie z zasadą <strong>Zero-Storage</strong> po pobraniu usuwamy plik z naszych serwerów. W rejestrze zostaje tylko metryka połączenia (numer, data i czas trwania). Sam plik audio bezpiecznie leży na Twoim koncie (np. <code>Google Drive / TelePakt_Dowody /</code>). Możesz go w każdej chwili otworzyć bezpośrednio na Dysku Google.
               </p>
               <p>
                 <strong>3. Czy połączenie z chmurą jest dwustronne?</strong> <strong>TAK!</strong> Obok każdej zsynchronizowanej rozmowy masz przycisk <strong>„Otwórz w chmurze”</strong> (odsłuchanie na Dysku Google w 1 kliknięcie) oraz przycisk <strong>„Wczytaj z powrotem”</strong> (możesz wczytać plik audio z dysku do aplikacji i odsłuchać go bezpośrednio wbudowanym odtwarzaczem rejestru).

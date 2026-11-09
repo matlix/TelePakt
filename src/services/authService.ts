@@ -3,12 +3,14 @@ import { auth, db, googleProvider, appleProvider } from '../firebase';
 import {
   signInWithPopup,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  deleteUser,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   updateProfile as updateFirebaseProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 const STORAGE_KEY_AUTH = 'telepakt_auth_user';
 
@@ -210,7 +212,7 @@ class AuthService {
       } else if (error.code === 'auth/invalid-email') {
         throw new Error('Nieprawidłowy format adresu e-mail.');
       }
-      throw new Error(error.message || 'Wystąpił błąd podczas rejestracji.');
+      throw new Error(this.friendlyAuthError(error, 'Wystąpił błąd podczas rejestracji.'));
     }
   }
 
@@ -261,7 +263,7 @@ class AuthService {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         throw new Error('Nieprawidłowy e-mail lub hasło. Sprawdź dane lub zarejestruj się.');
       }
-      throw new Error(error.message || 'Błąd logowania.');
+      throw new Error(this.friendlyAuthError(error, 'Błąd logowania.'));
     }
   }
 
@@ -285,11 +287,11 @@ class AuthService {
       } else {
         account = {
           id: user.uid,
-          email: user.email || fallbackEmail || 'matlix@gmail.com',
+          email: user.email || fallbackEmail || '',
           name: user.displayName || 'Użytkownik Google',
           provider: 'google',
           photoUrl: user.photoURL || undefined,
-          subscriptionPlan: 'shield',
+          subscriptionPlan: 'free',
           createdAt: new Date().toLocaleDateString('pl-PL'),
           isVerified: true,
           phoneProtected: '+48 '
@@ -307,24 +309,8 @@ class AuthService {
       // In case popup was closed by user or iframe restrictions apply, provide graceful fallback
       if (error.code === 'auth/popup-closed-by-user') {
         throw new Error('Okno logowania Google zostało zamknięte.');
-      } else if (error.code === 'auth/unauthorized-domain' || error.code === 'auth/operation-not-allowed') {
-        console.warn('Firebase domain restriction, using verified Google identity session:', error);
-        // Fallback session
-        const email = fallbackEmail || 'matlix@gmail.com';
-        const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const googleUser: UserAccount = {
-          id: 'google_' + Date.now().toString(36),
-          email,
-          name,
-          provider: 'google',
-          photoUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0284c7`,
-          subscriptionPlan: 'shield',
-          createdAt: new Date().toLocaleDateString('pl-PL'),
-          isVerified: true,
-          phoneProtected: '+48 500 123 456'
-        };
-        this.saveSession(googleUser);
-        return googleUser;
+      } else if (error.code === 'auth/unauthorized-domain' || error.code === 'auth/operation-not-allowed' || error.code === 'auth/operation-not-supported-in-this-environment') {
+        throw new Error('Logowanie przez Google nie jest tu dostępne. Zaloguj się adresem e-mail i hasłem.');
       }
       throw new Error(error.message || 'Logowanie przez Google nie powiodło się.');
     }
@@ -348,14 +334,14 @@ class AuthService {
       if (profileDoc && profileDoc.exists()) {
         account = profileDoc.data() as UserAccount;
       } else {
-        const finalEmail = user.email || (hideEmail ? `user.${Math.random().toString(36).substring(2, 7)}@privaterelay.appleid.com` : 'uzytkownik.apple@icloud.com');
+        const finalEmail = user.email || '';
         account = {
           id: user.uid,
           email: finalEmail,
           name: user.displayName || (hideEmail ? 'Użytkownik Apple' : 'Użytkownik Apple ID'),
           provider: 'apple',
           appleRelayEmail: hideEmail,
-          subscriptionPlan: 'shield',
+          subscriptionPlan: 'free',
           createdAt: new Date().toLocaleDateString('pl-PL'),
           isVerified: true,
           phoneProtected: '+48 '
@@ -372,29 +358,63 @@ class AuthService {
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
         throw new Error('Okno logowania Apple ID zostało zamknięte.');
-      } else if (error.code === 'auth/unauthorized-domain' || error.code === 'auth/operation-not-allowed') {
-        console.warn('Firebase Apple domain restriction, using Apple Private Relay identity:', error);
-        const finalEmail = hideEmail
-          ? `user.${Math.random().toString(36).substring(2, 8)}@privaterelay.appleid.com`
-          : 'uzytkownik.apple@icloud.com';
-        const appleUser: UserAccount = {
-          id: 'apple_' + Date.now().toString(36),
-          email: finalEmail,
-          name: hideEmail ? 'Użytkownik Apple' : 'Użytkownik Apple ID',
-          provider: 'apple',
-          appleRelayEmail: hideEmail,
-          subscriptionPlan: 'shield',
-          createdAt: new Date().toLocaleDateString('pl-PL'),
-          isVerified: true,
-          phoneProtected: '+48 601 987 654'
-        };
-        this.saveSession(appleUser);
-        return appleUser;
+      } else if (error.code === 'auth/unauthorized-domain' || error.code === 'auth/operation-not-allowed' || error.code === 'auth/operation-not-supported-in-this-environment') {
+        throw new Error('Logowanie przez Apple ID nie jest tu dostępne. Zaloguj się adresem e-mail i hasłem.');
       }
       throw new Error(error.message || 'Logowanie przez Apple ID nie powiodło się.');
     }
   }
 
+  /** Zamienia kody błędów Firebase na zrozumiałe komunikaty (bez ujawniania surowych tekstów technicznych). */
+  private friendlyAuthError(error: any, fallback: string): string {
+    switch (error?.code) {
+      case 'auth/operation-not-allowed':
+        return 'Logowanie e-mailem nie zostało jeszcze włączone w usłudze. Skontaktuj się z administratorem.';
+      case 'auth/too-many-requests':
+        return 'Zbyt wiele prób. Spróbuj ponownie za kilka minut.';
+      case 'auth/network-request-failed':
+        return 'Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.';
+      case 'auth/user-disabled':
+        return 'To konto zostało zablokowane.';
+      default:
+        return fallback;
+    }
+  }
+  // 5a. RESET HASŁA (e-mail z linkiem od Firebase)
+  public async resetPassword(email: string): Promise<void> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('Podaj prawidłowy adres e-mail.');
+    }
+    try {
+      await sendPasswordResetEmail(auth, cleanEmail);
+    } catch (error: any) {
+      // Nie ujawniamy, czy konto istnieje - dla nieznanego adresu zachowujemy się tak samo jak dla znanego.
+      if (error.code === 'auth/user-not-found') return;
+      if (error.code === 'auth/invalid-email') throw new Error('Nieprawidłowy format adresu e-mail.');
+      throw new Error('Nie udało się wysłać wiadomości. Spróbuj ponownie później.');
+    }
+  }
+
+  // 5b. USUNIĘCIE KONTA (prawo do usunięcia danych, art. 17 RODO)
+  public async deleteAccount(): Promise<void> {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      throw new Error('Brak aktywnej sesji użytkownika.');
+    }
+    try {
+      await deleteDoc(doc(db, 'users', firebaseUser.uid));
+      await deleteUser(firebaseUser);
+    } catch (error: any) {
+      if (error.code === 'auth/requires-recent-login') {
+        throw new Error('Ze względów bezpieczeństwa wyloguj się, zaloguj ponownie i spróbuj usunąć konto jeszcze raz.');
+      }
+      throw new Error(error.message || 'Nie udało się usunąć konta.');
+    }
+    this.currentUser = null;
+    localStorage.removeItem(STORAGE_KEY_AUTH);
+    this.notify();
+  }
   // 5. WYLOGOWANIE
   public async logout(): Promise<void> {
     try {

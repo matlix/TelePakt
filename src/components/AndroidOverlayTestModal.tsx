@@ -47,7 +47,7 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
 
     if (PolishVoiceSynthesizer.isSupported()) {
       PolishVoiceSynthesizer.speak(
-        'Uwaga telemarketerze. Na podstawie artykułu 398 Prawa komunikacji elektronicznej oraz artykułu 21 RODO oświadczam, że zgłaszam bezwzględny sprzeciw wobec marketingu bezpośredniego. Żądam natychmiastowego usunięcia mojego numeru z Państwa bazy i zaprzestania połączeń pod rygorem zawiadomienia Prezesa Urzędu Komunikacji Elektronicznej.',
+        'Uwaga telemarketerze. Na podstawie artykułu 398 Prawa komunikacji elektronicznej oraz artykułu 21 RODO oświadczam, że zgłaszam bezwzględny sprzeciw wobec marketingu bezpośredniego. Żądam natychmiastowego usunięcia mojego numeru z Państwa bazy i zaprzestania połączeń W razie dalszych połączeń zgłoszę sprawę Prezesowi Urzędu Komunikacji Elektronicznej.',
         { onEnd: () => setSpeechPlaying(false), onError: () => setSpeechPlaying(false) }
       );
     } else {
@@ -187,10 +187,7 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
                     <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
                     <span>Komunikat „Problem parsing the package” na Android 13 (np. Ulefone Armor)?</span>
                   </div>
-                  <p className="text-[11px] leading-relaxed text-amber-100/80">
-                    Nowe wersje Androida (w tym Android 13 Go na Ulefone Armor X12 Pro) wymagają ściśle skompilowanego binarnego pliku AXML i certyfikatu Android SDK.
-                    Pobierz oficjalny, podpisany binarny pakiet z GitHub Actions: <strong><a href="https://github.com/matlix/TelePakt/releases" target="_blank" rel="noopener noreferrer" className="underline text-amber-300 hover:text-white">GitHub Releases / Actions</a></strong> lub zainstaluj wersję PWA jednym kliknięciem (menu Chrome ➔ „Zainstaluj aplikację”).
-                  </p>
+                  $${1}Najczęstsze przyczyny: plik pobrał się niekompletnie (pobierz go ponownie, najlepiej przez Wi-Fi), na telefonie jest już zainstalowana starsza wersja podpisana innym kluczem (odinstaluj ją i zainstaluj ponownie) albo telefon ma Androida starszego niż 7.0. Plik pobieraj zawsze z tej strony.$${2}
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-400 font-mono break-all flex items-center justify-between gap-2">
@@ -285,7 +282,7 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
                     <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider block">
                       Połączenie przychodzące
                     </span>
-                    <strong className="text-sm text-white block">+48 22 104 39 88</strong>
+                    <strong className="text-sm text-white block">+48 22 000 00 88</strong>
                     <span className="text-[11px] text-slate-400">Prawdopodobnie: Telemarketing / Call Center</span>
                   </div>
                 </div>
@@ -309,7 +306,7 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
                         <span>Weto Prawne PKE Zgłoszone!</span>
                       </div>
                       <p className="text-[11px] text-slate-300">
-                        Formuła art. 398 PKE została odtworzona do mikrofonu rozmowy. Zarejestrowano hash dowodowy SHA-256.
+                        Formuła art. 398 PKE została odtworzona do mikrofonu rozmowy.
                       </p>
                       {speechPlaying && (
                         <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold animate-pulse">

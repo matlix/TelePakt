@@ -7,7 +7,6 @@ import {
   Gift
 } from 'lucide-react';
 import { AppNameOption, CustomerReview, UserAccount } from '../types';
-import { INITIAL_CUSTOMER_REVIEWS } from '../data/adminAndReviewsData';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
 import pwaGuideImage from '../assets/images/pwa_install_android_1793461222858.jpg';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -90,14 +89,12 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   const [testerRegistered, setTesterRegistered] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Search widget state (Tellows Scorelist + UKE offline cache)
-  const [searchNumber, setSearchNumber] = useState('+48 22 104 39 88');
-  const [searched, setSearched] = useState(true);
-  const [searchResult, setSearchResult] = useState<LookupResult | null>(() => {
-    return spamDatabaseService.lookupNumber('+48 22 104 39 88');
-  });
+  // Search widget state (lokalna lista zgłoszeń użytkowników)
+  const [searchNumber, setSearchNumber] = useState('');
+  const [searched, setSearched] = useState(false);
+  const [searchResult, setSearchResult] = useState<LookupResult | null>(null);
   const [reportedSuccessMsg, setReportedSuccessMsg] = useState(false);
-  const [fakeCallInitialNumber, setFakeCallInitialNumber] = useState('+48 22 104 39 88');
+  const [fakeCallInitialNumber, setFakeCallInitialNumber] = useState('+48 22 000 00 88');
   const [fakeCallInitialName, setFakeCallInitialName] = useState('Centrum Dotacji OZE (Bot)');
 
   // Beta Program Signup State (Omnibus & UOKiK Compliance)
@@ -207,8 +204,8 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
   const faqs = [
     {
-      q: 'Czy odgrywanie formuły prawnej z art. 398 PKE podczas rozmowy jest w 100% legalne?',
-      a: 'Tak, w pełni legalne. 10 listopada 2024 r. weszła w życie ustawa Prawo komunikacji elektronicznej (Dz.U. 2024 poz. 1221). Art. 398 bezwzględnie zakazuje używania telekomunikacyjnych urządzeń końcowych i automatycznych systemów wywołujących dla celów marketingu bezpośredniego bez uprzedniej zgody abonenta. Naruszenie tego przepisu stanowi delikt zagrożony karą nakładaną przez Prezesa UKE (do 3% rocznego przychodu podmiotu naruszającego).'
+      q: 'Na jakiej podstawie prawnej działa TelePakt?',
+      a: 'Od 10 listopada 2024 r. obowiązuje ustawa Prawo komunikacji elektronicznej (Dz.U. 2024 poz. 1221). Art. 398 zakazuje używania telekomunikacyjnych urządzeń końcowych i automatycznych systemów wywołujących do celów marketingu bezpośredniego bez uprzedniej zgody abonenta. TelePakt odtwarza formułę sprzeciwu i pomaga przygotować zawiadomienie do UKE. Nie jest to porada prawna.'
     },
     {
       q: 'Jak technicznie działa TelePakt w trakcie trwającego połączenia?',
@@ -216,19 +213,19 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
     },
     {
       q: 'Czy ponoszę dodatkowe koszty za połączenie konferencyjne z botem?',
-      a: 'Nie. Telefon łączy się ze standardowym polskim numerem stacjonarnym w strefie Warszawy (+48 22). Połączenia te we wszystkich polskich ofertach komórkowych no-limit (Play, Orange, Plus, T-Mobile) są całkowicie bezpłatne w ramach Twojego abonamentu.'
+      a: 'Połączenie z asystentem jest zwykłym połączeniem krajowym na numer stacjonarny. Jeśli Twój abonament zawiera bezpłatne połączenia krajowe, nie płacisz za nie dodatkowo. Warunki sprawdź u swojego operatora.'
     },
     {
       q: 'Co dzieje się z nagraniami rozmów? Na czym polega zasada ochrony prywatności?',
-      a: 'Stosujemy bezwzględną zasadę braku przechowywania na serwerach (Zero-Storage). TelePakt w ogóle nie przechowuje Twoich nagrań na serwerach zewnętrznych. Nagranie oraz zawiadomienie do Prezesa UKE trafiają wyłącznie do pamięci Twojego telefonu lub na wskazaną przez Ciebie prywatną chmurę (Google Drive, iCloud, Dropbox). Z węzła telekomunikacyjnego bufor audio jest natychmiast bezpowrotnie niszczony (cyfrowy shredding).'
+      a: 'Stosujemy zasadę Zero-Storage: po rozmowie nagranie jest tymczasowo dostępne do pobrania. Gdy pobierzesz je na telefon lub do swojej prywatnej chmury (Google Drive, iCloud, Dropbox), usuwamy je z naszych serwerów i z serwera operatora telefonii. Niepobrane nagrania kasujemy automatycznie po 30 dniach.'
     },
     {
       q: 'Czym TelePakt różni się od zwykłych, pasywnych aplikacji blokujących?',
-      a: 'Zwykłe aplikacje tylko sprawdzają numer w internecie. Telemarketerzy omijają je, rotując tysiące nowych numerów VoIP (tzw. spoofing). TelePakt działa aktywnie: wygłasza formalne żądanie zaprzestania przetwarzania danych z rygorem kontroli UKE i UODO, co zmusza centra telemarketingowe do trwałego wykreślenia Twojego numeru z baz CRM.'
+      a: 'Zwykłe aplikacje tylko sprawdzają numer w internecie. Telemarketerzy omijają je, rotując tysiące nowych numerów VoIP (tzw. spoofing). TelePakt działa aktywnie: wygłasza formalne żądanie zaprzestania przetwarzania danych z powołaniem na art. 398 PKE i art. 21 RODO.'
     },
     {
-      q: 'Skąd pochodzi baza numerów spamowych TelePakt?',
-      a: 'Korzystamy z hybrydowej architektury: hurtowej bazy numerów Tellows (Polska, ocena ryzyka 7–9), oficjalnego Rejestru Numerów o Podwyższonej Opłacie UKE (70x, 71x, 80x) oraz zgłoszeń abonentów TelePakt. Baza pobierana jest hurtowo i zapisywana lokalnie na urządzeniu, dzięki czemu sprawdzanie numeru trwa ułamek milisekundy i kosztuje 0 zł (brak płatnych zapytań API).'
+      q: 'Skąd pochodzi baza zgłoszonych numerów?',
+      a: 'Baza dopiero powstaje i opiera się na zgłoszeniach użytkowników TelePakt. Brak numeru w bazie nie oznacza, że jest on bezpieczny — zawsze zachowaj ostrożność wobec nieznanych rozmówców.'
     }
   ];
 
@@ -473,7 +470,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           </h1>
 
           <p className="text-sm sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            <strong>TelePakt.pl</strong> to aplikacja dla abonentów w Polsce, która w trakcie uciążliwej rozmowy włącza asystenta prawnego wygłaszającego bezwzględny sprzeciw z <strong>art. 398 PKE</strong> i <strong>art. 21 RODO</strong> (pod rygorem kary nakładanej przez Prezesa UKE do 3% przychodu) oraz rejestruje dowód audio z sumą kontrolną SHA-256.
+            <strong>TelePakt.pl</strong> to aplikacja dla abonentów w Polsce, która w trakcie uciążliwej rozmowy włącza asystenta prawnego wygłaszającego bezwzględny sprzeciw z <strong>art. 398 PKE</strong> i <strong>art. 21 RODO</strong> oraz nagrywa rozmowę, abyś mógł dołączyć ją do zawiadomienia do UKE.
           </p>
 
           {/* Download & Beta Badges */}
@@ -621,39 +618,14 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
               <Database className="w-3.5 h-3.5" />
-              Baza Zagrożeń Tellows (Polska) • Rejestr UKE • Zgłoszenia Art. 398 PKE
+              Zgłoszenia społeczności TelePakt
             </div>
             <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
               Sprawdź numer w bazie telemarketingu i spamu
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Sprawdź ocenę ryzyka w skali Tellows (1–9), delikty z art. 398 PKE oraz stawki połączeń Premium UKE. 
-              Baza działa w 100% lokalnie na Twoim urządzeniu (0 ms opóźnienia, 0 zł za sprawdzenie).
+              Sprawdź, czy ktoś już zgłosił dany numer jako uciążliwy. Baza dopiero powstaje i opiera się na zgłoszeniach użytkowników — brak wpisu nie oznacza, że numer jest bezpieczny.
             </p>
-          </div>
-
-          {/* Quick sample chips */}
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-slate-500 font-medium">Przykłady z bazy:</span>
-            {[
-              { num: '+48 22 104 39 88', label: 'Bot Fotowoltaika (Warszawa)' },
-              { num: '+48 22 598 40 00', label: 'Spoofing Bankowy' },
-              { num: '+48 708 888 123', label: 'Premium UKE 708 (Płatny)' },
-              { num: '+48 71 889 02 11', label: 'Pokazy Garnków (Wrocław)' },
-            ].map(sample => (
-              <button
-                key={sample.num}
-                type="button"
-                onClick={() => handleSelectSample(sample.num)}
-                className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono transition-all cursor-pointer ${
-                  searchNumber === sample.num
-                    ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-bold'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-                }`}
-              >
-                {sample.label}
-              </button>
-            ))}
           </div>
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 max-w-xl mx-auto">
@@ -662,7 +634,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 type="text"
                 value={searchNumber}
                 onChange={(e) => setSearchNumber(e.target.value)}
-                placeholder="Wpisz numer, np. +48 22 104 39 88 lub 708..."
+                placeholder="Wpisz numer telefonu"
                 className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 text-sm text-white font-mono placeholder-slate-500 focus:outline-none focus:border-cyan-500"
               />
             </div>
@@ -685,7 +657,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     <span>{searchResult.validationError || 'Nieprawidłowy format numeru'}</span>
                   </div>
                   <p className="text-slate-300 text-xs leading-relaxed">
-                    Wprowadzony ciąg „<strong className="text-white font-mono">{searchNumber}</strong>” nie jest prawidłowym numerem telefonu. Podaj numer stacjonarny, komórkowy lub infolinii (np. <span className="font-mono text-cyan-300">+48 22 104 39 88</span> lub <span className="font-mono text-cyan-300">708 888 123</span>), aby przeszukać bazę.
+                    Wprowadzony ciąg „<strong className="text-white font-mono">{searchNumber}</strong>” nie jest prawidłowym numerem telefonu. Podaj numer stacjonarny, komórkowy lub infolinii (np. <span className="font-mono text-cyan-300">+48 22 000 00 88</span> lub <span className="font-mono text-cyan-300">708 888 123</span>), aby przeszukać bazę.
                   </p>
                 </div>
               ) : !searchResult.found ? (
@@ -696,11 +668,11 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                       <span className="text-lg font-black text-white font-mono">{searchResult.record.number}</span>
                       <div className="text-xs text-emerald-400 font-bold mt-0.5 flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>Numer bezpieczny — brak wpisów w czarnej liście Tellows i rejestrze UKE</span>
+                        <span>Brak zgłoszeń tego numeru w bazie TelePakt (to nie oznacza, że numer jest bezpieczny)</span>
                       </div>
                     </div>
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-3 py-1 rounded-full border border-emerald-500/40 font-bold self-start sm:self-center">
-                      Tellows Score: 1 / 9 (Zaufany)
+                      Brak zgłoszeń
                     </span>
                   </div>
 
@@ -758,7 +730,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                           {searchResult.record.riskLevel === 'critical' && 'Ryzyko: Krytyczne'}
                           {searchResult.record.riskLevel === 'dangerous' && 'Ryzyko: Niebezpieczne'}
                           {searchResult.record.riskLevel === 'suspicious' && 'Ryzyko: Podejrzane'}
-                          {searchResult.record.riskLevel === 'safe' && 'Status: Bezpieczny'}
+                          {searchResult.record.riskLevel === 'safe' && 'Brak zgłoszeń'}
                         </span>
                       </div>
                       <h3 className="text-sm font-bold text-indigo-300 mt-1">
@@ -769,10 +741,10 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     <div className="flex items-center gap-1.5 self-start sm:self-center">
                       <span className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center gap-1.5">
                         <Database className="w-3 h-3 text-cyan-400" />
-                        {searchResult.source === 'tellows_scorelist' && 'Baza Zagrożeń Tellows (PL)'}
-                        {searchResult.source === 'uke_register' && 'Rejestr UKE Premium'}
+                        {searchResult.source === 'tellows_scorelist' && 'Zgłoszenia społeczności'}
+                        {searchResult.source === 'uke_register' && 'Zakres numeracji o podwyższonej opłacie'}
                         {searchResult.source === 'telepakt_community' && 'Społeczność TelePakt'}
-                        {searchResult.source === 'verified_safe' && 'Weryfikacja bezpieczna'}
+                        {searchResult.source === 'verified_safe' && 'Brak wpisu w bazie'}
                       </span>
                     </div>
                   </div>
@@ -782,7 +754,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-slate-300 flex items-center gap-1.5">
                         <Gauge className="w-4 h-4 text-cyan-400" />
-                        Wskaźnik Tellows Score (1 – 9):
+                        Ocena ryzyka (1 – 9):
                       </span>
                       <span className={`font-black font-mono px-2 py-0.5 rounded text-xs ${
                         searchResult.record.tellowsScore >= 7
@@ -791,7 +763,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                           ? 'bg-amber-500 text-slate-950'
                           : 'bg-emerald-500 text-white'
                       }`}>
-                        {searchResult.record.tellowsScore} / 9 ({searchResult.record.tellowsScore >= 7 ? 'Spam uciążliwy' : searchResult.record.tellowsScore >= 4 ? 'Wymaga uwagi' : 'Zaufany'})
+                        {searchResult.record.tellowsScore} / 9 ({searchResult.record.tellowsScore >= 7 ? 'Spam uciążliwy' : searchResult.record.tellowsScore >= 4 ? 'Wymaga uwagi' : 'Niskie ryzyko'})
                       </span>
                     </div>
 
@@ -963,9 +935,9 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-black font-mono text-sm">
                 4
               </span>
-              <h3 className="text-base font-bold text-white">Dowód dla UKE i Sądu</h3>
+              <h3 className="text-base font-bold text-white">Nagranie do zawiadomienia</h3>
               <p className="text-slate-400 leading-relaxed">
-                Rozmowa zostaje automatycznie rozłączona, a nagranie z gotowym pismem dowodowym trafia prosto do pamięci Twojego telefonu lub na Twój prywatny dysk w chmurze (Google Drive, iCloud) – TelePakt nie przechowuje Twoich nagrań na serwerach (100% Zero-Storage).
+                Rozmowa zostaje automatycznie rozłączona, a nagranie z gotowym pismem trafia do pamięci Twojego telefonu lub na Twój prywatny dysk w chmurze (Google Drive, iCloud). Po pobraniu usuwamy je z naszych serwerów (Zero-Storage).
               </p>
             </div>
 
@@ -1008,7 +980,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             <div className="p-6 rounded-3xl bg-slate-900 border border-rose-500/30 space-y-3">
               <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
                 <AlertTriangle className="w-5 h-5" />
-                <span>Art. 445 PKE – Kary do 1 000 000 zł</span>
+                <span>Art. 444 i 446 PKE – kary do 1 000 000 zł</span>
               </div>
               <p className="text-slate-300 leading-relaxed text-xs">
                 Kto wbrew przepisom art. 398 wykonuje połączenia telefoniczne, podlega karze pieniężnej nakładanej przez Prezesa Urzędu Komunikacji Elektronicznej (UKE) <strong>w wysokości do 3% przychodu ukaranego podmiotu lub do 1 000 000 zł</strong>.
@@ -1043,7 +1015,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <span className="text-2xl leading-none">🛡️</span>
               <div className="space-y-0.5">
                 <strong className="text-white block">Gwarancja 100% Odblokowanych Funkcji:</strong>
-                <span>Auto-Sprzeciw (art. 398 PKE), Dowód Audio SHA-256, Wnioski UKE, Baza Offline, Sprzeciw SMS Twilio, Pływający Suwak i Zero-Storage działają bez ograniczeń w każdym pakiecie.</span>
+                <span>Auto-Sprzeciw (art. 398 PKE), nagranie rozmowy, Wnioski UKE, Baza Offline, Sprzeciw SMS Twilio, Pływający Suwak i Zero-Storage działają bez ograniczeń w każdym pakiecie.</span>
               </div>
             </div>
           </div>
@@ -1084,13 +1056,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     ✓ Pływający suwak Androida i Auto-Sprzeciw art. 398 PKE
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Dowód Audio z kryptograficzną sumą SHA-256
+                    ✓ Nagranie rozmowy do pobrania
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Generator formalnych zawiadomień do Prezesa UKE
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Baza numerów spamowych offline i ocena Tellows
+                    ✓ Sprawdzanie numerów ze zgłoszeń społeczności
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Bramka SMS (art. 77² K.c.) z gotowymi wzorcami
@@ -1142,7 +1114,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                   </div>
                   
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-300 font-medium leading-relaxed">
-                    ✨ <strong>Gwarancja nieprzepadania minut:</strong> Minuty są bezterminowe i same nigdy nie znikną! Nie ma żadnego abonamentu comiesięcznego ani ukrytych opłat. Płacisz raz (np. BLIK-iem) i minuty czekają na Twoim koncie.
+                    ✨ <strong>Gwarancja nieprzepadania minut:</strong> Minuty są bezterminowe i same nigdy nie znikną! Nie ma żadnego abonamentu comiesięcznego ani ukrytych opłat. Płacisz raz w sklepie z aplikacjami i minuty czekają na Twoim koncie.
                   </div>
                 </div>
                 
@@ -1157,7 +1129,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     ✓ Pływający suwak Android (.APK) i Auto-Sprzeciw art. 398 PKE
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Certyfikaty dowodowe SHA-256 akceptowane przez sądy i UKE
+                    ✓ Nagrania do pobrania na telefon lub do Twojej chmury
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Nielimitowane zawiadomienia do Prezesa UKE i UODO
@@ -1166,7 +1138,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     ✓ Bramka SMS (art. 77² K.c.) z natychmiastowym doręczeniem
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Płatność jednorazowa (BLIK, Karta, Google Play, Apple Pay)
+                    ✓ Płatność jednorazowa przez sklep z aplikacjami
                   </li>
                 </ul>
               </div>
@@ -1199,17 +1171,11 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 <Shield className="w-5 h-5" />
               </div>
               <div>
-                <strong className="text-white block">100% Bezpieczna Subskrypcja w Twoim Sklepie:</strong>
+                <strong className="text-white block">Płatność wyłącznie w oficjalnym sklepie:</strong>
                 <span className="text-slate-400 text-[11px]">
-                  Google Play • Apple App Store • Samsung Galaxy Store • Huawei AppGallery. Płać BLIK-iem, kartą lub dopisz do abonamentu Play, Orange, Plus, T-Mobile.
+                  Google Play • Apple App Store • Samsung Galaxy Store • Huawei AppGallery. Płatność obsługuje wybrany przez Ciebie sklep.
                 </span>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2 font-mono text-[11px] text-cyan-300 shrink-0">
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">BLIK</span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">Apple Pay / GPay</span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">Rachunek Operatora</span>
             </div>
           </div>
 

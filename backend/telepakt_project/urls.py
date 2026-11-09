@@ -12,7 +12,7 @@ def root_landing_view(request):
         "api_domain": "api.telepakt.pl",
         "status": "online",
         "hosting": "Render.com",
-        "legal_act": "Ustawa z dnia 12 lipca 2024 r. Prawo komunikacji elektronicznej (art. 398, 445)",
+        "legal_act": "Ustawa z dnia 12 lipca 2024 r. Prawo komunikacji elektronicznej (art. 398, 444, 446)",
         "endpoints": {
             "admin": "/admin/",
             "telephony_webhooks": "/api/telephony/",

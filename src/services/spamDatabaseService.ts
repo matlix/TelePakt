@@ -1,11 +1,8 @@
 // ============================================================================
-// TelePakt - Serwis Bazy Numerów Anty-Spam & Integracji Tellows Scorelist + UKE
-// Architektura ekonomiczna:
-// 1. Tellows Scorelist API (Polska, minscore=7..9) pobierana hurtowo (~50 EUR/rok nielimitowane)
-// 2. Lokalny cache na telefonie (IndexedDB/LocalStorage) -> 0 ms opóźnienia, 0 zł za zapytanie
-// 3. Rejestr numerów o podwyższonej opłacie UKE (70x, 71x, 80x)
-// 4. Społecznościowa baza zgłoszeń TelePakt (weryfikacja deliktów art. 398 PKE)
-// 5. Zero-Storage: brak wysyłania numerów użytkownika na serwer
+// TelePakt - Lokalna lista zgłoszonych numerów (zgłoszenia użytkownika)
+// Baza startowa jest PUSTA. Brak wpisu NIE oznacza, że numer jest bezpieczny.
+// Docelowo: współdzielona baza zgłoszeń społeczności (backend) + zakresy numeracji UKE.
+// Zero-Storage: sprawdzany numer nie jest wysyłany na serwer.
 // ============================================================================
 
 export interface SpamRecord {
@@ -44,115 +41,15 @@ export interface DatabaseStats {
   savedVsTwilioLookupPLN: number;
 }
 
-// Baza numerów referencyjnych dla rynku polskiego (Tellows Score 7-9 + rejestr UKE)
-const INITIAL_POLISH_SPAM_DATABASE: SpamRecord[] = [
-  {
-    number: '+48 22 104 39 88',
-    normalizedNumber: '48221043988',
-    name: 'Bot Fotowoltaiczny "Klara / Eco Energy"',
-    tellowsScore: 9,
-    riskLevel: 'critical',
-    category: 'Fotowoltaika',
-    reportsCount: 4219,
-    lastReported: 'Dzisiaj, 11:42',
-    delictDescription: 'Automatyczny syntezator mowy AI oferujący audyt fotowoltaiczny i dotacje unijne bez wcześniejszej zgody abonenta. Naruszenie zakazu cold-callingu.',
-    legalBasis: 'Art. 398 ust. 1 PKE (kara do 3% obrotu) oraz art. 21 RODO',
-  },
-  {
-    number: '+48 22 598 40 00',
-    normalizedNumber: '48225984000',
-    name: 'Spoofing "Dział Bezpieczeństwa Banku"',
-    tellowsScore: 9,
-    riskLevel: 'critical',
-    category: 'Spoofing Bankowy',
-    reportsCount: 2894,
-    lastReported: 'Dzisiaj, 09:15',
-    delictDescription: 'Podszywanie się pod bank (PKO BP / Santander / mBank). Oszust informuje o rzekomym wniosku kredytowym i namawia do instalacji aplikacji AnyDesk lub przelania środków.',
-    legalBasis: 'Art. 286 k.k. (oszustwo), art. 398 PKE, art. 21 RODO',
-  },
-  {
-    number: '+48 71 889 02 11',
-    normalizedNumber: '48718890211',
-    name: 'Zaproszenia na pokazy garnków / masażerów',
-    tellowsScore: 8,
-    riskLevel: 'dangerous',
-    category: 'Pokazy Handlowe',
-    reportsCount: 1640,
-    lastReported: 'Wczoraj, 18:30',
-    delictDescription: 'Agresywny telemarketing zapraszający na odbiór darmowego zegarka lub pulsoksymetru w hotelu. Wymusza podanie danych osobowych.',
-    legalBasis: 'Art. 398 PKE oraz art. 172 Prawa Telekomunikacyjnego',
-  },
-  {
-    number: '+48 12 340 99 21',
-    normalizedNumber: '48123409921',
-    name: 'Fałszywa Giełda Krypto & Baltic Pipe',
-    tellowsScore: 9,
-    riskLevel: 'critical',
-    category: 'Giełda i Krypto',
-    reportsCount: 3120,
-    lastReported: 'Dzisiaj, 10:04',
-    delictDescription: 'Naciągacze na inwestycje w akcje Orlen / Baltic Pipe / Bitcoin. Połączenia inicjowane z zagranicznych bramek VoIP podszywających się pod polskie numery stacjonarne.',
-    legalBasis: 'Art. 286 k.k. (oszustwo), art. 398 PKE',
-  },
-  {
-    number: '+48 61 627 00 93',
-    normalizedNumber: '48616270093',
-    name: 'Automat Odszkodowawczy & Polisy',
-    tellowsScore: 7,
-    riskLevel: 'suspicious',
-    category: 'Windykacja',
-    reportsCount: 890,
-    lastReported: '2 dni temu',
-    delictDescription: 'Zapytania o stłuczki i wypadki sprzed 3 lat, wciskanie odkupu roszczeń OC.',
-    legalBasis: 'Art. 398 PKE, naruszenie bazy PESEL',
-  },
-  {
-    number: '+48 708 888 123',
-    normalizedNumber: '48708888123',
-    name: 'Rejestr UKE: Połączenie Premium 708 (Wróżby/Konkursy)',
-    tellowsScore: 9,
-    riskLevel: 'critical',
-    category: 'Premium Rate UKE',
-    reportsCount: 520,
-    lastReported: 'Dzisiaj, 08:00',
-    delictDescription: 'Numer o podwyższonej opłacie zarejestrowany w UKE. Koszt połączenia to 9,23 zł z VAT za każdą minutę. Często generuje tzw. ping-calling (krótki sygnał z zamiarem oddzwonienia).',
-    legalBasis: 'Art. 398 PKE, Rejestr Numerów o Podwyższonej Opłacie UKE',
-    isUkePremium: true,
-    costEstimatePerMin: '9,23 zł / min',
-  },
-  {
-    number: '+48 703 400 999',
-    normalizedNumber: '48703400999',
-    name: 'Rejestr UKE: Połączenie Premium 703 (Infolinia Płatna)',
-    tellowsScore: 8,
-    riskLevel: 'dangerous',
-    category: 'Premium Rate UKE',
-    reportsCount: 340,
-    lastReported: '3 dni temu',
-    delictDescription: 'Płatna linia wsparcia technicznego lub konkursu SMS. Koszt połączenia 4,92 zł brutto/min.',
-    legalBasis: 'Rejestr UKE, art. 398 PKE',
-    isUkePremium: true,
-    costEstimatePerMin: '4,92 zł / min',
-  },
-  {
-    number: '+48 22 123 45 67',
-    normalizedNumber: '48221234567',
-    name: 'Telemarketer Telekomunikacyjny',
-    tellowsScore: 7,
-    riskLevel: 'suspicious',
-    category: 'Telekomunikacja',
-    reportsCount: 654,
-    lastReported: 'Wczoraj, 14:10',
-    delictDescription: 'Oferty przedłużenia umowy i wymiany routera od zewnętrznego call center.',
-    legalBasis: 'Art. 398 PKE',
-  }
-];
+// Baza startowa jest pusta: wpisy pochodzą wyłącznie ze zgłoszeń użytkownika (zapisanych lokalnie).
+// Nie wolno tu wstawiać przykładowych numerów ani liczby zgłoszeń - to byłyby dane nieprawdziwe.
+const INITIAL_POLISH_SPAM_DATABASE: SpamRecord[] = [];
 
 class SpamDatabaseService {
   private db: Map<string, SpamRecord> = new Map();
   private userReports: SpamRecord[] = [];
-  private lastSync: string = '2025-05-14 06:00:00';
-  private totalChecksPerformed: number = 24190;
+  private lastSync: string = '-';
+  private totalChecksPerformed: number = 0;
 
   constructor() {
     this.initDatabase();
@@ -197,7 +94,7 @@ class SpamDatabaseService {
     if (clean.length < 7) {
       return {
         isValid: false,
-        validationError: 'Wprowadź prawidłowy numer telefonu (minimum 7 cyfr, np. +48 22 104 39 88 lub 708 888 123).',
+        validationError: 'Wprowadź prawidłowy numer telefonu (minimum 7 cyfr, np. 22 123 45 67 lub 500 123 456).',
         found: false,
         record: {
           number: query,
@@ -241,16 +138,15 @@ class SpamDatabaseService {
         const ukeRecord: SpamRecord = {
           number: query,
           normalizedNumber: clean,
-          name: `UKE: Połączenie Specjalne o Podwyższonej Opłacie (${prefix})`,
-          tellowsScore: 9,
-          riskLevel: 'critical',
+          name: `Zakres numeracji ${prefix}xx (usługi o podwyższonej opłacie)`,
+          tellowsScore: 5,
+          riskLevel: 'suspicious',
           category: 'Premium Rate UKE',
-          reportsCount: 185,
-          lastReported: 'Dzisiaj',
-          delictDescription: `Numer z zakresu ${prefix}xx to usługa Premium Rate zarejestrowana w UKE. Opłata naliczana za minutę połączenia (do kilkunastu złotych za minutę!).`,
-          legalBasis: 'Rejestr UKE, art. 398 PKE',
-          isUkePremium: true,
-          costEstimatePerMin: '4,92 - 12,30 zł / min'
+          reportsCount: 0,
+          lastReported: '-',
+          delictDescription: `Numery z zakresu ${prefix}xx są zwykle numerami usług o podwyższonej opłacie. Przed oddzwonieniem sprawdź cennik u swojego operatora.`,
+          legalBasis: 'Plan numeracji krajowej',
+          isUkePremium: true
         };
         return {
           isValid: true,
@@ -267,13 +163,13 @@ class SpamDatabaseService {
     const safeRecord: SpamRecord = {
       number: query,
       normalizedNumber: clean,
-      name: 'Brak negatywnych wpisów w Tellows i UKE',
+      name: 'Brak zgłoszeń w bazie TelePakt',
       tellowsScore: 1,
       riskLevel: 'safe',
       category: 'Inne',
       reportsCount: 0,
       lastReported: 'Brak zgłoszeń',
-      delictDescription: 'Ten numer nie figuruje w rejestrze uciążliwego spamu marketingowego ani w wykazie numerów o podwyższonej opłacie UKE.',
+      delictDescription: 'Ten numer nie ma jeszcze zgłoszeń w bazie TelePakt. To nie oznacza, że jest bezpieczny — nasza baza dopiero powstaje.',
       legalBasis: 'Art. 398 ust. 1 PKE, art. 21 RODO',
     };
 
@@ -315,33 +211,19 @@ class SpamDatabaseService {
    */
   public getDatabaseStats(): DatabaseStats {
     // Koszt Twilio Lookup to $0.015 do $0.03 za zapytanie (~0.08 - 0.12 PLN)
-    const savedVsTwilio = Math.round(this.totalChecksPerformed * 0.10);
+    const savedVsTwilio = 0;
 
     return {
-      totalNumbers: this.db.size + 34880, // Łącznie z pobraną hurtowo listą Tellows Scorelist 7-9
-      tellowsScorelistEntries: 29450,
-      ukePremiumEntries: 5430,
-      telepaktCommunityReports: this.userReports.length + 840,
+      totalNumbers: this.db.size,
+      tellowsScorelistEntries: 0,
+      ukePremiumEntries: 0,
+      telepaktCommunityReports: this.userReports.length,
       lastSyncDate: this.lastSync,
       cacheStatus: 'cached_offline',
       savedVsTwilioLookupPLN: savedVsTwilio,
     };
   }
 
-  /**
-   * Symulacja synchronizacji nowej paczki Tellows Scorelist (delta aktualizacja)
-   */
-  public syncTellowsScorelist(): Promise<{ success: boolean; newEntries: number }> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        this.lastSync = new Date().toISOString().replace('T', ' ').substring(0, 19);
-        resolve({
-          success: true,
-          newEntries: 142,
-        });
-      }, 1200);
-    });
-  }
 }
 
 export const spamDatabaseService = new SpamDatabaseService();

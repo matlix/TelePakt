@@ -1,8 +1,54 @@
 """Testy API telephony: webhooki Twilio, opinie, paragony IAP, health check."""
+from datetime import timedelta
+from unittest import mock
+
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
-from .models import CallLog, CustomerReview, InAppPurchaseReceipt
+from .models import CallLog, CustomerReview, InAppPurchaseReceipt, UkeComplaint
+from .retention import purge_expired
+
+
+class RetentionTests(TestCase):
+    """Nagrania po terminie retencji są kasowane u Twilio i w bazie."""
+
+    def _call(self, sid, **kw):
+        return CallLog.objects.create(call_sid=sid, caller_number='x', recipient_number='y', **kw)
+
+    def test_purge_deletes_expired_recording_and_row(self):
+        past = timezone.now() - timedelta(days=1)
+        self._call('CA1', recording_sid='RE1', recording_url='https://x/1', retention_expires_at=past)
+        with mock.patch('telephony.retention._twilio_client') as client:
+            self.assertEqual(purge_expired(), 1)
+        client.return_value.recordings.assert_called_once_with('RE1')
+        self.assertFalse(CallLog.objects.filter(call_sid='CA1').exists())
+
+    def test_purge_keeps_fresh_recordings(self):
+        future = timezone.now() + timedelta(days=5)
+        self._call('CA2', recording_sid='RE2', retention_expires_at=future)
+        with mock.patch('telephony.retention._twilio_client') as client:
+            self.assertEqual(purge_expired(), 0)
+        client.return_value.recordings.assert_not_called()
+        self.assertTrue(CallLog.objects.filter(call_sid='CA2').exists())
+
+    def test_purge_retries_later_when_twilio_fails(self):
+        past = timezone.now() - timedelta(days=1)
+        self._call('CA3', recording_sid='RE3', retention_expires_at=past)
+        with mock.patch('telephony.retention._twilio_client') as client:
+            client.return_value.recordings.return_value.delete.side_effect = RuntimeError('boom')
+            self.assertEqual(purge_expired(), 0)
+        self.assertTrue(CallLog.objects.filter(call_sid='CA3').exists())  # zostaje do kolejnej próby
+
+    def test_purge_keeps_metadata_when_complaint_attached(self):
+        past = timezone.now() - timedelta(days=1)
+        call = self._call('CA4', recording_sid='RE4', retention_expires_at=past)
+        UkeComplaint.objects.create(call_log=call, applicant_name='A', applicant_email='a@b.pl')
+        with mock.patch('telephony.retention._twilio_client'):
+            purge_expired()
+        call = CallLog.objects.get(call_sid='CA4')
+        self.assertEqual(call.recording_sid, '')
+        self.assertTrue(call.deleted_from_server)
 
 
 @override_settings(DEBUG=True)
@@ -16,13 +62,15 @@ class TwilioWebhookTests(TestCase):
         self.assertIn(b'<Conference', resp.content)
         self.assertTrue(CallLog.objects.filter(call_sid='CA1', status='initiated').exists())
 
-    def test_recording_callback_sets_hash(self):
+    def test_recording_callback_stores_url_and_sid(self):
         CallLog.objects.create(call_sid='CA2', caller_number='x', recipient_number='y')
         self.client.post('/api/telephony/recording-callback/',
-                         {'CallSid': 'CA2', 'RecordingUrl': 'https://x/rec', 'RecordingDuration': '12'})
+                         {'CallSid': 'CA2', 'RecordingUrl': 'https://x/rec', 'RecordingSid': 'RE123',
+                          'RecordingDuration': '12'})
         call = CallLog.objects.get(call_sid='CA2')
         self.assertEqual(call.status, 'recorded')
-        self.assertEqual(len(call.sha256_hash), 64)
+        self.assertEqual(call.recording_sid, 'RE123')
+        self.assertEqual(call.duration_seconds, 12)
 
     def test_recording_callback_bad_duration_does_not_crash(self):
         CallLog.objects.create(call_sid='CA3', caller_number='x', recipient_number='y')
@@ -96,13 +144,35 @@ class PurchaseAndHealthTests(TestCase):
                              {'user_email': 'a@b.pl', 'purchase_token': 't', 'platform': 'nope'}, format='json')
         self.assertEqual(resp.status_code, 400)
 
-    def test_zero_storage_delete(self):
+    def test_zero_storage_delete_removes_recording_at_twilio(self):
         CallLog.objects.create(call_sid='CA9', caller_number='x', recipient_number='y',
-                               recording_url='https://x/r')
-        resp = self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA9'}, format='json')
+                               recording_url='https://x/r', recording_sid='RE9')
+        with mock.patch('telephony.retention._twilio_client') as client:
+            resp = self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA9'}, format='json')
         self.assertEqual(resp.status_code, 200)
-        self.assertIsNone(CallLog.objects.get(call_sid='CA9').recording_url)
+        client.return_value.recordings.assert_called_once_with('RE9')
+        client.return_value.recordings.return_value.delete.assert_called_once()
+        call = CallLog.objects.get(call_sid='CA9')
+        self.assertIsNone(call.recording_url)
+        self.assertEqual(call.recording_sid, '')
+        self.assertTrue(call.deleted_from_server)
         self.assertEqual(self.api.post('/api/telephony/zero-storage-delete/', {}, format='json').status_code, 400)
+
+    def test_zero_storage_delete_fails_loudly_when_twilio_is_down(self):
+        CallLog.objects.create(call_sid='CA10', caller_number='x', recipient_number='y',
+                               recording_url='https://x/r', recording_sid='RE10')
+        with mock.patch('telephony.retention._twilio_client') as client:
+            client.return_value.recordings.return_value.delete.side_effect = RuntimeError('boom')
+            resp = self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA10'}, format='json')
+        self.assertEqual(resp.status_code, 502)
+        call = CallLog.objects.get(call_sid='CA10')
+        self.assertFalse(call.deleted_from_server)       # nie udajemy, że usunięto
+        self.assertEqual(call.recording_sid, 'RE10')
+
+    def test_zero_storage_delete_without_twilio_credentials_is_not_reported_as_success(self):
+        CallLog.objects.create(call_sid='CA11', caller_number='x', recipient_number='y', recording_sid='RE11')
+        resp = self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA11'}, format='json')
+        self.assertEqual(resp.status_code, 502)
 
     def test_health(self):
         self.assertEqual(self.api.get('/api/telephony/health/').json()['status'], 'healthy')

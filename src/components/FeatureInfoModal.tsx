@@ -66,34 +66,34 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
       'Asystent wita konsultanta oficjalnym, spokojnym głosem prawnym.',
       'Powołuje się na art. 398 Prawa komunikacji elektronicznej (zakaz kontaktu bez wcześniejszej zgody) oraz art. 21 RODO.',
       'Żąda natychmiastowego usunięcia Twojego numeru z systemów CRM dzwoniącego.',
-      'Ostrzega konsultanta przed karą finansową nakładaną przez Prezesa UKE (do 3% przychodu lub 1 000 000 zł).'
+      'Informuje konsultanta, że dalsze kontakty zgłosisz do Prezesa UKE.'
     ],
     legalBasis:
       'Art. 398 ustawy Prawo Komunikacji Elektronicznej (PKE) oraz Art. 21 ust. 2 i 3 RODO. Sprzeciw wobec marketingu bezpośredniego ma charakter absolutny — firma nie ma prawa dalej dzwonić.',
     telemarketerReaction:
-      'Konsultant w call center ma bezwzględny obowiązek systemowy oznaczyć Twój rekord jako „ZAKAZ KONTAKTU / SPRZECIW RODO”, by chronić firmę przed wielotysięcznymi karami.',
+      'Konsultant w call center powinien oznaczyć Twój rekord jako „ZAKAZ KONTAKTU / SPRZECIW RODO” i zaprzestać dalszych połączeń.',
     tip: 'Nie musisz się denerwować, tłumaczyć ani wdawać w dyskusje — bot wykonuje całą procedurę za Ciebie w kilkanaście sekund.'
   },
   dowod_audio: {
     id: 'dowod_audio',
-    badge: 'Kryptografia • Suma SHA-256',
+    badge: 'Nagranie • Do pobrania',
     badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     icon: <Mic className="w-7 h-7 text-cyan-400" />,
-    title: 'Dowód Audio & Suma Kontrolna SHA-256',
-    subtitle: 'Niepodważalny materiał dowodowy dla Prezesa UKE i UODO',
+    title: 'Nagranie dowodowe',
+    subtitle: 'Nagranie, które możesz dołączyć do zawiadomienia do UKE lub UODO',
     whatIsIt:
-      'Rejestruje kluczowy fragment rozmowy (wygłoszenie formuły sprzeciwu) i zabezpiecza go unikalnym stemplem kryptograficznym w Twoim telefonie.',
+      'Zapisuje kluczowy fragment rozmowy (wygłoszenie formuły sprzeciwu), który możesz pobrać na telefon albo wysłać do prywatnej chmury.',
     howItWorks: [
       'Podczas rozmowy zapisywane jest audio wygłoszonego oświadczenia.',
-      'Aplikacja wylicza unikalną sumę kontrolną SHA-256 pliku audio.',
-      'Suma SHA-256 jest wpisywana do oficjalnego zawiadomienia do Prezesa UKE / UODO.',
-      'Jeżeli telemarketer skłamie, że „rozmowy nie było”, stempel dowodzi autentyczności i nienaruszenia nagrania.'
+      'Po rozmowie pobierasz plik na telefon lub wysyłasz go do swojej chmury (np. Google Drive).',
+      'Po pobraniu kopia jest usuwana z naszych serwerów i z serwera operatora telefonii.',
+      'Nagranie możesz dołączyć do zawiadomienia do Prezesa UKE / UODO.'
     ],
     legalBasis:
-      'Art. 308 Kodeksu postępowania cywilnego (K.p.c.) dopuszcza dowody z nagrań dźwiękowych. Nagrywanie rozmowy, w której sam uczestniczysz, jest w 100% legalne w polskim prawie.',
+      'Uczestnik rozmowy może co do zasady nagrywać własną rozmowę (nie jest to podsłuch z art. 267 k.k.). To, czy nagranie zostanie uznane za dowód, ocenia sąd lub organ prowadzący postępowanie. To nie jest porada prawna.',
     telemarketerReaction:
-      'Obecność sumy kontrolnej SHA-256 uniemożliwia call center mataczenie lub twierdzenie, że doszło do pomyłki systemowej.',
-    tip: 'Zasada Zero-Storage: Pliki audio NIGDY nie są wysyłane na nasze serwery. Wszystko pozostaje bezpiecznie w Twoim urządzeniu.'
+      'Nagranie pomaga wykazać, że sprzeciw został zgłoszony i kiedy.',
+    tip: 'Zero-Storage: po pobraniu pliku usuwamy go z naszych serwerów, a niepobrane nagrania kasujemy automatycznie po 30 dniach.'
   },
   probne_polaczenie: {
     id: 'probne_polaczenie',
@@ -210,7 +210,7 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     legalBasis:
       'Automatyczna sekretarka prawna działająca na prawach oświadczenia woli abonenta.',
     telemarketerReaction:
-      'Zamiast kolejnej próby dodzwonienia się, telemarketer otrzymuje zakaz kontaktu pod rygorem kary UKE.',
+      'Zamiast kolejnej próby dodzwonienia się, telemarketer słyszy zakaz kontaktu z powołaniem na art. 398 PKE.',
     tip: 'Przekierowanie do bota całkowicie eliminuje ponowne dzwonienie tego samego call center.'
   },
   wyszukiwarka_offline: {
@@ -221,14 +221,14 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     title: 'Wyszukiwarka Numerów Offline',
     subtitle: 'Sprawdzanie podejrzanych numerów bez internetu i bez opłat',
     whatIsIt:
-      'Wbudowana w aplikację lokalna baza tysięcy prefiksów i numerów znanych z nielegalnego telemarketingu, botów AI (np. Klara), fałszywych inwestycji i naciągaczy.',
+      'Lokalna lista numerów zgłoszonych przez użytkowników TelePakt jako uciążliwe lub oszukańcze. Baza dopiero powstaje, więc brak wpisu nie oznacza, że numer jest bezpieczny.',
     howItWorks: [
       'Wpisujesz numer telefonu w pole wyszukiwania.',
-      'Aplikacja w 0 ms przeszukuje lokalny rejestr.',
-      'Wyświetla ocenę ryzyka, wskaźnik Tellows (1-9) oraz raportowaną kategorię spamu.'
+      'Aplikacja przeszukuje lokalną listę zgłoszeń.',
+      'Wyświetla ocenę ryzyka oraz kategorię zgłoszenia, jeśli numer był już zgłaszany.'
     ],
     legalBasis:
-      'Jawne rejestry naruszeń i zgłoszeń konsumenckich.',
+      'Zgłoszenia użytkowników TelePakt.',
     telemarketerReaction:
       'Pozwala zidentyfikować firmę i jej faktyczny cel, zanim w ogóle odbierzesz połączenie.',
     tip: 'Działa całkowicie bez internetu — przydatne w podróży, w roamingu czy na wsi.'
@@ -258,10 +258,10 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     badge: 'Telefonia GSM • Węzeł +48',
     badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     icon: <Phone className="w-7 h-7 text-cyan-400" />,
-    title: 'Numer Asystenta Prawnego (+48 22 104 39 80)',
+    title: 'Numer Asystenta Prawnego',
     subtitle: 'Krajowy numer bramki telekonferencyjnej TelePakt do włączania bota w trakcie rozmowy',
     whatIsIt:
-      'To dedykowany, warszawski numer stacjonarny TelePakt (+48 22 104 39 80), który możesz dołączyć do trwającej rozmowy z natrętnym telemarketerem.',
+      'To dedykowany numer telefonu TelePakt (pokażemy go w aplikacji po uruchomieniu usługi), który możesz dołączyć do trwającej rozmowy z natrętnym telemarketerem.',
     howItWorks: [
       'Gdy dzwoni telemarketer, odbierasz połączenie i mówisz: „Chwileczkę, dołączam asystenta prawnego”.',
       'W telefonie wybierasz funkcję „Dodaj połączenie” (lub wybierasz ten numer z książki kontaktów).',
@@ -307,13 +307,13 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     howItWorks: [
       'Wpisujesz swój numer (np. +48 500 123 456) i klikasz „Zapisz”.',
       'Gdy zgłosisz skargę na spamera, generator zawiadomień do Prezesa UKE automatycznie wpisuje Twój numer jako numer pokrzywdzonego abonenta.',
-      'Numer jest używany w nagłówkach dowodowych audio z sumą SHA-256 jako dowód, na który numer wykonano nielegalne połączenie telemarketingowe.',
+      'Numer trafia do pisma jako numer, na który wykonano niechciane połączenie.',
       'Nie musisz za każdym razem ręcznie wpisywać swojego numeru w generatorze zawiadomień.'
     ],
     legalBasis:
-      'Art. 445 ustawy Prawo Komunikacji Elektronicznej (PKE) wymaga precyzyjnego wskazania numeru telefonu, na który nastąpiło niechciane połączenie marketingowe.',
+      'Zawiadomienie do UKE powinno wskazywać numer telefonu, na który wykonano niechciane połączenie marketingowe.',
     telemarketerReaction:
-      'Dla organów ścigania (UKE/UODO) podanie numeru abonenta w zawiadomieniu jest niezbędne do wszczęcia postępowania karnego wobec call center.',
+      'Podanie numeru abonenta pozwala UKE zidentyfikować zgłoszenie i wszcząć postępowanie wobec dzwoniącego.',
     tip: 'Numer jest zapisywany lokalnie w Twoim urządzeniu. W każdej chwili możesz go zmienić lub usunąć.'
   },
   subskrypcja_minuty: {
@@ -329,13 +329,13 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
       'Pakiet Startowy (Darmowy): do 3 minut rozmowy asystenta gratis (wystarcza na ok. 5–6 zneutralizowanych spamów po 30s) — 0 zł, bez podawania karty.',
       'Pakiet 30 minut: 14,99 zł jednorazowo (wystarcza na ok. 50–60 zneutralizowanych połączeń telemarketingowych).',
       'Minuty BEZTERMINOWE: Minuty same NIGDY nie znikną! Nie kasują się z końcem miesiąca. Schodzą z konta wyłącznie wtedy, gdy asystent realnie odpiera telemarketera.',
-      'Zero comiesięcznego abonamentu: Brak automatycznych obciążeń karty. Płacisz jednorazowo m.in. BLIK-iem lub przez sklep.',
-      'Wszystkie opcje, Auto-Sprzeciw PKE, certyfikaty dowodowe SHA-256, bramka SMS i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'
+      'Zero abonamentu: brak automatycznych obciążeń. Płacisz jednorazowo przez sklep z aplikacjami (Google Play, App Store, Galaxy Store lub AppGallery).',
+      'Wszystkie opcje, Auto-Sprzeciw PKE, bramka SMS i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'
     ],
     legalBasis:
       'Zapewnienie powszechnego, bezpłatnego dostępu do ochrony konstytucyjnych praw konsumenta (art. 76 Konstytucji RP).',
     telemarketerReaction:
-      'Niezależnie od wybranego pakietu asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE pod rygorem kary do 3% przychodu telemarketera.',
+      'Niezależnie od wybranego pakietu asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE.',
     tip: 'Pakiety minut są w 100% bezterminowe — jeśli w danym miesiącu nie zadzwoni żaden natrętny telemarketer, Twoje minuty nie przepadną i czekają na kolejne miesiące!'
   },
   sprzeciw_sms: {
@@ -348,15 +348,15 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     whatIsIt:
       'Wielu telemarketerów i botów natychmiast odkłada słuchawkę, gdy usłyszy formułę prawną. Wysłanie sprzeciwu SMS na numer, z którego dzwoniono, stanowi prawnie wiążące doręczenie oświadczenia woli w formie dokumentowej (art. 77² Kodeksu cywilnego).',
     howItWorks: [
-      'Wybierasz jeden z 5 gotowych szablonów prawnych (Art. 398 PKE, Art. 15 RODO, po zerwanej rozmowie, windykacja, lub ekspresowy 1 SMS).',
-      'Wysyłasz wiadomość bezpośrednio przez chmurową bramkę Twilio (+48 22 104 39 80) lub otwierasz ją w swojej aplikacji SMS w telefonie.',
+      'Wybierasz jeden z 4 gotowych szablonów (Art. 398 PKE, Art. 15 RODO, po zerwanej rozmowie lub ekspresowy 1 SMS).',
+      'Wysyłasz wiadomość bezpośrednio przez chmurową bramkę Twilio lub otwierasz ją w swojej aplikacji SMS w telefonie.',
       'Twilio generuje unikalny identyfikator Message SID (np. SM3f9...), który rejestruje dokładny czas doręczenia w sieci komórkowej operatora.',
       'Identyfikator ten dołączany jest do skargi dla Prezesa UKE / UODO, dowodząc, że firma otrzymała sprzeciw i nie może powoływać się na brak wiedzy.'
     ],
     legalBasis:
       'Art. 77² Kodeksu cywilnego (oświadczenie w formie dokumentowej) oraz Art. 398 ustawy Prawo Komunikacji Elektronicznej (zakaz kontaktu bez uprzedniej zgody).',
     telemarketerReaction:
-      'Call center zostaje pozbawione jedynej linii obrony ("klient się rozłączył / połączenie zerwane"). Dalszy kontakt skutkuje wnioskiem o nałożenie kary do 1 000 000 zł.',
+      'Call center zostaje pozbawione jedynej linii obrony ("klient się rozłączył / połączenie zerwane"). Dalszy kontakt możesz zgłosić do Prezesa UKE.',
     tip: 'Możesz wysłać SMS zarówno bezpłatnie ze swojego telefonu (klikając "Otwórz w SMS telefonu"), jak i bezpośrednio przez bezpieczną bramkę Twilio API.'
   }
 };
