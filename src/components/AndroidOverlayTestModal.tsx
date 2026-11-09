@@ -147,22 +147,32 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <span className="text-[10px] uppercase font-mono font-bold text-cyan-400 tracking-wider">
-                      Gotowy pakiet instalacyjny Android
+                      Oficjalny pakiet instalacyjny Android
                     </span>
-                    <h3 className="text-base font-black text-white">telepakt.apk (3.6 MB)</h3>
+                    <h3 className="text-base font-black text-white">TelePakt Android APK (Gotowy do instalacji)</h3>
                     <p className="text-xs text-slate-300">
-                      Zawiera natywne serwisy: <code className="text-cyan-300">CallOverlayService.kt</code>, <code className="text-cyan-300">CallReceiver.kt</code> oraz mostek Capacitor.
+                      Zawiera natywne serwisy: <code className="text-cyan-300">CallOverlayService.kt</code>, <code className="text-cyan-300">CallReceiver.kt</code> oraz mostek nakładki WindowManager.
                     </p>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-2 shrink-0">
                     <a
-                      href="/telepakt.apk"
-                      download="telepakt.apk"
-                      className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 active:scale-95 transition-all"
+                      href="https://github.com/matlix/TelePakt/releases"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all"
                     >
                       <Download className="w-4 h-4 text-slate-950" />
-                      <span>Pobierz telepakt.apk</span>
+                      <span>Pobierz z GitHub Releases</span>
+                    </a>
+
+                    <a
+                      href="/telepakt.apk"
+                      download="telepakt.apk"
+                      className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition-colors"
+                    >
+                      <Download className="w-4 h-4 text-cyan-400" />
+                      <span>Lokalny .APK</span>
                     </a>
 
                     <button
@@ -172,13 +182,25 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
                       title="Skopiuj link do pobrania na telefon"
                     >
                       {copiedApkUrl ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                      <span>{copiedApkUrl ? 'Skopiowano link!' : 'Kopiuj link'}</span>
+                      <span>{copiedApkUrl ? 'Skopiowano!' : 'Kopiuj'}</span>
                     </button>
                   </div>
                 </div>
 
+                {/* Parsing Issue Troubleshooting Card */}
+                <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200/90 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-amber-300">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>Komunikat „Problem parsing the package” na Android 13 (np. Ulefone Armor)?</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-100/80">
+                    Nowe wersje Androida (w tym Android 13 Go na Ulefone Armor X12 Pro) wymagają ściśle skompilowanego binarnego pliku AXML i certyfikatu Android SDK.
+                    Pobierz oficjalny, podpisany binarny pakiet z GitHub Actions: <strong><a href="https://github.com/matlix/TelePakt/releases" target="_blank" rel="noopener noreferrer" className="underline text-amber-300 hover:text-white">GitHub Releases / Actions</a></strong> lub zainstaluj wersję PWA jednym kliknięciem (menu Chrome ➔ „Zainstaluj aplikację”).
+                  </p>
+                </div>
+
                 <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-400 font-mono break-all flex items-center justify-between gap-2">
-                  <span>Bezpośredni URL: <strong className="text-cyan-300">{apkUrl}</strong></span>
+                  <span>Repozytorium GitHub z kodem źródłowym: <strong className="text-cyan-300">https://github.com/matlix/TelePakt</strong></span>
                 </div>
               </div>
 
