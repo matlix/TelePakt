@@ -48,8 +48,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // Pricing: Free (3 min) vs Perpetual Prepaid Packages (30 min / 14,99 zł or 300 min / 149,99 zł) - ZERO monthly subscription!
-  const [selectedPaidPack, setSelectedPaidPack] = useState<'30min' | '300min'>('30min');
+  // Pricing: Free (3 min) vs Perpetual Prepaid Package (30 min / 14,99 zł) - ZERO monthly subscription!
 
   // Referral Program: Pending invitation code from URL (?ref=...)
   const [referralRefCode, setReferralRefCode] = useState<string | null>(() => {
@@ -1113,7 +1112,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </div>
             </div>
 
-            {/* Card 2: Prepaid Minutes Tier (14,99 zł for 30 min OR 149,99 zł for 300 min) */}
+            {/* Card 2: Prepaid Minutes Tier (14,99 zł for 30 min) */}
             <div className="p-6 rounded-3xl bg-gradient-to-b from-indigo-950/70 via-slate-900 to-slate-950 border border-cyan-500/50 space-y-5 flex flex-col justify-between relative shadow-2xl shadow-cyan-500/10 ring-1 ring-cyan-500/30">
               <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[10px] font-bold bg-cyan-400 text-slate-950 uppercase tracking-wide shadow-md">
                 Pakiety Minut • Bez Abonamentu
@@ -1128,50 +1127,14 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     </span>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                    {selectedPaidPack === '30min' ? '30 minut' : '300 minut'}
+                    30 minut
                   </span>
-                </div>
-
-                {/* Sub-selector for package size */}
-                <div className="p-1.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPaidPack('30min')}
-                      className={`p-2.5 rounded-xl text-center border transition-all cursor-pointer ${
-                        selectedPaidPack === '30min'
-                          ? 'bg-cyan-500/25 border-cyan-400 text-white font-bold shadow-sm'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <div className="font-mono text-xs font-bold">30 minut</div>
-                      <div className="text-xs text-cyan-300 font-bold">14,99 zł</div>
-                      <div className="text-[9px] text-slate-400 mt-0.5">0,50 zł / min</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPaidPack('300min')}
-                      className={`p-2.5 rounded-xl text-center border transition-all cursor-pointer relative ${
-                        selectedPaidPack === '300min'
-                          ? 'bg-cyan-500/25 border-cyan-400 text-white font-bold shadow-sm'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[8px] bg-emerald-500 text-slate-950 font-bold uppercase">
-                        10x więcej
-                      </span>
-                      <div className="font-mono text-xs font-bold">300 minut</div>
-                      <div className="text-xs text-emerald-400 font-bold">149,99 zł</div>
-                      <div className="text-[9px] text-slate-400 mt-0.5">0,50 zł / min</div>
-                    </button>
-                  </div>
                 </div>
 
                 {/* Price and Guarantee Display */}
                 <div className="space-y-1.5">
                   <div className="text-3xl font-black text-emerald-400 font-mono">
-                    {selectedPaidPack === '30min' ? '14,99 zł' : '149,99 zł'}{' '}
+                    14,99 zł{' '}
                     <span className="text-xs font-normal text-slate-400">jednorazowo</span>
                   </div>
                   
@@ -1182,7 +1145,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 
                 <ul className="space-y-2.5 text-slate-200 border-t border-slate-800/80 pt-4">
                   <li className="flex items-center gap-2 text-cyan-300 font-bold">
-                    ✓ {selectedPaidPack === '30min' ? '30 minut rozmowy asystenta (~50–60 zneutralizowanych połączeń)' : '300 minut rozmowy asystenta (~500–600 zneutralizowanych połączeń)'}
+                    ✓ 30 minut rozmowy asystenta (~50–60 zneutralizowanych połączeń)
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ <strong>Wszystkie opcje odblokowane</strong> dla każdego
@@ -1211,9 +1174,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                   onClick={onOpenApp}
                   className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-center block shadow-lg shadow-cyan-500/25 transition-all cursor-pointer active:scale-95"
                 >
-                  {selectedPaidPack === '30min'
-                    ? 'Doładuj 30 minut (14,99 zł jednorazowo)'
-                    : 'Doładuj 300 minut (149,99 zł jednorazowo)'}
+                  Doładuj 30 minut (14,99 zł jednorazowo)
                 </button>
                 <div className="text-[10px] text-center text-slate-400">
                   Jednorazowa opłata • Zero cyklicznych obciążeń karty

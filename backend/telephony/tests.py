@@ -34,6 +34,8 @@ class TwilioWebhookTests(TestCase):
         resp = self.client.post('/api/telephony/play-formula/?script_id=999')
         self.assertEqual(resp.status_code, 200)
         self.assertIn(b'<Say', resp.content)
+        self.assertIn(b'Polly.Ola-Neural', resp.content)
+        self.assertIn(b'<prosody rate="110%"', resp.content)
 
 
 @override_settings(DEBUG=False, TWILIO_AUTH_TOKEN='secret', ALLOWED_HOSTS=['testserver'],

@@ -80,7 +80,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   const [phoneInput, setPhoneInput] = useState(currentUser?.phoneProtected || '+48 500 123 456');
   const [phoneSaveSuccess, setPhoneSaveSuccess] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
-  const [activePlan, setActivePlan] = useState<'free' | 'pack_30' | 'pack_300'>('free');
+  const [activePlan, setActivePlan] = useState<'free' | 'pack_30'>('free');
 
   // Android Quick Settings Toggles
   const [autoRejectSpam, setAutoRejectSpam] = useState(true);
@@ -894,12 +894,12 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                   </button>
                 </div>
                 <span className="text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                  {activePlan === 'free' ? '0,00 zł / Darmowy (3 min)' : activePlan === 'pack_30' ? '14,99 zł / Pakiet 30 min' : '149,99 zł / Pakiet 300 min'}
+                  {activePlan === 'free' ? '0,00 zł / Darmowy (3 min)' : '14,99 zł / Pakiet 30 min'}
                 </span>
               </div>
 
-              {/* Interactive Plan Selector: Free vs 30 min vs 300 min */}
-              <div className="grid grid-cols-3 gap-2 text-xs">
+              {/* Interactive Plan Selector: Free vs 30 min */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => setActivePlan('free')}
@@ -932,26 +932,6 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                   </div>
                   <div className="text-base font-black font-mono">14,99 zł</div>
                   <div className="text-[9px] text-cyan-300 mt-0.5">bezterminowe</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActivePlan('pack_300')}
-                  className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
-                    activePlan === 'pack_300'
-                      ? 'bg-indigo-500/15 border-indigo-500 text-white shadow-md'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                  }`}
-                >
-                  <span className="absolute -top-1.5 right-1.5 px-1 rounded text-[7px] bg-emerald-500 text-slate-950 font-black uppercase">
-                    MEGA
-                  </span>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-indigo-300 text-[11px]">300 min</span>
-                    {activePlan === 'pack_300' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-300" />}
-                  </div>
-                  <div className="text-base font-black font-mono">149,99 zł</div>
-                  <div className="text-[9px] text-emerald-400 font-semibold mt-0.5">bezterminowe</div>
                 </button>
               </div>
 

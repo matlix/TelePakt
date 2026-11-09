@@ -189,7 +189,7 @@ export class ReferralService {
   }
 
   /**
-   * Called when a user buys a package (14,99 zł or 149,99 zł).
+   * Called when a user buys a package (14,99 zł).
    * Awards an extra +5 minutes to the person who invited this user!
    */
   static onUserPurchasedPackage(currentUserId: string): { bonusAwardedToInviter: boolean } {

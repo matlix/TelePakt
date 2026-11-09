@@ -322,13 +322,12 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     icon: <Zap className="w-7 h-7 text-amber-400" />,
     title: 'Pakiety Minut i Zero Abonamentu',
-    subtitle: 'Wszystkie funkcje prawne dla każdego • 3 min gratis na start • Doładowania 30 min (14,99 zł) i 300 min (149,99 zł)',
+    subtitle: 'Wszystkie funkcje prawne dla każdego • 3 min gratis na start • Doładowanie 30 min (14,99 zł)',
     whatIsIt:
       'W TelePakt nie blokujemy żadnych funkcji obronnych za paywallem ani nie pobieramy comiesięcznych subskrypcji. Płacisz wyłącznie raz za minuty rozmów, które nigdy nie przepadają.',
     howItWorks: [
       'Pakiet Startowy (Darmowy): do 3 minut rozmowy asystenta gratis (wystarcza na ok. 5–6 zneutralizowanych spamów po 30s) — 0 zł, bez podawania karty.',
       'Pakiet 30 minut: 14,99 zł jednorazowo (wystarcza na ok. 50–60 zneutralizowanych połączeń telemarketingowych).',
-      'Pakiet MEGA 300 minut: 149,99 zł jednorazowo (dla osób mocno nękanych, właścicieli firm i biur — ok. 500–600 połączeń).',
       'Minuty BEZTERMINOWE: Minuty same NIGDY nie znikną! Nie kasują się z końcem miesiąca. Schodzą z konta wyłącznie wtedy, gdy asystent realnie odpiera telemarketera.',
       'Zero comiesięcznego abonamentu: Brak automatycznych obciążeń karty. Płacisz jednorazowo m.in. BLIK-iem lub przez sklep.',
       'Wszystkie opcje, Auto-Sprzeciw PKE, certyfikaty dowodowe SHA-256, bramka SMS i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'

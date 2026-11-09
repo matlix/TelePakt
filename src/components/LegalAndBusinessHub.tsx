@@ -32,7 +32,6 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
   // Unit Economics & Profitability Simulator State
   const [simUsers, setSimUsers] = useState<number>(10000); // Total users in cohort
   const [simConversion, setSimConversion] = useState<number>(5.0); // % paying users
-  const [simPack300Share, setSimPack300Share] = useState<number>(15); // % of payers choosing 300 min (149.99 zł) vs 30 min (14.99 zł)
   const [simFreeMinUsed, setSimFreeMinUsed] = useState<number>(2.0); // average minutes used by free users (out of 3.0 min max)
   
   // Google AdWords & Acquisition Marketing State
@@ -333,7 +332,7 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
                   Kalkulator Kosztów i Zysków Realnego Biznesu TelePakt
                 </h3>
                 <p className="text-xs text-slate-300">
-                  Przetestuj realne założenia: ile kosztują darmowe 3 minuty, ile przynoszą pakiety 14,99 zł i 149,99 zł oraz jaki jest zysk netto.
+                  Przetestuj realne założenia: ile kosztują darmowe 3 minuty, ile przynosi pakiet 14,99 zł oraz jaki jest zysk netto.
                 </p>
               </div>
 
@@ -418,29 +417,6 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
                 </div>
               </div>
 
-              {/* Slider 4: Share of 300 min pack buyers (149.99 zł) vs 30 min pack (14.99 zł) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <label className="font-semibold text-slate-300">Udział pakietu 300 minut (149,99 zł) vs 30 min (14,99 zł):</label>
-                  <span className="font-mono font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-                    {simPack300Share}% pakiet 300 min / {100 - simPack300Share}% pakiet 30 min
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="50"
-                  step="5"
-                  value={simPack300Share}
-                  onChange={(e) => setSimPack300Share(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-400"
-                />
-                <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                  <span>0% (tylko 14,99 zł)</span>
-                  <span>15% (biznes/aktywniejsi)</span>
-                  <span>50%</span>
-                </div>
-              </div>
 
               {/* Slider 5: Google AdWords Paid Traffic Share */}
               <div className="space-y-2">
@@ -520,13 +496,10 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
             {(() => {
               const freeUsersCount = Math.round(simUsers * (1 - simConversion / 100));
               const payingUsersCount = Math.round(simUsers * (simConversion / 100));
-              const buyers30Count = Math.round(payingUsersCount * (1 - simPack300Share / 100));
-              const buyers300Count = Math.round(payingUsersCount * (simPack300Share / 100));
+              const buyers30Count = payingUsersCount;
 
-              // Initial Purchase Revenue
-              const rev30 = buyers30Count * 14.99;
-              const rev300 = buyers300Count * 149.99;
-              const initialRevenue = rev30 + rev300;
+              // Initial Purchase Revenue (only the 14,99 zł / 30 min package is sold)
+              const initialRevenue = buyers30Count * 14.99;
 
               // LTV Booster (Repurchases over 12 months)
               const ltvBonusRevenue = initialRevenue * (repeatPurchaseRate / 100);
@@ -543,7 +516,7 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
               const costFreeUsers = freeMinutesConsumed * costPerMin;
 
               // Paying minutes delivered (including repeat purchases, assuming 75% utilized on average)
-              const paidMinutesDelivered = (buyers30Count * 30 + buyers300Count * 300) * (1 + repeatPurchaseRate / 100) * 0.75;
+              const paidMinutesDelivered = (buyers30Count * 30) * (1 + repeatPurchaseRate / 100) * 0.75;
               const costPaidUsers = paidMinutesDelivered * costPerMin;
 
               const totalTelecomCost = costFreeUsers + costPaidUsers;
@@ -562,8 +535,6 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
               // Leverage ratio: how many free users (at simFreeMinUsed min) are funded by 1 paying pack:
               const costOfOneFreeUser = simFreeMinUsed * costPerMin;
               const freeUsersFundedBy30Pack = costOfOneFreeUser > 0 ? Math.floor((14.99 - (30 * 0.75 * costPerMin)) / costOfOneFreeUser) : 0;
-              const freeUsersFundedBy300Pack = costOfOneFreeUser > 0 ? Math.floor((149.99 - (300 * 0.75 * costPerMin)) / costOfOneFreeUser) : 0;
-
               return (
                 <div className="space-y-6">
                   
@@ -619,7 +590,7 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
                       <span>Analiza Współczynnika Pokrycia Kosztów (Unit Economics):</span>
                     </h4>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
                         <strong className="text-cyan-300 block">Pakiet 30 minut (14,99 zł):</strong>
                         <ul className="space-y-1 text-slate-300 text-[11px] list-disc pl-4">
@@ -628,16 +599,6 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
                           <li>Zysk bezpośredni z 1 klienta: <strong>13,19 zł</strong>.</li>
                           <li>Koszt 1 darmowego usera ({simFreeMinUsed.toFixed(1)} min x 0,08 zł): <strong>{(simFreeMinUsed * 0.08).toFixed(2)} zł</strong>.</li>
                           <li><strong className="text-emerald-400">Wniosek:</strong> Już <strong>1 zakup pakietu 14,99 zł</strong> w pełni finansuje darmowe testy dla aż <strong>{freeUsersFundedBy30Pack} niepłacących użytkowników</strong>!</li>
-                        </ul>
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                        <strong className="text-purple-300 block">Pakiet 300 minut (149,99 zł):</strong>
-                        <ul className="space-y-1 text-slate-300 text-[11px] list-disc pl-4">
-                          <li>Cena dla klienta: <strong>149,99 zł</strong> (0,50 zł / min).</li>
-                          <li>Koszt dostarczenia 300 minut połączeń: <strong>18,00 zł</strong>.</li>
-                          <li>Zysk bezpośredni z 1 klienta: <strong>131,99 zł</strong>.</li>
-                          <li><strong className="text-emerald-400">Wniosek:</strong> <strong>1 zakup pakietu 149,99 zł</strong> finansuje darmowe testy dla aż <strong>{freeUsersFundedBy300Pack} niepłacących użytkowników</strong>!</li>
                         </ul>
                       </div>
                     </div>
@@ -688,7 +649,7 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
                       <div className="p-3 rounded-xl bg-slate-950 border border-blue-500/20 text-[11px] text-slate-300 flex items-start gap-2">
                         <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
                         <div>
-                          <strong>Rentowność kampanii AdWords:</strong> Ponieważ 15% klientów wybiera pakiet 300 minut (149,99 zł), średni przychód na płacącego klienta (AOV) wynosi ponad <strong>35 zł</strong>. W połączeniu z doładowaniami LTV (+25%), budżet reklamowy Google AdWords zwraca się ze znaczną nawiązką (ROAS &gt; 180–300%), generując stabilny strumień zysku netto.
+                          <strong>Rentowność kampanii AdWords:</strong> Ponieważ sprzedajemy jeden płatny pakiet (14,99 zł), średni przychód na płacącego klienta (AOV) wynosi <strong>14,99 zł</strong>, a z doładowaniami (+25%) ok. <strong>18,70 zł</strong>. Opłacalność kampanii zależy więc głównie od kosztu instalacji (CPI) i konwersji — sprawdź ją w symulatorze powyżej (ROAS i Blended CAC).
                         </div>
                       </div>
                     </div>
@@ -722,7 +683,7 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
                             +5 minut extra (Polecający)
                           </div>
                           <p className="text-[10px] text-slate-400 leading-tight">
-                            Gdy znajomy kupi pakiet 14,99 zł (lub 149,99 zł), polecający zyskuje 5 min. Koszt dla nas: <strong>0,40 zł</strong> przy przychodzie 14,99 zł (zaledwie <strong>2,6%</strong> kwoty!).
+                            Gdy znajomy kupi pakiet 14,99 zł, polecający zyskuje 5 min. Koszt dla nas: <strong>0,40 zł</strong> przy przychodzie 14,99 zł (zaledwie <strong>2,6%</strong> kwoty!).
                           </p>
                         </div>
 
@@ -829,7 +790,7 @@ export const LegalAndBusinessHub: React.FC<LegalAndBusinessHubProps> = ({
                       <span>TelePakt (telepakt.pl)</span>
                       <span className="px-1.5 py-0.5 rounded text-[9px] bg-cyan-500/20 text-cyan-300 font-mono">NASZA OFERTA</span>
                     </td>
-                    <td className="py-3 px-4 font-bold text-white">0 zł (3 min gratis) / 14,99 zł (30 min) / 149,99 zł (300 min) bezterminowo</td>
+                    <td className="py-3 px-4 font-bold text-white">0 zł (3 min gratis) / 14,99 zł (30 min) bezterminowo</td>
                     <td className="py-3 px-4 text-emerald-400 font-bold">TAK (wymuszony sprzeciw RODO)</td>
                     <td className="py-3 px-4 text-emerald-400 font-bold">TAK (Art. 398 & 445 PKE)</td>
                     <td className="py-3 px-4 text-emerald-400 font-bold">TAK (WAV + SHA-256 PDF)</td>

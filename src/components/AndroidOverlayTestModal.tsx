@@ -4,6 +4,7 @@ import {
   Volume2, ExternalLink, X, Copy, Check, Terminal, FileCode, Layers, Info
 } from 'lucide-react';
 import { NativeOverlayBridge } from '../services/nativeOverlayBridge';
+import { PolishVoiceSynthesizer } from '../utils/speech';
 
 interface AndroidOverlayTestModalProps {
   isOpen: boolean;
@@ -44,16 +45,11 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
     setIsWetoFired(true);
     setSpeechPlaying(true);
 
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(
-        'Uwaga telemarketerze. Na podstawie artykułu 398 Prawa komunikacji elektronicznej oraz artykułu 21 RODO oświadczam, że zgłaszam bezwzględny sprzeciw wobec marketingu bezpośredniego. Żądam natychmiastowego usunięcia mojego numeru z Państwa bazy i zaprzestania połączeń pod rygorem zawiadomienia Prezesa Urzędu Komunikacji Elektronicznej.'
+    if (PolishVoiceSynthesizer.isSupported()) {
+      PolishVoiceSynthesizer.speak(
+        'Uwaga telemarketerze. Na podstawie artykułu 398 Prawa komunikacji elektronicznej oraz artykułu 21 RODO oświadczam, że zgłaszam bezwzględny sprzeciw wobec marketingu bezpośredniego. Żądam natychmiastowego usunięcia mojego numeru z Państwa bazy i zaprzestania połączeń pod rygorem zawiadomienia Prezesa Urzędu Komunikacji Elektronicznej.',
+        { onEnd: () => setSpeechPlaying(false), onError: () => setSpeechPlaying(false) }
       );
-      utterance.lang = 'pl-PL';
-      utterance.rate = 1.05;
-      utterance.onend = () => setSpeechPlaying(false);
-      utterance.onerror = () => setSpeechPlaying(false);
-      window.speechSynthesis.speak(utterance);
     } else {
       setTimeout(() => setSpeechPlaying(false), 4000);
     }
@@ -62,9 +58,7 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
   const resetSlider = () => {
     setSliderVal(0);
     setIsWetoFired(false);
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    PolishVoiceSynthesizer.stop();
     setSpeechPlaying(false);
   };
 

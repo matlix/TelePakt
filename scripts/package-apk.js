@@ -22,18 +22,16 @@ const publicApk = path.join(root, 'public', 'telepakt.apk');
 const builtApk = path.join(androidDir, 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
 const run = (cmd, cwd = root) => execSync(cmd, { cwd, stdio: 'inherit', env: process.env });
 
-// 1. Stary APK nie może trafić do dist/ (i w efekcie do środka nowego APK).
-fs.rmSync(publicApk, { force: true });
-
-// 2. Frontend -> dist -> android/app/src/main/assets/public
+// 1. Frontend -> dist -> android/app/src/main/assets/public
 run('npm run build');
 run('npx cap sync android');
+// Poprzedni public/telepakt.apk został skopiowany do dist/ - nie może wylądować wewnątrz nowego APK.
 fs.rmSync(path.join(androidDir, 'app', 'src', 'main', 'assets', 'public', 'telepakt.apk'), { force: true });
 
-// 3. Gradle (debug podpisany kluczem debug => instalowalny przez sideload)
-const gradlew = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
+// 2. Gradle (debug podpisany kluczem debug => instalowalny przez sideload)
+const gradlew = process.platform === 'win32' ? '.\\gradlew.bat' : './gradlew';
 run(`${gradlew} assembleDebug --no-daemon`, androidDir);
 
-// 4. Publikacja do public/
+// 3. Publikacja do public/
 fs.copyFileSync(builtApk, publicApk);
 console.log(`\nGotowe: ${publicApk} (${(fs.statSync(publicApk).size / 1048576).toFixed(1)} MB)`);

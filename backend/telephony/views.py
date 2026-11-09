@@ -44,6 +44,10 @@ DEFAULT_LEGAL_FORMULA = (
     "Żądam natychmiastowego usunięcia mojego numeru na podstawie art. 398 PKE."
 )
 
+#: Głos i tempo TwiML <Say> (Amazon Polly, neuronowy polski głos).
+TTS_VOICE = 'Polly.Ola-Neural'
+TTS_RATE = '110%'
+
 #: Dozwolone typy urządzeń w opiniach (zgodne z ``CustomerReview.DEVICE_CHOICES``).
 REVIEW_DEVICES = {choice[0] for choice in CustomerReview.DEVICE_CHOICES}
 
@@ -130,7 +134,9 @@ def twilio_play_legal_formula(request):
     formula_text = script.text_content if script else DEFAULT_LEGAL_FORMULA
     auto_hangup = script.auto_hangup if script else True
 
-    response.say(formula_text, voice='Polly.Maja', language='pl-PL')
+    # Neuronowy głos Polly (Ola) + tempo 110% - szybciej i bardziej naturalnie niż Polly.Maja.
+    say = response.say(voice=TTS_VOICE, language='pl-PL')
+    say.prosody(formula_text, rate=TTS_RATE)
     if auto_hangup:
         response.pause(length=1)
         response.hangup()
