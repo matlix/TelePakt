@@ -211,46 +211,52 @@ export const AndroidOverlayTestModal: React.FC<AndroidOverlayTestModalProps> = (
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 min-w-0 overflow-hidden">
                     <div className="w-7 h-7 rounded-xl bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-xs">
                       1
                     </div>
-                    <strong className="text-white block">Zezwól na instalację</strong>
-                    <p className="text-slate-400 text-[11px] leading-relaxed">
-                      Pobierz plik <code className="text-cyan-300">telepakt.apk</code> na telefon. W ustawieniach przeglądarki Chrome/Samsung zezwól na instalację z tego źródła.
+                    <strong className="text-white block break-words">Zezwól na instalację</strong>
+                    <p className="text-slate-400 text-[11px] leading-relaxed break-words">
+                      Pobierz plik <code className="text-cyan-300 break-all">telepakt.apk</code> na telefon. W ustawieniach przeglądarki Chrome/Samsung zezwól na instalację z tego źródła.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 min-w-0 overflow-hidden">
                     <div className="w-7 h-7 rounded-xl bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-xs">
                       2
                     </div>
-                    <strong className="text-white block">Włącz uprawnienie nakładki</strong>
-                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                    <strong className="text-white block break-words">Włącz uprawnienie nakładki</strong>
+                    <p className="text-slate-400 text-[11px] leading-relaxed break-words">
                       Po otwarciu aplikacji kliknij przycisk żądania nakładki lub wejdź w: <br />
-                      <em>Ustawienia ➔ Aplikacje ➔ TelePakt ➔ Wyświetlaj nad innymi aplikacjami (Włącz)</em>.
+                      <em className="break-words">Ustawienia ➔ Aplikacje ➔ TelePakt ➔ Wyświetlaj nad innymi aplikacjami (Włącz)</em>.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 min-w-0 overflow-hidden">
                     <div className="w-7 h-7 rounded-xl bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-xs">
                       3
                     </div>
-                    <strong className="text-white block">Zadzwoń lub odbierz test</strong>
-                    <p className="text-slate-400 text-[11px] leading-relaxed">
-                      Gdy zadzwoni telefon, <code className="text-cyan-300">CallReceiver</code> wykryje stan dzwonienia i <code className="text-cyan-300">WindowManager</code> natychmiast wyświetli pływający suwak nad ekranem połączenia!
+                    <strong className="text-white block break-words">Zadzwoń lub odbierz test</strong>
+                    <p className="text-slate-400 text-[11px] leading-relaxed break-words">
+                      Gdy zadzwoni telefon, <code className="text-cyan-300 break-all">CallReceiver</code> wykryje stan dzwonienia i <code className="text-cyan-300 break-all">WindowManager</code> natychmiast wyświetli pływający suwak nad ekranem połączenia!
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Note on Google Play / Store verification */}
-              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex items-start gap-3 text-xs text-indigo-200">
+              <div className="p-4 sm:p-5 rounded-2xl bg-indigo-950/50 border border-indigo-500/30 flex items-start gap-3 text-xs text-indigo-200 overflow-hidden">
                 <Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <strong className="text-white block">Jak to działa w Androidzie od wersji 8.0 do 14/15?</strong>
-                  <p className="text-slate-300 leading-relaxed text-[11px]">
-                    Google Android pozwala legalnym aplikacjom na wyświetlanie widoków systemowych typu <code className="text-cyan-300 font-mono">WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY</code>. Wymaga to jednorazowego przełączenia suwaka przez użytkownika w Ustawieniach telefonu. Kod TelePakt sam przenosi użytkownika prosto do tego ekranu systemowego.
+                <div className="space-y-1.5 min-w-0 flex-1 overflow-hidden">
+                  <strong className="text-white block text-xs sm:text-sm font-bold break-words">
+                    Jak to działa w Androidzie od wersji 8.0 do 14/15?
+                  </strong>
+                  <p className="text-slate-300 leading-relaxed text-[11px] sm:text-xs break-words">
+                    Google Android pozwala legalnym aplikacjom na wyświetlanie widoków systemowych typu{' '}
+                    <code className="text-cyan-300 font-mono text-[10px] sm:text-xs px-1.5 py-0.5 bg-slate-900 rounded border border-slate-700/60 break-all inline">
+                      WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                    </code>
+                    . Wymaga to jednorazowego przełączenia suwaka przez użytkownika w Ustawieniach telefonu. Kod TelePakt sam przenosi użytkownika prosto do tego ekranu systemowego.
                   </p>
                 </div>
               </div>
