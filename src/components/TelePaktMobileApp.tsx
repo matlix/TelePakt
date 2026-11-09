@@ -450,13 +450,13 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-sm text-white tracking-tight">TelePakt</span>
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap border ${
                   autoRejectSpam 
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
                     : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${autoRejectSpam ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-                  {autoRejectSpam ? 'Tarcza Aktywna' : 'Wstrzymana'}
+                  {autoRejectSpam ? <><span className="hidden min-[420px]:inline">Tarcza&nbsp;</span>Aktywna</> : 'Wstrzymana'}
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 font-mono truncate">
@@ -555,8 +555,8 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5 gap-1">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[10px] font-bold uppercase font-mono tracking-tight truncate">Auto-Sprzeciw</span>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase font-mono tracking-tight">Auto-Sprzeciw</span>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -589,8 +589,8 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5 gap-1">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[10px] font-bold uppercase font-mono tracking-tight truncate">Dowód Audio</span>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0">
+                      <span className="text-[10px] font-bold uppercase font-mono tracking-tight">Dowód Audio</span>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -651,13 +651,13 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                     <span>INFO</span>
                   </button>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-mono font-bold">0 ms • 0 zł</span>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold whitespace-nowrap">0 ms • 0 zł</span>
               </div>
 
               <form onSubmit={handleSearchNumber} className="flex gap-2">
                 <input
                   type="tel"
-                  placeholder="Wpisz numer (np. 22 104 39 88)..."
+                  placeholder="np. 22 104 39 88"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -940,7 +940,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                 <div className="space-y-0.5 min-w-0">
                   <div className="text-[11px] font-bold text-white flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                    <span className="truncate">Minuty NIGDY nie znikną (Zero abonamentu)</span>
+                    <span className="leading-snug">Minuty NIGDY nie znikną (Zero abonamentu)</span>
                   </div>
                   <div className="text-[10px] text-slate-300 leading-tight">
                     Płacisz tylko raz (BLIK, Karta). Minuty czekają na koncie dopóki ich nie zużyjesz!
@@ -1041,8 +1041,8 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                     <Gift className="w-5 h-5 text-purple-400" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-bold text-white block truncate">Program Poleceń TelePakt</span>
-                    <span className="text-[10px] text-purple-300/90 font-mono block truncate">
+                    <span className="text-xs font-bold text-white block leading-snug">Program Poleceń TelePakt</span>
+                    <span className="text-[10px] text-purple-300/90 font-mono block break-words">
                       Twój kod: <strong className="text-white font-bold">{ReferralService.getReferralCode(currentUser)}</strong> • Bonus: +{referralBonusMinutes} min
                     </span>
                   </div>
@@ -1094,7 +1094,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
               <div className="flex items-center justify-between">
                 <div className="text-[11px] text-slate-400 flex items-center gap-1.5 min-w-0">
                   <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span className="truncate">Prywatność Zero-Storage: Wszystkie dowody zostają w telefonie.</span>
+                  <span className="leading-snug">Prywatność Zero-Storage: Wszystkie dowody zostają w telefonie.</span>
                 </div>
                 <button
                   type="button"
@@ -1135,7 +1135,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-slate-300 truncate">Automatyczny sprzeciw (art. 398 PKE)</span>
+                    <span className="text-slate-300 leading-snug">Automatyczny sprzeciw (art. 398 PKE)</span>
                     <button
                       type="button"
                       onClick={() => setActiveFeatureInfo('autosprzeciw')}
@@ -1157,7 +1157,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
 
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-slate-300 truncate">Blokada numerów zastrzeżonych</span>
+                    <span className="text-slate-300 leading-snug">Blokada numerów zastrzeżonych</span>
                     <button
                       type="button"
                       onClick={() => setActiveFeatureInfo('blokada_zastrzezonych')}

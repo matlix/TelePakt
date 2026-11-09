@@ -371,13 +371,13 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                       <button
                         key={sc.id}
                         onClick={() => setSelectedScenario(sc)}
-                        className={`w-full p-2 rounded-xl text-xs border text-left transition-all flex items-center justify-between ${
+                        className={`w-full p-2 rounded-xl text-xs border text-left transition-all flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 ${
                           selectedScenario.id === sc.id
                             ? 'bg-indigo-950/60 border-indigo-500 text-white font-medium ring-1 ring-indigo-500'
                             : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        <span className="truncate">{sc.name}</span>
+                        <span className="leading-snug">{sc.name}</span>
                         <span className="text-[10px] font-mono text-indigo-400 shrink-0">{sc.number}</span>
                       </button>
                     ))}
@@ -747,12 +747,12 @@ export const InCallSimulator: React.FC<InCallSimulatorProps> = ({
                                     : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
                                 }`}
                               >
-                                <div className="pr-2 truncate">
-                                  <div className="font-semibold text-white group-hover:text-indigo-300 truncate text-[11px] flex items-center gap-1">
+                                <div className="pr-2 min-w-0">
+                                  <div className="font-semibold text-white group-hover:text-indigo-300 leading-snug text-[11px] flex items-center gap-1">
                                     {script.isUserRecorded && <span className="text-[9px] text-emerald-400">●</span>}
                                     <span>{script.title}</span>
                                   </div>
-                                  <div className="text-[10px] text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                                  <div className="text-[10px] text-slate-400 flex flex-wrap items-center gap-1 mt-0.5">
                                     <span>{script.badge}</span>
                                     <span>•</span>
                                     {script.autoHangup !== false ? (

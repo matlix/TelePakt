@@ -263,7 +263,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+                  <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-cyan-300 transition-colors whitespace-nowrap">
                     TelePakt<span className="text-cyan-400">.pl</span>
                   </span>
                   <span className="hidden sm:inline-flex text-[10px] bg-cyan-500/10 text-cyan-300 font-mono px-2 py-0.5 rounded-full border border-cyan-500/30 font-bold whitespace-nowrap">
@@ -303,20 +303,23 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               ) : (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
+                  aria-label="Zaloguj się"
                   className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-cyan-300 font-bold text-xs cursor-pointer transition-colors"
                 >
                   <User className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="hidden xs:inline">Zaloguj się</span>
+                  <span className="hidden sm:inline">Zaloguj się</span>
                 </button>
               )}
 
               {onOpenApp && (
                 <button
                   onClick={onOpenApp}
+                  aria-label="Uruchom aplikację"
                   className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs shadow-md shadow-cyan-500/20 cursor-pointer transition-all active:scale-95"
                 >
                   <Smartphone className="w-3.5 h-3.5 text-slate-950" />
-                  <span>Uruchom Aplikację</span>
+                  <span className="hidden min-[400px]:inline sm:hidden">Aplikacja</span>
+                  <span className="hidden sm:inline">Uruchom Aplikację</span>
                 </button>
               )}
 
@@ -449,9 +452,9 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm max-w-full">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-2xl sm:rounded-full text-left sm:text-center leading-snug text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm max-w-full">
               <Shield className="w-4 h-4 shrink-0" />
-              <span className="truncate">Prawna tarcza anty-spam zgodna z Prawem komunikacji elektronicznej (PKE 2024)</span>
+              <span>Prawna tarcza anty-spam zgodna z Prawem komunikacji elektronicznej (PKE 2024)</span>
             </div>
 
             {referralRefCode && (
@@ -491,7 +494,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-cyan-300 font-mono font-bold block leading-tight">Pobierz .APK</span>
-                  <strong className="text-xs text-white truncate block">Android (Suwak)</strong>
+                  <strong className="text-xs text-white leading-tight break-words block">Android (Suwak)</strong>
                 </div>
               </div>
 
@@ -505,7 +508,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-emerald-400 font-mono block leading-tight">Otwórz w</span>
-                  <strong className="text-xs text-white truncate block">Google Play</strong>
+                  <strong className="text-xs text-white leading-tight break-words block">Google Play</strong>
                 </div>
               </div>
 
@@ -519,7 +522,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-blue-400 font-mono block leading-tight">Otwórz na</span>
-                  <strong className="text-xs text-white truncate block">iPhone / iOS</strong>
+                  <strong className="text-xs text-white leading-tight break-words block">iPhone / iOS</strong>
                 </div>
               </div>
 
@@ -533,7 +536,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-indigo-400 font-mono block leading-tight">Uruchom na</span>
-                  <strong className="text-xs text-white truncate block">Galaxy Store</strong>
+                  <strong className="text-xs text-white leading-tight break-words block">Galaxy Store</strong>
                 </div>
               </div>
 
@@ -547,7 +550,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-rose-400 font-mono block leading-tight">Uruchom na</span>
-                  <strong className="text-xs text-white truncate block">Huawei / Inne</strong>
+                  <strong className="text-xs text-white leading-tight break-words block">Huawei / Inne</strong>
                 </div>
               </div>
 
@@ -2004,7 +2007,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
       )}
 
       {/* Floating Quick Action: Fake Call Tester on Android / iPhone */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
+      <div className={`fixed right-4 sm:right-6 z-40 ${isCookieBannerOpen ? 'hidden sm:block bottom-4 sm:bottom-32' : 'bottom-4 sm:bottom-6'}`}>
         <button
           onClick={() => setIsFakeCallModalOpen(true)}
           className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 text-slate-950 font-black text-xs sm:text-sm shadow-2xl shadow-rose-500/30 border border-white/30 hover:scale-105 active:scale-95 transition-all cursor-pointer group"
@@ -2039,19 +2042,23 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
       {isCookieBannerOpen && (
         <aside 
           aria-label="Powiadomienie o plikach cookies i pamięci podręcznej"
-          className="fixed bottom-0 inset-x-0 z-50 p-3 sm:p-4 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 shadow-2xl"
+          className="fixed bottom-0 inset-x-0 z-50 p-3 sm:p-4 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 shadow-2xl max-h-[40vh] overflow-y-auto"
         >
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1 text-xs">
               <div className="flex items-center gap-2 font-bold text-white">
                 <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Prywatność Zero-Storage i Informacja o Pamięci Lokalnej (art. 399 PKE)</span>
+                <span className="hidden sm:inline">Prywatność Zero-Storage i Informacja o Pamięci Lokalnej (art. 399 PKE)</span>
+                <span className="sm:hidden">Prywatność i pamięć lokalna (art. 399 PKE)</span>
               </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed max-w-4xl">
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-4xl sm:hidden">
+                Używamy tylko niezbędnej pamięci lokalnej przeglądarki (localStorage). Bez cookies śledzących i profilowania.
+              </p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-4xl hidden sm:block">
                 Serwis TelePakt.pl korzysta wyłącznie z niezbędnej pamięci lokalnej Twojej przeglądarki (localStorage) do działania wyszukiwarki spamu w trybie offline oraz zapamiętania Twoich preferencji testowych. Nie stosujemy żadnych komercyjnych plików cookie śledzących ani skryptów profilujących stron trzecich.
               </p>
             </div>
-            <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+            <div className="flex items-center gap-2.5 shrink-0 self-stretch sm:self-center justify-end">
               <button
                 onClick={() => setActiveLegalModal('cookies')}
                 className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium cursor-pointer transition-colors"

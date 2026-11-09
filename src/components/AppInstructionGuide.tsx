@@ -233,7 +233,7 @@ export const AppInstructionGuide: React.FC = () => {
                 {isPassed && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
               </div>
 
-              <div className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-slate-300'}`}>
+              <div className={`text-xs font-bold leading-tight break-words ${isActive ? 'text-white' : 'text-slate-300'}`}>
                 {s.title}
               </div>
 
@@ -406,7 +406,7 @@ export const AppInstructionGuide: React.FC = () => {
 
               {/* Bottom Phone Bar: State Status Banner */}
               <div className="pt-1 pb-1">
-                <div className="text-[10px] text-slate-400 bg-black/60 py-1.5 px-2 rounded-xl border border-slate-800/80 truncate">
+                <div className="text-[10px] text-slate-400 bg-black/60 py-1.5 px-2 rounded-xl border border-slate-800/80 leading-snug break-words">
                   {step.screenState.bannerText}
                 </div>
               </div>
