@@ -3,7 +3,8 @@ import {
   Shield, Smartphone, Scale, CheckCircle2, AlertTriangle, Play,
   Download, Star, MessageSquare, Plus, Lock, ChevronDown, ChevronUp,
   ExternalLink, ArrowRight, Sparkles, HelpCircle, FileText, Check, PhoneCall,
-  Menu, X, Share2, Copy, Search, Zap, Gauge, Database, RefreshCw, User
+  Menu, X, Share2, Copy, Search, Zap, Gauge, Database, RefreshCw, User,
+  Gift
 } from 'lucide-react';
 import { AppNameOption, CustomerReview, UserAccount } from '../types';
 import { INITIAL_CUSTOMER_REVIEWS } from '../data/adminAndReviewsData';
@@ -15,7 +16,9 @@ import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import { FakeCallModal } from './FakeCallModal';
 import { AuthModal } from './AuthModal';
 import { UserProfileModal } from './UserProfileModal';
+import { AndroidOverlayTestModal } from './AndroidOverlayTestModal';
 import { authService } from '../services/authService';
+import { ReferralService } from '../services/referralService';
 import { spamDatabaseService, LookupResult } from '../services/spamDatabaseService';
 
 interface PublicWebsiteProps {
@@ -38,17 +41,26 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   const [showPwaScreenshotZoom, setShowPwaScreenshotZoom] = useState(false);
   const [activeLegalModal, setActiveLegalModal] = useState<LegalDocType | null>(null);
   const [isFakeCallModalOpen, setIsFakeCallModalOpen] = useState(false);
+  const [isOverlayModalOpen, setIsOverlayModalOpen] = useState(false);
 
   // User Authentication State
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => authService.getCurrentUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // Pricing & Billing Selector State (Monthly Subscription vs One-Time Minutes Package)
-  const [billingMode, setBillingMode] = useState<'monthly' | 'time_package'>('monthly');
-  const [timePackageOption, setTimePackageOption] = useState<'30min' | '60min'>('30min');
+  // Pricing: Free (3 min) vs Perpetual Prepaid Packages (30 min / 14,99 zł or 300 min / 149,99 zł) - ZERO monthly subscription!
+  const [selectedPaidPack, setSelectedPaidPack] = useState<'30min' | '300min'>('30min');
+
+  // Referral Program: Pending invitation code from URL (?ref=...)
+  const [referralRefCode, setReferralRefCode] = useState<string | null>(() => {
+    return ReferralService.captureUrlReferralCode() || ReferralService.getPendingReferralCode();
+  });
 
   useEffect(() => {
+    const fromUrl = ReferralService.captureUrlReferralCode();
+    if (fromUrl) {
+      setReferralRefCode(fromUrl);
+    }
     return authService.subscribe((u) => {
       setCurrentUser(u);
     });
@@ -437,9 +449,18 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           
-          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm max-w-full">
-            <Shield className="w-4 h-4 shrink-0" />
-            <span className="truncate">Prawna tarcza anty-spam zgodna z Prawem komunikacji elektronicznej (PKE 2024)</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm max-w-full">
+              <Shield className="w-4 h-4 shrink-0" />
+              <span className="truncate">Prawna tarcza anty-spam zgodna z Prawem komunikacji elektronicznej (PKE 2024)</span>
+            </div>
+
+            {referralRefCode && (
+              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold bg-purple-500/15 text-purple-300 border border-purple-500/40 shadow-sm animate-in fade-in">
+                <Gift className="w-4 h-4 text-purple-400 animate-bounce shrink-0" />
+                <span>Kod polecenia od znajomego: <strong className="text-white font-mono">{referralRefCode}</strong> (+1 min gratis)</span>
+              </div>
+            )}
           </div>
 
           <h1 className="text-2xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
@@ -459,29 +480,43 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               Wkrótce w oficjalnych sklepach (trwają zamknięte testy Beta):
             </p>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5 max-w-4xl mx-auto">
               
+              {/* Android Native APK with Floating Slider */}
+              <div 
+                onClick={() => setIsOverlayModalOpen(true)}
+                className="p-3 rounded-2xl bg-gradient-to-b from-cyan-950/80 to-slate-900 border-2 border-cyan-400/80 hover:border-cyan-300 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-lg shadow-cyan-500/20 group hover:scale-[1.02] active:scale-95 col-span-2 sm:col-span-1"
+              >
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300 group-hover:scale-110 transition-transform shrink-0">
+                  <Download className="w-4 h-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <span className="text-[10px] text-cyan-300 font-mono font-bold block leading-tight">Pobierz .APK</span>
+                  <strong className="text-xs text-white truncate block">Android (Suwak)</strong>
+                </div>
+              </div>
+
               {/* Google Play */}
               <div 
                 onClick={onOpenApp}
-                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+                className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4" />
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-emerald-400 font-mono block leading-tight">Otwórz w</span>
-                  <strong className="text-xs text-white truncate block">Google Play / PWA</strong>
+                  <strong className="text-xs text-white truncate block">Google Play</strong>
                 </div>
               </div>
 
               {/* Apple App Store */}
               <div 
                 onClick={onOpenApp}
-                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+                className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4" />
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-blue-400 font-mono block leading-tight">Otwórz na</span>
@@ -492,24 +527,24 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               {/* Samsung Galaxy Store */}
               <div 
                 onClick={onOpenApp}
-                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+                className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4" />
                 </div>
                 <div className="text-left min-w-0">
-                  <span className="text-[10px] text-cyan-400 font-mono block leading-tight">Uruchom na</span>
-                  <strong className="text-xs text-white truncate block">Galaxy / Android</strong>
+                  <span className="text-[10px] text-indigo-400 font-mono block leading-tight">Uruchom na</span>
+                  <strong className="text-xs text-white truncate block">Galaxy Store</strong>
                 </div>
               </div>
 
               {/* Huawei AppGallery */}
               <div 
                 onClick={onOpenApp}
-                className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/60 text-white flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
+                className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Smartphone className="w-4 h-4" />
                 </div>
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-rose-400 font-mono block leading-tight">Uruchom na</span>
@@ -519,26 +554,37 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
             </div>
 
-            {/* Primary Action Card: Launch App or Install PWA */}
+            {/* Primary Action Cards: Launch App & Download APK with Floating Slider */}
             <div className="pt-3 max-w-xl mx-auto space-y-3">
-              {onOpenApp && (
-                <button
-                  onClick={onOpenApp}
-                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl shadow-cyan-500/25 active:scale-95 transition-all cursor-pointer ring-2 ring-cyan-400/80 group"
-                >
-                  <Smartphone className="w-5 h-5 text-slate-950 group-hover:scale-110 transition-transform" />
-                  <span>Uruchom Aplikację TelePakt (w przeglądarce / telefonie)</span>
-                  <ArrowRight className="w-4 h-4 text-slate-950" />
-                </button>
-              )}
+              
+              {/* Native APK Promo Button */}
+              <button
+                type="button"
+                onClick={() => setIsOverlayModalOpen(true)}
+                className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl shadow-cyan-500/25 active:scale-95 transition-all cursor-pointer ring-2 ring-cyan-400 group"
+              >
+                <Download className="w-5 h-5 text-slate-950 group-hover:scale-110 transition-transform animate-bounce" />
+                <span>Pobierz plik .APK na telefon (z pływającym suwakiem)</span>
+                <ArrowRight className="w-4 h-4 text-slate-950" />
+              </button>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                {onOpenApp && (
+                  <button
+                    onClick={onOpenApp}
+                    className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-95"
+                  >
+                    <Smartphone className="w-4 h-4 text-cyan-400" />
+                    <span>Uruchom w Przeglądarce / PWA</span>
+                  </button>
+                )}
+
                 <button
                   onClick={handlePWAInstallClick}
-                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-95"
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all active:scale-95"
                 >
-                  <Download className="w-4 h-4 text-cyan-400 animate-bounce" />
-                  <span>Zainstaluj na pulpicie telefonu</span>
+                  <Download className="w-4 h-4 text-emerald-400" />
+                  <span>Zainstaluj PWA na pulpicie</span>
                 </button>
 
                 <button
@@ -552,10 +598,10 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
               <div className="text-center pt-1">
                 <button
-                  onClick={onOpenApp}
-                  className="text-[11px] text-slate-400 hover:text-white underline underline-offset-4 cursor-pointer"
+                  onClick={() => setIsOverlayModalOpen(true)}
+                  className="text-[11px] text-cyan-400 hover:text-cyan-300 underline underline-offset-4 cursor-pointer font-medium"
                 >
-                  Otwórz aplikację bezpośrednio na telefonie ➔
+                  Zobacz jak działa natywny suwak pływający w Androidzie (WindowManager) ➔
                 </button>
               </div>
             </div>
@@ -981,13 +1027,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           
           <div className="text-center space-y-2">
             <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest font-mono">
-              Dwa Proste Plany • Bez Ukrytych Opłat
+              Bez Abonamentu • Minuty Nigdy Nie Przepadają
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-white">
-              Cennik TelePakt: Wybierz Jak Wolisz Płacić
+              Cennik TelePakt: Pakiet Darmowy lub Minuty Bezterminowe
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto">
-              W TelePakt <strong>wszystkie funkcje prawne i dowodowe są w 100% odblokowane dla każdego</strong>. Wybierz comiesięczną subskrypcję lub jednorazowy pakiet minut bezterminowych.
+              W TelePakt <strong>wszystkie funkcje prawne i dowodowe są w 100% odblokowane dla każdego użytkownika</strong>. Usunęliśmy comiesięczne subskrypcje – doładowujesz minuty raz i one same nigdy nie znikną, dopóki ich nie zużyjesz.
             </p>
 
             {/* Feature Equality Guarantee Banner */}
@@ -995,42 +1041,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <span className="text-2xl leading-none">🛡️</span>
               <div className="space-y-0.5">
                 <strong className="text-white block">Gwarancja 100% Odblokowanych Funkcji:</strong>
-                <span>Auto-Sprzeciw (art. 398 PKE), Dowód Audio SHA-256, Wnioski UKE, Baza Offline, Sprzeciw SMS Twilio i Zero-Storage działają bez żadnych ograniczeń w każdym planie.</span>
-              </div>
-            </div>
-
-            {/* Billing Mode Interactive Switcher (Monthly vs One-Time Time Package) */}
-            <div className="pt-4 flex justify-center">
-              <div className="inline-flex p-1.5 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setBillingMode('monthly')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                    billingMode === 'monthly'
-                      ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span>Abonament Miesięczny</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-black/30 text-cyan-200">
-                    Odnawialny
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBillingMode('time_package')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                    billingMode === 'time_package'
-                      ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span>Pakiety Minut (Prepaid)</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/30 text-emerald-300">
-                    BEZTERMINOWE
-                  </span>
-                </button>
+                <span>Auto-Sprzeciw (art. 398 PKE), Dowód Audio SHA-256, Wnioski UKE, Baza Offline, Sprzeciw SMS Twilio, Pływający Suwak i Zero-Storage działają bez ograniczeń w każdym pakiecie.</span>
               </div>
             </div>
           </div>
@@ -1047,7 +1058,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     <span className="text-[10px] text-slate-500">Dla każdego nowego użytkownika</span>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    3 minuty rozmów
+                    3 minuty gratis
                   </span>
                 </div>
 
@@ -1056,19 +1067,19 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     0 zł <span className="text-xs font-normal text-slate-500">/ na zawsze</span>
                   </div>
                   <p className="text-slate-400 text-xs">
-                    Wystarcza na neutralizację ok. 5–6 połączeń marketingowych po ~30 sekund.
+                    Wystarcza na przetestowanie i neutralizację ok. 5–6 połączeń marketingowych po ~30 sekund.
                   </p>
                 </div>
                 
                 <ul className="space-y-2.5 text-slate-300 border-t border-slate-800/80 pt-4">
                   <li className="flex items-center gap-2 text-emerald-400">
-                    ✓ <strong>3 minuty</strong> asystenta prawnego na start (lub co miesiąc)
+                    ✓ <strong>3 minuty</strong> asystenta prawnego na start
                   </li>
                   <li className="flex items-center gap-2 text-white font-semibold">
                     ✓ <strong>100% funkcji odblokowanych</strong>
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Automatyczny sprzeciw z art. 398 PKE i art. 21 RODO
+                    ✓ Pływający suwak Androida i Auto-Sprzeciw art. 398 PKE
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Dowód Audio z kryptograficzną sumą SHA-256
@@ -1092,127 +1103,104 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 <button
                   type="button"
                   onClick={onOpenApp}
-                  className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-colors cursor-pointer border border-slate-700"
+                  className="w-full py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-center block transition-colors cursor-pointer border border-slate-700"
                 >
                   Uruchom za Darmo (0 zł)
                 </button>
                 <div className="text-[10px] text-center text-slate-500">
-                  Bez podawania karty kredytowej
+                  Bez podawania karty kredytowej • Zero ryzyka
                 </div>
               </div>
             </div>
 
-            {/* Card 2: PRO Tier (Dynamic: Monthly Subscription OR One-Time Minutes Package) */}
+            {/* Card 2: Prepaid Minutes Tier (14,99 zł for 30 min OR 149,99 zł for 300 min) */}
             <div className="p-6 rounded-3xl bg-gradient-to-b from-indigo-950/70 via-slate-900 to-slate-950 border border-cyan-500/50 space-y-5 flex flex-col justify-between relative shadow-2xl shadow-cyan-500/10 ring-1 ring-cyan-500/30">
               <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[10px] font-bold bg-cyan-400 text-slate-950 uppercase tracking-wide shadow-md">
-                {billingMode === 'monthly' ? 'Abonament PRO • Najpopularniejszy' : 'Pakiet Minut • Bez Abonamentu'}
+                Pakiety Minut • Bez Abonamentu
               </span>
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-white text-sm block">Pakiet Pełna Tarcza (PRO)</span>
+                    <span className="font-bold text-white text-sm block">Pakiet Minut Tarczy</span>
                     <span className="text-[10px] text-cyan-300/80">
-                      {billingMode === 'monthly' ? 'Subskrypcja comiesięczna' : 'Doładowanie jednorazowe'}
+                      Płatność jednorazowa • Minuty nigdy nie przepadają
                     </span>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                    {billingMode === 'monthly'
-                      ? '30 minut / mies.'
-                      : timePackageOption === '30min'
-                      ? '30 minut (Prepaid)'
-                      : '60 minut (Prepaid)'}
+                    {selectedPaidPack === '30min' ? '30 minut' : '300 minut'}
                   </span>
                 </div>
 
-                {/* If One-Time Package Mode: Provide Sub-Option (30 min vs 60 min) */}
-                {billingMode === 'time_package' && (
-                  <div className="p-2 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase font-mono block text-center">
-                      Wybierz wielkość pakietu minut:
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setTimePackageOption('30min')}
-                        className={`p-2 rounded-xl text-center border transition-all cursor-pointer ${
-                          timePackageOption === '30min'
-                            ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <div className="font-mono text-xs font-bold">30 minut</div>
-                        <div className="text-[10px] text-cyan-300">19,00 zł</div>
-                      </button>
+                {/* Sub-selector for package size */}
+                <div className="p-1.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaidPack('30min')}
+                      className={`p-2.5 rounded-xl text-center border transition-all cursor-pointer ${
+                        selectedPaidPack === '30min'
+                          ? 'bg-cyan-500/25 border-cyan-400 text-white font-bold shadow-sm'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="font-mono text-xs font-bold">30 minut</div>
+                      <div className="text-xs text-cyan-300 font-bold">14,99 zł</div>
+                      <div className="text-[9px] text-slate-400 mt-0.5">0,50 zł / min</div>
+                    </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setTimePackageOption('60min')}
-                        className={`p-2 rounded-xl text-center border transition-all cursor-pointer relative ${
-                          timePackageOption === '60min'
-                            ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[8px] bg-emerald-500 text-slate-950 font-bold uppercase">
-                          -25%
-                        </span>
-                        <div className="font-mono text-xs font-bold">60 minut</div>
-                        <div className="text-[10px] text-emerald-400 font-bold">29,00 zł</div>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaidPack('300min')}
+                      className={`p-2.5 rounded-xl text-center border transition-all cursor-pointer relative ${
+                        selectedPaidPack === '300min'
+                          ? 'bg-cyan-500/25 border-cyan-400 text-white font-bold shadow-sm'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded text-[8px] bg-emerald-500 text-slate-950 font-bold uppercase">
+                        10x więcej
+                      </span>
+                      <div className="font-mono text-xs font-bold">300 minut</div>
+                      <div className="text-xs text-emerald-400 font-bold">149,99 zł</div>
+                      <div className="text-[9px] text-slate-400 mt-0.5">0,50 zł / min</div>
+                    </button>
                   </div>
-                )}
+                </div>
 
-                {/* Price Display */}
-                <div className="space-y-1">
-                  {billingMode === 'monthly' ? (
-                    <>
-                      <div className="text-3xl font-black text-cyan-400 font-mono">
-                        14,99 zł <span className="text-xs font-normal text-slate-400">/ mies.</span>
-                      </div>
-                      <p className="text-slate-300 text-xs">
-                        30 minut co miesiąc (wystarcza na ok. 50–60 zneutralizowanych połączeń). Minuty kumulują się i przechodzą na kolejny miesiąc!
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-3xl font-black text-emerald-400 font-mono">
-                        {timePackageOption === '30min' ? '19,00 zł' : '29,00 zł'}{' '}
-                        <span className="text-xs font-normal text-slate-400">jednorazowo</span>
-                      </div>
-                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-300 font-medium">
-                        ✨ <strong>Minuty BEZTERMINOWE:</strong> Nie przepadają pod koniec miesiąca! Płacisz raz BLIK-iem i minuty czekają na Twoim koncie.
-                      </div>
-                    </>
-                  )}
+                {/* Price and Guarantee Display */}
+                <div className="space-y-1.5">
+                  <div className="text-3xl font-black text-emerald-400 font-mono">
+                    {selectedPaidPack === '30min' ? '14,99 zł' : '149,99 zł'}{' '}
+                    <span className="text-xs font-normal text-slate-400">jednorazowo</span>
+                  </div>
+                  
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-300 font-medium leading-relaxed">
+                    ✨ <strong>Gwarancja nieprzepadania minut:</strong> Minuty są bezterminowe i same nigdy nie znikną! Nie ma żadnego abonamentu comiesięcznego ani ukrytych opłat. Płacisz raz (np. BLIK-iem) i minuty czekają na Twoim koncie.
+                  </div>
                 </div>
                 
                 <ul className="space-y-2.5 text-slate-200 border-t border-slate-800/80 pt-4">
                   <li className="flex items-center gap-2 text-cyan-300 font-bold">
-                    ✓ {billingMode === 'monthly'
-                      ? '30 minut rozmowy asystenta co miesiąc'
-                      : timePackageOption === '30min'
-                      ? '30 minut rozmowy bez terminu ważności'
-                      : '60 minut rozmowy bez terminu ważności'}
+                    ✓ {selectedPaidPack === '30min' ? '30 minut rozmowy asystenta (~50–60 zneutralizowanych połączeń)' : '300 minut rozmowy asystenta (~500–600 zneutralizowanych połączeń)'}
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ <strong>Wszystkie opcje odblokowane</strong>
+                    ✓ <strong>Wszystkie opcje odblokowane</strong> dla każdego
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Dedykowana linia telekonferencji (+48) z priorytetem
+                    ✓ Pływający suwak Android (.APK) i Auto-Sprzeciw art. 398 PKE
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Auto-Sprzeciw PKE i certyfikaty dowodowe SHA-256
+                    ✓ Certyfikaty dowodowe SHA-256 akceptowane przez sądy i UKE
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Nielimitowane zawiadomienia do Prezesa UKE i UODO
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Bramka SMS (art. 77² K.c.) i natychmiastowe doręczenie
+                    ✓ Bramka SMS (art. 77² K.c.) z natychmiastowym doręczeniem
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ {billingMode === 'monthly' ? 'Możliwość anulowania w 1 kliknięcie' : 'Płatność jednorazowa (BLIK, Karta, Sklep)'}
+                    ✓ Płatność jednorazowa (BLIK, Karta, Google Play, Apple Pay)
                   </li>
                 </ul>
               </div>
@@ -1223,16 +1211,12 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                   onClick={onOpenApp}
                   className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-center block shadow-lg shadow-cyan-500/25 transition-all cursor-pointer active:scale-95"
                 >
-                  {billingMode === 'monthly'
-                    ? 'Włącz Subskrypcję PRO (14,99 zł / mies.)'
-                    : timePackageOption === '30min'
-                    ? 'Kup Pakiet 30 min (19 zł jednorazowo)'
-                    : 'Kup Pakiet 60 min (29 zł jednorazowo)'}
+                  {selectedPaidPack === '30min'
+                    ? 'Doładuj 30 minut (14,99 zł jednorazowo)'
+                    : 'Doładuj 300 minut (149,99 zł jednorazowo)'}
                 </button>
                 <div className="text-[10px] text-center text-slate-400">
-                  {billingMode === 'monthly'
-                    ? 'Subskrypcja Google Play / Apple App Store • Anuluj kiedy chcesz'
-                    : 'Jednorazowa opłata • Zero cyklicznych obciążeń karty'}
+                  Jednorazowa opłata • Zero cyklicznych obciążeń karty
                 </div>
               </div>
             </div>
@@ -1263,6 +1247,31 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">Apple Pay / GPay</span>
               <span className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800">Rachunek Operatora</span>
             </div>
+          </div>
+
+          {/* Referral Program Banner */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/60 via-slate-950 to-indigo-950/60 border border-purple-500/40 max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-xl">
+            <div className="flex items-center gap-3.5 text-slate-300">
+              <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                <Gift className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <strong className="text-white text-sm block">Program Poleceń: Zyskaj do +7 Darmowych Minut za Każdego Znajomego</strong>
+                <span className="text-slate-400 text-[11px] block">
+                  Podziel się swoim kodem: otrzymujesz <strong>+2 minuty</strong> za instalację znajomego i kolejne <strong>+5 minut</strong> za doładowanie. Twój znajomy zyskuje <strong>+1 minutę extra</strong> (4 minuty gratis na start). Minuty nigdy nie przepadają!
+                </span>
+              </div>
+            </div>
+
+            {onOpenApp && (
+              <button
+                type="button"
+                onClick={onOpenApp}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs shrink-0 cursor-pointer shadow-md shadow-purple-500/25 transition-transform active:scale-95"
+              >
+                Odbierz Swój Kod ➔
+              </button>
+            )}
           </div>
 
         </div>
@@ -2118,6 +2127,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
           onUpdate={(updated) => setCurrentUser(updated)}
         />
       )}
+
+      {/* Android Native Overlay & APK Modal */}
+      <AndroidOverlayTestModal
+        isOpen={isOverlayModalOpen}
+        onClose={() => setIsOverlayModalOpen(false)}
+        onOpenApp={onOpenApp}
+      />
 
     </div>
   );

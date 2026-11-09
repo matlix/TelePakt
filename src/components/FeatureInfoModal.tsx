@@ -318,24 +318,26 @@ const FEATURE_DETAILS: Record<FeatureInfoKey, FeatureDetail> = {
   },
   subskrypcja_minuty: {
     id: 'subskrypcja_minuty',
-    badge: '100% Funkcji Odblokowanych',
+    badge: '100% Funkcji Odblokowanych • Zero Abonamentu',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     icon: <Zap className="w-7 h-7 text-amber-400" />,
-    title: 'Dwa Proste Plany i Pakiety Minut',
-    subtitle: 'Wszystkie funkcje prawne dla każdego • Wybór między subskrypcją a pakietem bezterminowym (30 lub 60 min)',
+    title: 'Pakiety Minut i Zero Abonamentu',
+    subtitle: 'Wszystkie funkcje prawne dla każdego • 3 min gratis na start • Doładowania 30 min (14,99 zł) i 300 min (149,99 zł)',
     whatIsIt:
-      'W TelePakt nie blokujemy żadnych funkcji obronnych za paywallem. Każdy użytkownik ma pełny dostęp do Auto-Sprzeciwu, Dowodu Audio SHA-256 i pism do UKE.',
+      'W TelePakt nie blokujemy żadnych funkcji obronnych za paywallem ani nie pobieramy comiesięcznych subskrypcji. Płacisz wyłącznie raz za minuty rozmów, które nigdy nie przepadają.',
     howItWorks: [
-      'Pakiet Startowy (Darmowy): 3 minuty rozmowy asystenta (wystarcza na ok. 5–6 zneutralizowanych spamów po 30s) — 0 zł na zawsze.',
-      'Pakiet Pełna Tarcza (PRO): do wyboru comiesięczny abonament 14,99 zł (30 min / mies.) LUB jednorazowy pakiet minut bez abonamentu (30 min za 19 zł lub 60 min za 29 zł).',
-      'Pakiety Bezterminowe (Prepaid): minuty z pakietu jednorazowego nigdy nie przepadają pod koniec miesiąca i schodzą wyłącznie wtedy, gdy bot rozmawia z telemarketerem.',
-      'Wszystkie opcje, suwaki, certyfikaty dowodowe SHA-256, bramka SMS i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'
+      'Pakiet Startowy (Darmowy): do 3 minut rozmowy asystenta gratis (wystarcza na ok. 5–6 zneutralizowanych spamów po 30s) — 0 zł, bez podawania karty.',
+      'Pakiet 30 minut: 14,99 zł jednorazowo (wystarcza na ok. 50–60 zneutralizowanych połączeń telemarketingowych).',
+      'Pakiet MEGA 300 minut: 149,99 zł jednorazowo (dla osób mocno nękanych, właścicieli firm i biur — ok. 500–600 połączeń).',
+      'Minuty BEZTERMINOWE: Minuty same NIGDY nie znikną! Nie kasują się z końcem miesiąca. Schodzą z konta wyłącznie wtedy, gdy asystent realnie odpiera telemarketera.',
+      'Zero comiesięcznego abonamentu: Brak automatycznych obciążeń karty. Płacisz jednorazowo m.in. BLIK-iem lub przez sklep.',
+      'Wszystkie opcje, Auto-Sprzeciw PKE, certyfikaty dowodowe SHA-256, bramka SMS i generator skarg do UKE są w 100% WŁĄCZONE DLA WSZYSTKICH.'
     ],
     legalBasis:
       'Zapewnienie powszechnego, bezpłatnego dostępu do ochrony konstytucyjnych praw konsumenta (art. 76 Konstytucji RP).',
     telemarketerReaction:
-      'Niezależnie czy korzystasz z pakietu darmowego, abonamentu czy doładowania minut, asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE.',
-    tip: 'Jeśli nie chcesz comiesięcznego abonamentu, wybierz jednorazowy pakiet 30 lub 60 minut — płacisz raz i minuty czekają na Twoim koncie bez limitu czasu!'
+      'Niezależnie od wybranego pakietu asystent wygłasza ten sam, bezwzględny sprzeciw prawny z art. 398 PKE pod rygorem kary do 3% przychodu telemarketera.',
+    tip: 'Pakiety minut są w 100% bezterminowe — jeśli w danym miesiącu nie zadzwoni żaden natrętny telemarketer, Twoje minuty nie przepadną i czekają na kolejne miesiące!'
   },
   sprzeciw_sms: {
     id: 'sprzeciw_sms',

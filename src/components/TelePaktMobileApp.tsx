@@ -5,7 +5,8 @@ import {
   Globe, CheckCircle2, AlertTriangle, ArrowRight, Volume2, Search,
   Copy, Check, Info, RefreshCw, Zap, Sparkles, ExternalLink,
   ChevronRight, Lock, PhoneOff, User, LogOut, Key, Eye, EyeOff,
-  Bell, FileText, ToggleLeft, ToggleRight, Clock, MessageSquare
+  Bell, FileText, ToggleLeft, ToggleRight, Clock, MessageSquare, Download,
+  Gift, Share2
 } from 'lucide-react';
 import { InCallSimulator } from './InCallSimulator';
 import { CallHistoryView } from './CallHistoryView';
@@ -14,7 +15,9 @@ import { FakeCallModal } from './FakeCallModal';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import { FeatureInfoModal, FeatureInfoKey } from './FeatureInfoModal';
 import { TwilioSmsModal } from './TwilioSmsModal';
+import { ReferralModal } from './ReferralModal';
 import { authService } from '../services/authService';
+import { ReferralService } from '../services/referralService';
 import { spamDatabaseService, LookupResult } from '../services/spamDatabaseService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
@@ -50,9 +53,13 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   const [isFakeCallOpen, setIsFakeCallOpen] = useState(false);
   const [activeLegalModal, setActiveLegalModal] = useState<LegalDocType | null>(null);
   const [activeFeatureInfo, setActiveFeatureInfo] = useState<FeatureInfoKey | null>(null);
+  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => authService.getCurrentUser());
+  const [referralBonusMinutes, setReferralBonusMinutes] = useState<number>(() => {
+    return ReferralService.getReferralState(authService.getCurrentUser()?.id || 'local_user').bonusMinutes;
+  });
   const [isGuestMode, setIsGuestMode] = useState<boolean>(() => {
     // Check if user previously elected guest mode
     return localStorage.getItem('telepakt_guest_mode') === 'true';
@@ -73,7 +80,7 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
   const [phoneInput, setPhoneInput] = useState(currentUser?.phoneProtected || '+48 500 123 456');
   const [phoneSaveSuccess, setPhoneSaveSuccess] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
-  const [activePlan, setActivePlan] = useState<'free' | 'pro'>('free');
+  const [activePlan, setActivePlan] = useState<'free' | 'pack_30' | 'pack_300'>('free');
 
   // Android Quick Settings Toggles
   const [autoRejectSpam, setAutoRejectSpam] = useState(true);
@@ -887,56 +894,76 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                   </button>
                 </div>
                 <span className="text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                  {activePlan === 'free' ? '0,00 zł / Darmowy' : '14,99 zł / PRO'}
+                  {activePlan === 'free' ? '0,00 zł / Darmowy (3 min)' : activePlan === 'pack_30' ? '14,99 zł / Pakiet 30 min' : '149,99 zł / Pakiet 300 min'}
                 </span>
               </div>
 
-              {/* Interactive Plan Selector */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              {/* Interactive Plan Selector: Free vs 30 min vs 300 min */}
+              <div className="grid grid-cols-3 gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => setActivePlan('free')}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
                     activePlan === 'free'
                       ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-md'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-emerald-400 text-xs">Darmowy</span>
+                    <span className="font-bold text-emerald-400 text-[11px]">Start</span>
                     {activePlan === 'free' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
                   </div>
-                  <div className="text-lg font-black font-mono">0 zł</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">3 minuty rozmów / mies.</div>
+                  <div className="text-base font-black font-mono">0 zł</div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">do 3 minut</div>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setActivePlan('pro')}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                    activePlan === 'pro'
+                  onClick={() => setActivePlan('pack_30')}
+                  className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                    activePlan === 'pack_30'
                       ? 'bg-cyan-500/15 border-cyan-500 text-white shadow-md'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-cyan-400 text-xs">Tarcza PRO</span>
-                    {activePlan === 'pro' && <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />}
+                    <span className="font-bold text-cyan-400 text-[11px]">30 min</span>
+                    {activePlan === 'pack_30' && <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />}
                   </div>
-                  <div className="text-lg font-black font-mono">14,99 zł</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">30 minut rozmów / mies.</div>
+                  <div className="text-base font-black font-mono">14,99 zł</div>
+                  <div className="text-[9px] text-cyan-300 mt-0.5">bezterminowe</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePlan('pack_300')}
+                  className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                    activePlan === 'pack_300'
+                      ? 'bg-indigo-500/15 border-indigo-500 text-white shadow-md'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="absolute -top-1.5 right-1.5 px-1 rounded text-[7px] bg-emerald-500 text-slate-950 font-black uppercase">
+                    MEGA
+                  </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-indigo-300 text-[11px]">300 min</span>
+                    {activePlan === 'pack_300' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-300" />}
+                  </div>
+                  <div className="text-base font-black font-mono">149,99 zł</div>
+                  <div className="text-[9px] text-emerald-400 font-semibold mt-0.5">bezterminowe</div>
                 </button>
               </div>
 
-              {/* One-Time Prepaid Minutes Alternative */}
+              {/* Perpetual Minutes Assurance Box */}
               <div className="p-3 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-slate-950 border border-cyan-500/30 flex items-center justify-between gap-2 shadow-sm">
                 <div className="space-y-0.5 min-w-0">
                   <div className="text-[11px] font-bold text-white flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                    <span className="truncate">Wolisz bez abonamentu? Pakiety minut</span>
+                    <span className="truncate">Minuty NIGDY nie znikną (Zero abonamentu)</span>
                   </div>
                   <div className="text-[10px] text-slate-300 leading-tight">
-                    30 min (19 zł) lub 60 min (29 zł) • Minuty bezterminowe, nie przepadają
+                    Płacisz tylko raz (BLIK, Karta). Minuty czekają na koncie dopóki ich nie zużyjesz!
                   </div>
                 </div>
                 <button
@@ -948,47 +975,137 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
                 </button>
               </div>
 
-              {/* Monthly Minutes Usage Progress Bar */}
+              {/* Native Android Overlay & APK Box */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-950 to-indigo-950/40 border border-cyan-500/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-white">Natywna Nakładka Połączeń (Android .APK)</span>
+                  </div>
+                  <span className="text-[9px] font-mono bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-md font-bold">
+                    WindowManager Kotlin
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Zainstaluj pakiet <strong>telepakt.apk</strong> na telefonie z Androidem, by suwak Auto-Sprzeciw art. 398 PKE pojawiał się automatycznie jako pływające okno nad każdą przychodzącą rozmową.
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <a
+                    href="/telepakt.apk"
+                    download="telepakt.apk"
+                    className="flex-1 py-2 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Pobierz plik telepakt.apk</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setActiveFeatureInfo('autosprzeciw')}
+                    className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer"
+                  >
+                    Instrukcja
+                  </button>
+                </div>
+              </div>
+
+              {/* Minutes Usage Progress Bar */}
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                    Wykorzystanie minut w tym miesiącu:
+                    Stan wykorzystania Twojego salda:
                   </span>
                   <span className="font-mono text-cyan-300 font-bold text-xs">
-                    {activePlan === 'free' ? '0:34 / 3:00 min' : '0:34 / 30:00 min'}
+                    {activePlan === 'free'
+                      ? '0:34 / 3:00 min'
+                      : activePlan === 'pack_30'
+                      ? '0:34 / 30:00 min'
+                      : '0:34 / 300:00 min'}
                   </span>
                 </div>
 
                 <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
-                      activePlan === 'free' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-cyan-500 to-indigo-500'
+                      activePlan === 'free'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                        : activePlan === 'pack_30'
+                        ? 'bg-gradient-to-r from-cyan-500 to-indigo-500'
+                        : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400'
                     }`}
-                    style={{ width: activePlan === 'free' ? '19%' : '2%' }}
+                    style={{
+                      width: activePlan === 'free' ? '19%' : activePlan === 'pack_30' ? '2%' : '0.2%'
+                    }}
                   />
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-                  <span>Pozostało: {activePlan === 'free' ? '2 min 26 sek (~5 rozmów)' : '29 min 26 sek (~58 rozmów)'}</span>
-                  <span className="text-emerald-400 font-bold">Odnawia się co miesiąc</span>
+                  <span>
+                    Pozostało:{' '}
+                    {activePlan === 'free'
+                      ? '2 min 26 sek (~5 rozmów)'
+                      : activePlan === 'pack_30'
+                      ? '29 min 26 sek (~58 rozmów)'
+                      : '299 min 26 sek (~590 rozmów)'}
+                  </span>
+                  <span className="text-emerald-400 font-bold">Minuty bezterminowe</span>
                 </div>
               </div>
+            </div>
 
-              {/* Feature Equality Notice */}
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-[11px]">
-                <div className="font-bold text-slate-200 flex items-center gap-1.5 text-xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Wszystkie opcje odblokowane dla Ciebie:</span>
+            {/* Referral Program Card */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 border-2 border-purple-500/40 space-y-3.5 shadow-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center border border-purple-500/40 shrink-0">
+                    <Gift className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold text-white block truncate">Program Poleceń TelePakt</span>
+                    <span className="text-[10px] text-purple-300/90 font-mono block truncate">
+                      Twój kod: <strong className="text-white font-bold">{ReferralService.getReferralCode(currentUser)}</strong> • Bonus: +{referralBonusMinutes} min
+                    </span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 text-slate-300 text-[10px]">
-                  <div className="flex items-center gap-1">✓ Sprzeciw z art. 398 PKE</div>
-                  <div className="flex items-center gap-1">✓ Dowód Audio SHA-256</div>
-                  <div className="flex items-center gap-1">✓ Generator pism do UKE</div>
-                  <div className="flex items-center gap-1">✓ Baza numerów offline</div>
-                  <div className="flex items-center gap-1">✓ Głosy Tomasz i Joanna</div>
-                  <div className="flex items-center gap-1">✓ 100% Zero-Storage</div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsReferralModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black text-xs shadow-md shadow-purple-500/20 cursor-pointer transition-transform active:scale-95 shrink-0"
+                >
+                  Poleć i Zyskaj ➔
+                </button>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span>Za instalację znajomego:</span>
+                  <strong className="text-purple-300 font-mono">+2 minuty bezterminowe</strong>
                 </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span>Gdy znajomy doładuje konto:</span>
+                  <strong className="text-emerald-400 font-mono">+5 minut bezterminowych</strong>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px] text-slate-400">
+                  <span>Twój znajomy otrzymuje na start:</span>
+                  <span className="text-emerald-300 font-semibold">+1 minutę extra (4 min)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature Equality Notice */}
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-[11px]">
+              <div className="font-bold text-slate-200 flex items-center gap-1.5 text-xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Wszystkie opcje odblokowane dla Ciebie:</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 text-slate-300 text-[10px]">
+                <div className="flex items-center gap-1">✓ Sprzeciw z art. 398 PKE</div>
+                <div className="flex items-center gap-1">✓ Dowód Audio SHA-256</div>
+                <div className="flex items-center gap-1">✓ Generator pism do UKE</div>
+                <div className="flex items-center gap-1">✓ Baza numerów offline</div>
+                <div className="flex items-center gap-1">✓ Głosy Tomasz i Joanna</div>
+                <div className="flex items-center gap-1">✓ 100% Zero-Storage</div>
               </div>
             </div>
 
@@ -1313,6 +1430,17 @@ export const TelePaktMobileApp: React.FC<TelePaktMobileAppProps> = ({
         onClose={() => setIsSmsModalOpen(false)}
         initialRecipient={smsTargetNumber}
         initialTemplateId="pke-rodo-full"
+      />
+
+      {/* Referral Program Modal */}
+      <ReferralModal
+        isOpen={isReferralModalOpen}
+        onClose={() => {
+          setIsReferralModalOpen(false);
+          setReferralBonusMinutes(ReferralService.getReferralState(currentUser?.id || 'local_user').bonusMinutes);
+        }}
+        currentUser={currentUser}
+        onBonusAwarded={(b) => setReferralBonusMinutes(prev => prev + b)}
       />
 
     </div>
