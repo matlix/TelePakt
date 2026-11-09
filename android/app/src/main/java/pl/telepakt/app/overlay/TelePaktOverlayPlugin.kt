@@ -17,7 +17,7 @@ import com.getcapacitor.annotation.Permission
 @CapacitorPlugin(
     name = "TelePaktOverlay",
     permissions = [
-        Permission(strings = [Manifest.permission.READ_PHONE_STATE], name = "phone")
+        Permission(strings = [Manifest.permission.READ_PHONE_STATE], alias = "phone")
     ]
 )
 class TelePaktOverlayPlugin : Plugin() {

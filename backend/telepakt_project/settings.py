@@ -6,18 +6,26 @@ Zoptymalizowana pod wdrożenie na chmurze Render.com z bazą PostgreSQL.
 import os
 from pathlib import Path
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-telepakt-pl-prod-key-change-me-in-render-dashboard-xyz987'
-)
-
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
+
+# Klucz sesji/CSRF. Na Render generowany automatycznie (render.yaml: generateValue).
+# Bez zmiennej DJANGO_SECRET_KEY produkcja nie wystartuje; lokalnie (DEBUG) używamy
+# jawnie niebezpiecznego klucza deweloperskiego.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-local-development-only'
+    else:
+        raise ImproperlyConfigured(
+            "Ustaw zmienną środowiskową DJANGO_SECRET_KEY (lub DJANGO_DEBUG=True lokalnie)."
+        )
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -94,7 +102,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -104,9 +115,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
+    # Health check Render może przyjść po HTTP wewnątrz sieci - nie przekierowuj go.
+    SECURE_REDIRECT_EXEMPT = [r'^api/telephony/health/$']
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
@@ -118,6 +130,13 @@ CORS_ALLOWED_ORIGINS = [
         'https://telepakt.pl,https://www.telepakt.pl'
     ).split(',')
 ]
+
+# Django REST Framework: publiczne endpointy są ograniczone throttlingiem.
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_RATES': {
+        'reviews': os.environ.get('REVIEWS_THROTTLE_RATE', '30/hour'),
+    },
+}
 
 # Twilio & Retencja
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')

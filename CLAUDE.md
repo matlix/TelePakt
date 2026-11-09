@@ -20,11 +20,15 @@ Backend: use the venv at `../.venv`; `cd backend && ../../.venv/Scripts/python m
 Render builds from GitHub `main`: backend via `backend/build.sh` (pip install, collectstatic, migrate). Pushing to `main` likely triggers production/preprod deploys – confirm before pushing.
 Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, never in git. `.env*` is gitignored.
 
+## Recent fixes (Nov 2026)
+- APK: `public/telepakt.apk` was a fake zip -> "error while parsing". Now a real Gradle build (`npm run build:apk`, needs JDK 21 + Android SDK). Also fixed Kotlin `@Permission(alias=...)` compile error and switched the overlay foreground service to `specialUse` (`phoneCall` type crashes on Android 14 without MANAGE_OWN_CALLS).
+- Backend: `telephony` had NO migrations (tables were never created on Render) -> added `0001_initial`. Twilio webhooks now verify `X-Twilio-Signature`; `DJANGO_SECRET_KEY` is required in prod; IAP receipts are no longer auto-verified; input validation + throttling on reviews; `STORAGES` setting; 14 tests.
+- Workflows moved to `.github/workflows` (ci runs lint/build/Django tests; build-apk is manual).
+- Expo was considered and rejected: the app is Capacitor + native Kotlin overlay; Expo would mean a rewrite and wouldn't have shown the cause.
+
 ## Known issues / TODO
-- `settings.py` has an insecure fallback `SECRET_KEY`; fail hard when unset in production.
-- `STATICFILES_STORAGE` is deprecated in Django 5.1+ (use `STORAGES`).
-- `package.json` name is still `react-example`; `.env.example` is AI Studio boilerplate; `@google/genai` dependency is a Gemini leftover.
-- Several components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle is 1.8 MB – needs code splitting.
-- README/render.yaml show mojibake (UTF-8 mis-decoded) in Polish text; re-save as UTF-8.
-- `data/pythonProjectFiles.ts` embeds a copy of the Python project as strings – may drift from `backend/`.
-- README badge points to `matlix/telepakt` (lowercase), repo is `matlix/TelePakt`.
+- IAP store verification, zero-storage-delete auth, plaintext `IntegrationCredential.secret_value` (see backend/README.md).
+- Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.
+- `data/pythonProjectFiles.ts` embeds a stale copy of the Python project as strings.
+- APK is debug-signed; set up a release keystore (kept out of git) before Play Store.
+- Windows PowerShell shows Polish text as mojibake; files are valid UTF-8.

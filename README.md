@@ -1,7 +1,7 @@
 # TelePakt.pl 🛡️📞
 **Polska Tarcza Anty-Spam, Ochrona Prawna (Art. 398 PKE & RODO) oraz Asystent Rozmów Telefonicznych**
 
-[![CI Build & Test](https://github.com/matlix/telepakt/actions/workflows/ci.yml/badge.svg)](https://github.com/matlix/telepakt/actions)
+[![CI Build & Test](https://github.com/matlix/TelePakt/actions/workflows/ci.yml/badge.svg)](https://github.com/matlix/TelePakt/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: Django 5](https://img.shields.io/badge/Backend-Django%205%20%2B%20DRF-092E20.svg)](https://www.djangoproject.com/)
 [![Frontend: React + Vite](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Tailwind%204-61DAFB.svg)](https://vitejs.dev/)
@@ -162,3 +162,28 @@ git push -u origin main
 ## 📄 Licencja & Prawa Autorskie
 Projekt stworzony dla platformy **telepakt.pl**.  
 Wszelkie prawa zastrzeżone © 2025 TelePakt.
+
+
+---
+
+## 📱 Budowa aplikacji Android (APK)
+
+`public/telepakt.apk` to **prawdziwy** plik APK zbudowany przez Capacitor + Gradle (pakiet `pl.telepakt.app`, minSdk 24). Strona serwuje go pod `/telepakt.apk`.
+
+```bash
+# wymagane: JDK 21 (JAVA_HOME), Android SDK (ANDROID_HOME)
+npm run build:apk     # build frontendu -> cap sync -> gradle assembleDebug -> public/telepakt.apk
+```
+
+Po instalacji nadaj uprawnienia: *wyświetlanie nad innymi aplikacjami* (nakładka) oraz *Telefon* (stan połączeń). Build jest podpisany kluczem debug – aby zainstalować nowszą wersję zbudowaną na innym komputerze, odinstaluj starą. Workflow `Build Android APK` (GitHub Actions, ręczny) buduje ten sam plik w chmurze.
+
+> Wcześniejszy „APK” generowany z JSZip był atrapą (fałszywy `classes.dex`, tekstowy manifest, fałszywy podpis) i powodował błąd „problem z analizą pakietu”.
+
+## 🧪 Testy
+
+```bash
+npm run lint                     # TypeScript
+cd backend && python manage.py test   # 14 testów API (webhooki Twilio, opinie, IAP)
+```
+
+Dokumentacja backendu: [backend/README.md](backend/README.md). Przewodnik dla Claude Code: [CLAUDE.md](CLAUDE.md).
