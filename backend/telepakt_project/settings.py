@@ -244,3 +244,18 @@ UNFOLD = {
         ],
     },
 }
+
+# --- Logowanie ------------------------------------------------------------------------------
+# Domyslnie Django (DEBUG=False) NIE zapisuje tracebackow bledow 500 nigdzie poza mailem do ADMINS,
+# wiec w logach Render widac tylko "500", bez przyczyny. Kierujemy je na stderr (logi Render).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'plain': {'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'}},
+    'handlers': {'console': {'class': 'logging.StreamHandler', 'formatter': 'plain'}},
+    'loggers': {
+        'django.request': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
+        'django.security': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+    },
+    'root': {'handlers': ['console'], 'level': 'WARNING'},
+}
