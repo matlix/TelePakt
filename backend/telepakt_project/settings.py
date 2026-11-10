@@ -153,7 +153,9 @@ EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+# Port 465 = SSL od razu (EMAIL_USE_SSL=True); port 587 = STARTTLS (EMAIL_USE_TLS=True).
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 'yes')
+EMAIL_USE_TLS = not EMAIL_USE_SSL and os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'TelePakt <noreply@telepakt.pl>')
 
 # Twilio & Retencja
