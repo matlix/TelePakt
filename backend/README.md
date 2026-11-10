@@ -19,7 +19,7 @@ python manage.py test
 | `DJANGO_DEBUG` | `True` tylko lokalnie. Wyłącza weryfikację podpisu Twilio. |
 | `DATABASE_URL` | PostgreSQL (Render); domyślnie SQLite. |
 | `TWILIO_AUTH_TOKEN` | Weryfikuje podpis `X-Twilio-Signature` webhooków – bez niego w produkcji zwracają 403. |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_PHONE_NUMBER` | Konfiguracja Twilio. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | Opcjonalny zapas - dane dostawców telefonii ustawia się w panelu admina (Dostawcy telefonii). |
 | `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` | Listy rozdzielane przecinkami. |
 | `RETENTION_DAYS` | Retencja nagrań (domyślnie 30). |
 | `REVIEWS_THROTTLE_RATE` | Limit POST /reviews (domyślnie `30/hour`). |

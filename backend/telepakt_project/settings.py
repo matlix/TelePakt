@@ -161,6 +161,7 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'TelePakt <noreply@tel
 # Twilio & Retencja
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '+48221234567')
+# Numer dostawcy ustawia się w panelu admina (Dostawcy telefonii); zmienna TWILIO_PHONE_NUMBER to tylko zapas przy pierwszym uruchomieniu.
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://telepakt.pl')
 DEFAULT_RETENTION_DAYS = int(os.environ.get('RETENTION_DAYS', '30'))
