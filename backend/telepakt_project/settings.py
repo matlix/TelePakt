@@ -128,13 +128,14 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get(
-        'CORS_ALLOWED_ORIGINS',
-        'https://telepakt.pl,https://www.telepakt.pl,https://localhost,capacitor://localhost'
-    ).split(',')
-]
+# Origins aplikacji mobilnej (Capacitor, androidScheme=https) sa STALE i zawsze dozwolone: bez nich
+# aplikacja nie polaczy sie z API ("Brak polaczenia z serwerem"), nawet gdy zmienna srodowiskowa
+# CORS_ALLOWED_ORIGINS na Render zawiera tylko adresy stron WWW.
+APP_ORIGINS = ['https://localhost', 'capacitor://localhost']
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys(
+    [o.strip() for o in os.environ.get('CORS_ALLOWED_ORIGINS', 'https://telepakt.pl,https://www.telepakt.pl').split(',')
+     if o.strip()] + APP_ORIGINS
+))
 
 # Django REST Framework: publiczne endpointy są ograniczone throttlingiem.
 REST_FRAMEWORK = {

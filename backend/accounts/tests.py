@@ -137,3 +137,22 @@ class AuthApiTests(TestCase):
         self.assertEqual(normalize_phone('+48 500-123-456'), '+48500123456')
         self.assertEqual(normalize_phone(''), '')
         self.assertIsNone(normalize_phone('12345'))
+
+
+class CorsOriginsTests(TestCase):
+    def test_app_origins_are_allowed_even_when_env_lists_only_websites(self):
+        """Regresja: env CORS_ALLOWED_ORIGINS na Render bez origins aplikacji -> "Brak polaczenia z serwerem"."""
+        import json
+        import os
+        import subprocess
+        import sys
+
+        env = dict(os.environ, DJANGO_DEBUG='True', DJANGO_SETTINGS_MODULE='telepakt_project.settings',
+                   CORS_ALLOWED_ORIGINS='https://telepakt.pl,https://www.telepakt.pl')
+        code = 'from django.conf import settings; import json; print(json.dumps(settings.CORS_ALLOWED_ORIGINS))'
+        out = subprocess.run([sys.executable, '-c', code], env=env, capture_output=True, text=True,
+                             cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        origins = json.loads(out.stdout.strip().splitlines()[-1])
+        self.assertIn('https://localhost', origins)
+        self.assertIn('capacitor://localhost', origins)
+        self.assertIn('https://telepakt.pl', origins)
