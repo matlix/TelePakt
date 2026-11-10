@@ -167,7 +167,9 @@ TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
 # Numer dostawcy ustawia się w panelu admina (Dostawcy telefonii); zmienna TWILIO_PHONE_NUMBER to tylko zapas przy pierwszym uruchomieniu.
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
-APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://telepakt.pl')
+APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://telepakt.pl')  # strona WWW (statyczna)
+# Adres API, pod ktorym dostawcy telefonii wolaja webhooki (NIE strona WWW).
+API_PUBLIC_URL = os.environ.get('API_PUBLIC_URL', 'https://api.telepakt.pl')
 DEFAULT_RETENTION_DAYS = int(os.environ.get('RETENTION_DAYS', '30'))
 
 

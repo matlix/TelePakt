@@ -108,7 +108,7 @@ class TelephonyProviderAdmin(ModelAdmin):
                     'last_checked_at', 'last_error')
     list_editable = ('is_enabled', 'priority')
     readonly_fields = ('status', 'consecutive_failures', 'last_checked_at', 'last_ok_at', 'last_error', 'webhook_urls')
-    actions = ['check_now']
+    actions = ['check_now', 'rotate_webhook_token']
 
     @display(description="Stan", label={'ok': 'success', 'failing': 'danger', 'unknown': 'warning'})
     def show_status(self, obj):
@@ -120,7 +120,7 @@ class TelephonyProviderAdmin(ModelAdmin):
 
     @display(description="Adresy webhooków do wpisania u dostawcy")
     def webhook_urls(self, obj):
-        base = settings.APP_BASE_URL.rstrip('/')
+        base = settings.API_PUBLIC_URL.rstrip('/')
         q = providers.callback_query(obj.kind) if obj and obj.pk else ''
         return (f"Voice (incoming call): {base}/api/telephony/conference-bridge/{q}  |  "
                 f"Recording callback: {base}/api/telephony/recording-callback/{q}")
@@ -148,3 +148,15 @@ class TelephonyProviderAdmin(ModelAdmin):
             ok = providers.run_check(row)
             self.message_user(request, f"{row}: {'działa' if ok else 'BŁĄD - ' + row.last_error}",
                               messages.SUCCESS if ok else messages.ERROR)
+
+    @admin.action(description="Wygeneruj nowy token webhooka (stary przestaje działać)")
+    def rotate_webhook_token(self, request, queryset):
+        for row in queryset:
+            row.webhook_token = secrets.token_urlsafe(24)
+            row.save(update_fields=['webhook_token'])
+        self.message_user(
+            request,
+            "Nowy token wygenerowany. Skopiuj zaktualizowane adresy webhooków do panelu dostawcy "
+            "(Telnyx: pole Voice URL aplikacji TeXML) - stare adresy są już nieważne.",
+            messages.WARNING,
+        )

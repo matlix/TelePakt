@@ -128,3 +128,17 @@ class AdminSmokeTests(TestCase):
                                  'secret': 'y', 'phone_number': ''})
         self.assertEqual(resp.status_code, 200)  # formularz z błędem unikalności
         self.assertEqual(TelephonyProvider.objects.filter(kind='twilio').count(), 1)
+
+    def test_webhook_urls_use_api_host_and_token_can_be_rotated(self):
+        row = TelephonyProvider.objects.get(kind='telnyx')
+        url = reverse('admin:telephony_telephonyprovider_change', args=[row.pk])
+        body = self.client.get(url).content.decode()
+        self.assertIn('https://api.telepakt.pl/api/telephony/conference-bridge/?provider=telnyx&amp;token=' + row.webhook_token, body)
+        self.assertNotIn('https://telepakt.pl/api/', body)  # to jest strona WWW, nie API
+        old = row.webhook_token
+        resp = self.client.post(reverse('admin:telephony_telephonyprovider_changelist'), {
+            'action': 'rotate_webhook_token', '_selected_action': [row.pk]})
+        self.assertEqual(resp.status_code, 302)
+        row.refresh_from_db()
+        self.assertNotEqual(row.webhook_token, old)
+        self.assertTrue(row.webhook_token)
