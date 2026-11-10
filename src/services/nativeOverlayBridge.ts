@@ -12,7 +12,7 @@ export interface TelePaktOverlayPluginInterface {
   requestOverlayPermission(): Promise<void>;
   showOverlay(options?: { phoneNumber?: string; callerName?: string }): Promise<{ success: boolean }>;
   hideOverlay(): Promise<{ success: boolean }>;
-  saveConfig(options: { apiUrl: string; recipientNumber: string }): Promise<void>;
+  saveConfig(options: { apiUrl: string; token: string }): Promise<void>;
   checkPhoneStatePermission(): Promise<{ granted: boolean }>;
   requestPhoneStatePermission(): Promise<{ granted: boolean }>;
 }
@@ -81,11 +81,11 @@ export class NativeOverlayBridge {
     }
   }
 
-  /** Przekazuje do natywnej nakładki adres API i numer chroniony (przycisk "Nagrywaj"). */
-  static async saveConfig(apiUrl: string, recipientNumber: string): Promise<void> {
+  /** Przekazuje do natywnej nakładki adres API i token sesji (przycisk "Nagrywaj"); pusty token po wylogowaniu. */
+  static async saveConfig(apiUrl: string, token: string): Promise<void> {
     if (!this.isNative()) return;
     try {
-      await TelePaktOverlayNative.saveConfig({ apiUrl, recipientNumber });
+      await TelePaktOverlayNative.saveConfig({ apiUrl, token });
     } catch (err) {
       console.warn('Failed to save overlay config:', err);
     }

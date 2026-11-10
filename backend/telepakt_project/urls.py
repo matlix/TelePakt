@@ -23,5 +23,6 @@ def root_landing_view(request):
 urlpatterns = [
     path('', root_landing_view, name='root'),
     path('admin/', admin.site.urls),
+    path('api/auth/', include('accounts.urls')),
     path('api/telephony/', include('telephony.urls')),
 ]

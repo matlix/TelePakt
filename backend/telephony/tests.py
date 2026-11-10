@@ -6,10 +6,23 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from django.contrib.auth.models import User
+
+from accounts.models import Profile
+from accounts.services import issue_token
 from .models import CallLog, CustomerReview, InAppPurchaseReceipt, UkeComplaint
 from . import providers
 from .models import TelephonyProvider
 from .retention import purge_expired
+
+
+def authed_client(email='u@telepakt.test', phone='+48500'):
+    """Klient API zalogowany jako uzytkownik z chronionym numerem ``phone``."""
+    user = User.objects.create_user(username=email, email=email, password='Passw0rd!x')
+    Profile.objects.create(user=user, name='U', phone_protected=phone)
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION='Bearer ' + issue_token(user))
+    return client
 
 
 class RetentionTests(TestCase):
@@ -63,7 +76,7 @@ class StartRecordingTests(TestCase):
         self._call()
         with mock.patch('telephony.retention._twilio_client') as client, \
                 mock.patch('telephony.providers.twilio_credentials', return_value=('AC1', 'tok')):
-            resp = APIClient().post('/api/telephony/start-recording/', {'recipient_number': '+48500'}, format='json')
+            resp = authed_client().post('/api/telephony/start-recording/', {}, format='json')
         self.assertEqual(resp.status_code, 200)
         client.return_value.calls.assert_called_once_with('CA9')
         self.assertTrue(CallLog.objects.get(call_sid='CA9').recording_started)
@@ -71,14 +84,26 @@ class StartRecordingTests(TestCase):
     def test_second_press_does_not_start_twice(self):
         self._call(recording_started=True)
         with mock.patch('telephony.retention._twilio_client'):
-            resp = APIClient().post('/api/telephony/start-recording/', {'recipient_number': '+48500'}, format='json')
+            resp = authed_client().post('/api/telephony/start-recording/', {}, format='json')
         self.assertEqual(resp.status_code, 404)
 
-    def test_requires_identifier_and_twilio(self):
-        self.assertEqual(APIClient().post('/api/telephony/start-recording/', {}, format='json').status_code, 400)
+    def test_requires_login(self):
+        self._call()
+        resp = APIClient().post('/api/telephony/start-recording/', {'recipient_number': '+48500'}, format='json')
+        self.assertEqual(resp.status_code, 401)
+
+    def test_cannot_record_someone_elses_call(self):
+        self._call()  # numer +48500
+        client = authed_client(email='other@telepakt.test', phone='+48999')
+        with mock.patch('telephony.providers.twilio_credentials', return_value=('AC1', 'tok')):
+            resp = client.post('/api/telephony/start-recording/', {'call_sid': 'CA9'}, format='json')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_requires_phone_in_profile_and_twilio(self):
+        self.assertEqual(authed_client(phone='').post('/api/telephony/start-recording/', {}, format='json').status_code, 400)
         self._call()
         with mock.patch('telephony.providers.twilio_credentials', return_value=('', '')):
-            resp = APIClient().post('/api/telephony/start-recording/', {'call_sid': 'CA9'}, format='json')
+            resp = authed_client(email='b@telepakt.test').post('/api/telephony/start-recording/', {'call_sid': 'CA9'}, format='json')
         self.assertEqual(resp.status_code, 503)
 
 
@@ -156,6 +181,7 @@ class ReviewsTests(TestCase):
 class PurchaseAndHealthTests(TestCase):
     def setUp(self):
         self.api = APIClient()
+        self.authed = authed_client()
 
     def test_purchase_is_not_auto_verified(self):
         payload = {'user_email': 'a@b.pl', 'purchase_token': 'tok', 'platform': 'google_play'}
@@ -176,10 +202,10 @@ class PurchaseAndHealthTests(TestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_zero_storage_delete_removes_recording_at_twilio(self):
-        CallLog.objects.create(call_sid='CA9', caller_number='x', recipient_number='y',
+        CallLog.objects.create(call_sid='CA9', caller_number='x', recipient_number='+48500',
                                recording_url='https://x/r', recording_sid='RE9')
         with mock.patch('telephony.retention._twilio_client') as client:
-            resp = self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA9'}, format='json')
+            resp = self.authed.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA9'}, format='json')
         self.assertEqual(resp.status_code, 200)
         client.return_value.recordings.assert_called_once_with('RE9')
         client.return_value.recordings.return_value.delete.assert_called_once()
@@ -187,23 +213,28 @@ class PurchaseAndHealthTests(TestCase):
         self.assertIsNone(call.recording_url)
         self.assertEqual(call.recording_sid, '')
         self.assertTrue(call.deleted_from_server)
-        self.assertEqual(self.api.post('/api/telephony/zero-storage-delete/', {}, format='json').status_code, 400)
+        self.assertEqual(self.authed.post('/api/telephony/zero-storage-delete/', {}, format='json').status_code, 400)
 
     def test_zero_storage_delete_fails_loudly_when_twilio_is_down(self):
-        CallLog.objects.create(call_sid='CA10', caller_number='x', recipient_number='y',
+        CallLog.objects.create(call_sid='CA10', caller_number='x', recipient_number='+48500',
                                recording_url='https://x/r', recording_sid='RE10')
         with mock.patch('telephony.retention._twilio_client') as client:
             client.return_value.recordings.return_value.delete.side_effect = RuntimeError('boom')
-            resp = self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA10'}, format='json')
+            resp = self.authed.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA10'}, format='json')
         self.assertEqual(resp.status_code, 502)
         call = CallLog.objects.get(call_sid='CA10')
         self.assertFalse(call.deleted_from_server)       # nie udajemy, że usunięto
         self.assertEqual(call.recording_sid, 'RE10')
 
     def test_zero_storage_delete_without_twilio_credentials_is_not_reported_as_success(self):
-        CallLog.objects.create(call_sid='CA11', caller_number='x', recipient_number='y', recording_sid='RE11')
-        resp = self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA11'}, format='json')
+        CallLog.objects.create(call_sid='CA11', caller_number='x', recipient_number='+48500', recording_sid='RE11')
+        resp = self.authed.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA11'}, format='json')
         self.assertEqual(resp.status_code, 502)
+
+    def test_zero_storage_delete_requires_login_and_ownership(self):
+        CallLog.objects.create(call_sid='CA12', caller_number='x', recipient_number='+48999', recording_sid='RE12')
+        self.assertEqual(self.api.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA12'}, format='json').status_code, 401)
+        self.assertEqual(self.authed.post('/api/telephony/zero-storage-delete/', {'call_sid': 'CA12'}, format='json').status_code, 404)
 
     def test_health(self):
         # watek kontroli dostawcow nie moze pisac do bazy testowej rownolegle z testem

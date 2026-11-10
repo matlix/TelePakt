@@ -32,7 +32,7 @@ class CallOverlayService : Service() {
     private var telephonyManager: TelephonyManager? = null
     private var isDefenseActivated = false
     private var apiUrl = ""
-    private var recipientNumber = ""
+    private var authToken = ""
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -48,7 +48,7 @@ class CallOverlayService : Service() {
         // Konfigurację zapisuje aplikacja (TelePaktOverlayPlugin.saveConfig); CallReceiver nie zna jej z intentu
         val prefs = getSharedPreferences("telepakt", Context.MODE_PRIVATE)
         apiUrl = prefs.getString("api_url", "") ?: ""
-        recipientNumber = prefs.getString("recipient_number", "") ?: ""
+        authToken = prefs.getString("auth_token", "") ?: ""
         val phoneNumber = intent?.getStringExtra("PHONE_NUMBER") ?: "+48 799 555 123"
         showOverlayWindow(phoneNumber)
         return START_NOT_STICKY
@@ -265,8 +265,8 @@ class CallOverlayService : Service() {
 
     /** Prosi backend o włączenie nagrywania (Twilio). Rozmówca nie słyszy żadnego komunikatu. */
     private fun startRecording(button: Button) {
-        if (apiUrl.isBlank() || recipientNumber.isBlank()) {
-            Toast.makeText(this, "Nagrywanie niedostępne: brak konfiguracji konta", Toast.LENGTH_LONG).show()
+        if (apiUrl.isBlank() || authToken.isBlank()) {
+            Toast.makeText(this, "Nagrywanie niedostępne: zaloguj się w aplikacji TelePakt", Toast.LENGTH_LONG).show()
             return
         }
         button.isEnabled = false
@@ -279,8 +279,8 @@ class CallOverlayService : Service() {
                 conn.readTimeout = 8000
                 conn.doOutput = true
                 conn.setRequestProperty("Content-Type", "application/json")
-                val body = org.json.JSONObject().put("recipient_number", recipientNumber).toString()
-                conn.outputStream.use { it.write(body.toByteArray()) }
+                conn.setRequestProperty("Authorization", "Bearer $authToken")
+                conn.outputStream.use { it.write("{}".toByteArray()) }
                 val code = conn.responseCode
                 conn.disconnect()
                 code in 200..299

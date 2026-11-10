@@ -1,6 +1,6 @@
 /**
  * Aplikacja TelePakt (Android / PWA) - celowo minimalna:
- *   1. logowanie i rejestracja (e-mail + hasło, Firebase),
+ *   1. logowanie i rejestracja (e-mail + hasło, konta na backendzie TelePakt),
  *   2. profil użytkownika,
  *   3. ustawienia (uprawnienia nakładki połączeń, dokumenty prawne, wylogowanie, usunięcie konta).
  *
@@ -50,6 +50,8 @@ function AuthScreen({ onLegal }: { onLegal: (doc: LegalDocType) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [resetStep, setResetStep] = useState<'none' | 'code'>('none');
+  const [code, setCode] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +63,10 @@ function AuthScreen({ onLegal }: { onLegal: (doc: LegalDocType) => void }) {
     }
     setBusy(true);
     try {
-      if (mode === 'register') await authService.registerWithEmail(name, email, password);
+      if (resetStep === 'code') {
+        await authService.confirmPasswordReset(email, code, password);
+        await authService.loginWithEmail(email, password);
+      } else if (mode === 'register') await authService.registerWithEmail(name, email, password);
       else await authService.loginWithEmail(email, password);
     } catch (err: any) {
       setError(err.message || 'Wystąpił błąd. Spróbuj ponownie.');
@@ -75,7 +80,9 @@ function AuthScreen({ onLegal }: { onLegal: (doc: LegalDocType) => void }) {
     setInfo(null);
     try {
       await authService.resetPassword(email);
-      setInfo('Jeśli konto z tym adresem istnieje, wysłaliśmy wiadomość z linkiem do zmiany hasła.');
+      setResetStep('code');
+      setPassword('');
+      setInfo('Jeśli konto z tym adresem istnieje, wysłaliśmy 8-cyfrowy kod (ważny 15 minut). Wpisz go poniżej i ustaw nowe hasło.');
     } catch (err: any) {
       setError(err.message);
     }
@@ -99,7 +106,7 @@ function AuthScreen({ onLegal }: { onLegal: (doc: LegalDocType) => void }) {
             <button
               key={m}
               type="button"
-              onClick={() => { setMode(m); setError(null); setInfo(null); }}
+              onClick={() => { setMode(m); setError(null); setInfo(null); setResetStep('none'); }}
               className={`py-2.5 rounded-xl transition-all ${
                 mode === m ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
               }`}
@@ -128,8 +135,15 @@ function AuthScreen({ onLegal }: { onLegal: (doc: LegalDocType) => void }) {
             </div>
           </label>
 
+          {resetStep === 'code' && (
+            <label className="block space-y-1">
+              <span className="text-[11px] font-semibold text-slate-300">Kod z e-maila</span>
+              <input className={inputClass} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value)} placeholder="12345678" />
+            </label>
+          )}
+
           <label className="block space-y-1">
-            <span className="text-[11px] font-semibold text-slate-300">Hasło {mode === 'register' && '(min. 6 znaków)'}</span>
+            <span className="text-[11px] font-semibold text-slate-300">{resetStep === 'code' ? 'Nowe hasło' : 'Hasło'} {(mode === 'register' || resetStep === 'code') && '(min. 8 znaków)'}</span>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -171,10 +185,10 @@ function AuthScreen({ onLegal }: { onLegal: (doc: LegalDocType) => void }) {
           )}
 
           <button type="submit" disabled={busy} className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-slate-950 font-black text-sm disabled:opacity-60 active:scale-[0.98] transition-transform">
-            {busy ? 'Proszę czekać…' : mode === 'login' ? 'Zaloguj się' : 'Utwórz konto'}
+            {busy ? 'Proszę czekać…' : resetStep === 'code' ? 'Zmień hasło i zaloguj' : mode === 'login' ? 'Zaloguj się' : 'Utwórz konto'}
           </button>
 
-          {mode === 'login' && (
+          {mode === 'login' && resetStep === 'none' && (
             <button type="button" onClick={forgot} className="w-full text-center text-[11px] text-slate-400 underline py-1">
               Nie pamiętam hasła
             </button>
@@ -378,12 +392,13 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
 
   const refresh = () => NativeOverlayBridge.checkStatus().then(setStatus);
 
   useEffect(() => {
-    NativeOverlayBridge.saveConfig(API_URL, user.phoneProtected ?? '');
-  }, [user.phoneProtected]);
+    NativeOverlayBridge.saveConfig(API_URL, authService.getToken() ?? '');
+  }, [user.id]);
 
   useEffect(() => {
     refresh();
@@ -401,7 +416,7 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
     setDeleteError(null);
     setDeleting(true);
     try {
-      await authService.deleteAccount();
+      await authService.deleteAccount(deletePassword);
     } catch (err: any) {
       setDeleteError(err.message);
       setDeleting(false);
@@ -461,8 +476,9 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
         ) : (
           <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-3">
             <p className="text-[11px] text-rose-100 leading-snug">
-              Konto <strong className="break-all">{user.email}</strong> i Twoje dane profilu zostaną trwale usunięte. Tej operacji nie można cofnąć.
+              Konto <strong className="break-all">{user.email}</strong>, dane profilu i Twoje nagrania zostaną trwale usunięte. Tej operacji nie można cofnąć.
             </p>
+            <input className={inputClass} type="password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Wpisz hasło, aby potwierdzić" />
             {deleteError && <p role="alert" className="text-[11px] text-rose-200">{deleteError}</p>}
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => { setConfirmDelete(false); setDeleteError(null); }} className="py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-white">
@@ -518,7 +534,7 @@ export function AccountApp() {
         {tab === 'profile' ? (
           <ProfileTab user={user} onUpdate={setUser} />
         ) : (
-          <SettingsTab user={user} onLegal={setLegalDoc} onLogout={() => authService.logout()} />
+          <SettingsTab user={user} onLegal={setLegalDoc} onLogout={() => { NativeOverlayBridge.saveConfig(API_URL, ''); authService.logout(); }} />
         )}
       </main>
 

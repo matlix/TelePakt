@@ -60,12 +60,12 @@ class TelePaktOverlayPlugin : Plugin() {
         call.resolve(ret)
     }
 
-    /** Zapisuje adres API i numer chroniony - czyta je CallOverlayService uruchamiany przez CallReceiver. */
+    /** Zapisuje adres API i token sesji - czyta je CallOverlayService uruchamiany przez CallReceiver. */
     @PluginMethod
     fun saveConfig(call: PluginCall) {
         context.getSharedPreferences("telepakt", android.content.Context.MODE_PRIVATE).edit()
             .putString("api_url", call.getString("apiUrl", ""))
-            .putString("recipient_number", call.getString("recipientNumber", ""))
+            .putString("auth_token", call.getString("token", ""))
             .apply()
         call.resolve()
     }

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'accounts.apps.AccountsConfig',
     'telephony.apps.TelephonyConfig',
 ]
 
@@ -127,17 +128,33 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
         'CORS_ALLOWED_ORIGINS',
-        'https://telepakt.pl,https://www.telepakt.pl'
+        'https://telepakt.pl,https://www.telepakt.pl,https://localhost,capacitor://localhost'
     ).split(',')
 ]
 
 # Django REST Framework: publiczne endpointy są ograniczone throttlingiem.
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ['accounts.auth.BearerTokenAuthentication'],
     'DEFAULT_THROTTLE_RATES': {
+        'auth': os.environ.get('AUTH_THROTTLE_RATE', '30/hour'),
+        'password_reset': os.environ.get('RESET_THROTTLE_RATE', '5/hour'),
+        'password_reset_confirm': os.environ.get('RESET_CONFIRM_THROTTLE_RATE', '20/hour'),
         'reviews': os.environ.get('REVIEWS_THROTTLE_RATE', '30/hour'),
         'recording': os.environ.get('RECORDING_THROTTLE_RATE', '60/hour'),
     },
 }
+
+# E-mail (kody resetu hasla). Bez EMAIL_HOST wiadomosci trafiaja tylko do logow serwera.
+EMAIL_BACKEND = (
+    'django.core.mail.backends.smtp.EmailBackend' if os.environ.get('EMAIL_HOST')
+    else 'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'TelePakt <noreply@telepakt.pl>')
 
 # Twilio & Retencja
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')

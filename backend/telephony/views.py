@@ -28,7 +28,8 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from twilio.request_validator import RequestValidator
@@ -186,33 +187,30 @@ def twilio_recording_callback(request):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @throttle_classes([ScopedRateThrottle])
 def start_recording(request):
-    """Włącza nagrywanie trwającego (lub dopiero dzwoniącego) połączenia - bez zapowiedzi.
+    """Wlacza nagrywanie trwajacego (lub dopiero dzwoniacego) polaczenia - bez zapowiedzi.
 
-    Body: ``{"recipient_number": "+48..."}`` (numer chroniony użytkownika) albo
-    ``{"call_sid": "CA..."}``. Bez ``call_sid`` wybieramy najnowsze połączenie tego numeru
-    z ostatnich 10 minut, które jeszcze nie jest nagrywane. Zapis idzie przez Twilio
-    ``calls(sid).recordings.create`` - nie odtwarzamy żadnego komunikatu stronie rozmówcy.
-
-    TODO: uwierzytelnienie (token Firebase) - dziś kto zna numer chroniony, może włączyć
-    nagrywanie jego trwającego połączenia.
+    Wymaga zalogowania (``Authorization: Bearer``). Numer chroniony pochodzi z profilu
+    uzytkownika, wiec nikt nie moze nagrywac cudzych polaczen. Opcjonalnie body
+    ``{"call_sid": "CA..."}``; bez niego wybieramy najnowsze polaczenie tego numeru
+    z ostatnich 10 minut, ktore jeszcze nie jest nagrywane. Rozmowca nie slyszy zadnego komunikatu.
     """
+    phone = request.user.profile.phone_protected
+    if not phone:
+        return Response({"error": "Ustaw chroniony numer telefonu w profilu"}, status=400)
     call_sid = str(request.data.get('call_sid') or '')
-    recipient = str(request.data.get('recipient_number') or '')
-    if not call_sid and not recipient:
-        return Response({"error": "Podaj call_sid lub recipient_number"}, status=400)
 
     calls = CallLog.objects.filter(
+        recipient_number=phone,
         timestamp__gte=timezone.now() - timedelta(minutes=10),
         recording_started=False,
         deleted_from_server=False,
     )
-    call = calls.filter(call_sid=call_sid).first() if call_sid else (
-        calls.filter(recipient_number=recipient).order_by('-timestamp').first()
-    )
+    call = calls.filter(call_sid=call_sid).first() if call_sid else calls.order_by('-timestamp').first()
     if call is None:
-        return Response({"error": "Brak trwającego połączenia do nagrania"}, status=404)
+        return Response({"error": "Brak trwajacego polaczenia do nagrania"}, status=404)
 
     adapter = providers.adapter_for(call.provider)
     if adapter is None or not adapter.has_credentials():
@@ -235,6 +233,7 @@ start_recording.cls.throttle_scope = 'recording'
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def zero_storage_delete(request):
     """Procedura Zero-Storage: kasuje nagranie po pobraniu go przez klienta.
 
@@ -243,13 +242,13 @@ def zero_storage_delete(request):
     jako usuniętego - klient może spróbować ponownie, a czyszczenie retencyjne
     dokończy sprawę.
 
-    TODO: uwierzytelnienie (np. token Firebase) - dziś wystarczy znać ``call_sid``.
+    Wymaga zalogowania; można usunąć tylko nagrania połączeń na własny chroniony numer.
     """
     call_sid = request.data.get('call_sid')
     if not call_sid:
         return Response({"error": "Brak call_sid"}, status=400)
     try:
-        call = CallLog.objects.get(call_sid=call_sid)
+        call = CallLog.objects.get(call_sid=call_sid, recipient_number=request.user.profile.phone_protected)
     except CallLog.DoesNotExist:
         return Response({"error": "Połączenie nie istnieje"}, status=404)
 
