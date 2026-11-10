@@ -19,7 +19,7 @@ import os
 import secrets
 import threading
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import requests
 from cryptography.fernet import Fernet, InvalidToken
@@ -81,6 +81,10 @@ class BaseProvider:
     def delete_recording(self, recording_sid: str) -> bool:
         raise NotImplementedError
 
+    def open_recording(self, url: str):
+        """Otwiera strumień audio nagrania (``requests.Response`` ze stream=True)."""
+        raise NotImplementedError
+
     def has_credentials(self) -> bool:
         return bool(self.row.account_sid and decrypt_secret(self.row.secret_encrypted))
 
@@ -112,6 +116,18 @@ class TwilioProvider(BaseProvider):
     def delete_recording(self, recording_sid):
         from .retention import delete_twilio_recording
         return delete_twilio_recording(recording_sid)
+
+    def open_recording(self, url):
+        sid, token = twilio_credentials()
+        if not (sid and token):
+            raise ProviderError("Brak danych dostępowych Twilio")
+        _require_host(url, 'twilio.com')
+        media = url if url.endswith(('.mp3', '.wav')) else url + '.mp3'
+        resp = requests.get(media, auth=(sid, token), stream=True, timeout=HTTP_TIMEOUT)  # Basic tylko do twilio.com
+        if resp.status_code != 200:
+            resp.close()
+            raise ProviderError(f"Twilio HTTP {resp.status_code}")
+        return resp
 
 
 class TelnyxProvider(BaseProvider):
@@ -161,6 +177,23 @@ class TelnyxProvider(BaseProvider):
         if resp.status_code not in (200, 201):
             raise ProviderError(f"Telnyx HTTP {resp.status_code}")
 
+    def open_recording(self, url):
+        key = decrypt_secret(self.row.secret_encrypted)
+        if not key:
+            raise ProviderError("Brak danych dostępowych Telnyx")
+        # Telnyx zwraca RecordingUrl jak Twilio; token Bearer wysyłamy tylko do telnyx.com.
+        host = urlparse(url).hostname or ''
+        headers = {'Authorization': f'Bearer {key}'} if host.endswith('telnyx.com') else {}
+        candidates = [url] if url.endswith(('.mp3', '.wav')) else [url + '.mp3', url]
+        last = None
+        for candidate in candidates:
+            resp = requests.get(candidate, headers=headers, stream=True, timeout=HTTP_TIMEOUT)
+            if resp.status_code == 200:
+                return resp
+            last = resp.status_code
+            resp.close()
+        raise ProviderError(f"Telnyx HTTP {last}")
+
     def delete_recording(self, recording_sid):
         try:
             resp = self._request('DELETE', f'Recordings/{recording_sid}.json')
@@ -168,6 +201,21 @@ class TelnyxProvider(BaseProvider):
             logger.error("Telnyx: nie udało się usunąć nagrania %s: %s", recording_sid, exc)
             return False
         return resp.status_code in (200, 204, 404)
+
+
+def _require_host(url: str, domain: str) -> None:
+    """Dane dostępowe wysyłamy wyłącznie do hosta dostawcy (https), nigdy pod obcy adres."""
+    parsed = urlparse(url)
+    if parsed.scheme != 'https' or not (parsed.hostname or '').endswith(domain):
+        raise ProviderError("Nieprawidłowy adres nagrania")
+
+
+def open_recording(call):
+    """Strumień audio nagrania połączenia od dostawcy, przez którego przeszło."""
+    adapter = adapter_for(call.provider)
+    if adapter is None or not adapter.has_credentials():
+        raise ProviderError("Telefonia nie jest skonfigurowana")
+    return adapter.open_recording(call.recording_url)
 
 
 ADAPTERS = {'twilio': TwilioProvider, 'telnyx': TelnyxProvider}

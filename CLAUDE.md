@@ -48,6 +48,11 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 ## Python version on Render
 - Render defaults to the newest Python (3.14.x at the time). Django 5.1 breaks on 3.14 (`copy(Context)` -> `'super' object has no attribute 'dicts'`), which made EVERY admin page return 500 (incl. login) while local 3.12 worked. Pinned via `.python-version` (3.12.8) and `PYTHON_VERSION` in render.yaml; `backend/build.sh` prints versions and fails the build on a bad Python/Django pair; `PythonCompatTests` guards the context copy. If you move to Python 3.14, upgrade Django to >=5.2.8 first.
 
+## Recording the whole conversation (3-way, Nov 2026, untested on a real call)
+- Android cannot record call audio, so the overlay button "Nagrywaj całą rozmowę" fetches the TelePakt number (`/forwarding-info/`), opens the dialer (`ACTION_DIAL`); the user calls it and taps Merge. The provider webhook sees the user's own phone as `From` (matches `Profile.phone_protected`), so the bridge records silently (`beep=false`, `waitUrl=""`, `OWN_CALL_LABEL`) and the CallLog belongs to the user. Does not need forwarding.
+- App tab "Nagrania" lists/plays/deletes recordings via `/recordings/`, `/recordings/<sid>/audio/` (server streams from the provider; credentials only go to twilio.com / telnyx.com), `/zero-storage-delete/`.
+- Unverified assumptions: the empty `waitUrl` really yields silence, and Telnyx RecordingUrl works with `.mp3` + Bearer. Check with a real call first.
+
 ## Known issues / TODO
 - IAP store verification (verify-purchase is still unauthenticated), plaintext `IntegrationCredential.secret_value` (see backend/README.md).
 - Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.

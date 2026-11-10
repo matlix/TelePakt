@@ -9,11 +9,12 @@
  * Nie ma tu żadnych odnośników do strony internetowej.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { Copy, Info, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
+import { Copy, Info, Mic, Play, RefreshCw, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
 import { UserAccount } from '../types';
 import { authService } from '../services/authService';
 import { NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
 import { API_URL, FEATURES } from '../config';
+import { recordingsService, RecordingItem } from '../services/recordingsService';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
 
@@ -614,11 +615,155 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
   );
 }
 
+/* ------------------------------------------------------------------ Nagrania */
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function RecordingsTab() {
+  const [items, setItems] = useState<RecordingItem[] | null>(null);
+  const [needsPhone, setNeedsPhone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [playing, setPlaying] = useState<{ sid: string; url: string } | null>(null);
+  const [busySid, setBusySid] = useState<string | null>(null);
+  const [confirmSid, setConfirmSid] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await recordingsService.list();
+      setItems(data.recordings);
+      setNeedsPhone(data.needs_phone);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => () => { if (playing) URL.revokeObjectURL(playing.url); }, [playing]);
+
+  const play = async (sid: string) => {
+    setBusySid(sid);
+    setError(null);
+    try {
+      const url = await recordingsService.audioUrl(sid);
+      setPlaying({ sid, url });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusySid(null);
+    }
+  };
+
+  const remove = async (sid: string) => {
+    setBusySid(sid);
+    setError(null);
+    try {
+      await recordingsService.remove(sid);
+      setConfirmSid(null);
+      if (playing?.sid === sid) setPlaying(null);
+      await load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusySid(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Nagrania rozmów</h2>
+        <button onClick={load} disabled={loading} aria-label="Odśwież listę" className="p-2 rounded-xl border border-slate-800 text-slate-300 disabled:opacity-50">
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {error && (
+        <div role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-200">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {needsPhone && (
+        <p className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-[11px] text-amber-100 leading-snug">
+          Ustaw swój numer telefonu w zakładce Profil - po nim przypisujemy nagrania do Twojego konta.
+        </p>
+      )}
+
+      {items && items.length === 0 && !needsPhone && (
+        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 leading-snug space-y-2">
+          <p className="font-bold text-white">Nie masz jeszcze nagrań.</p>
+          <p>Aby nagrać całą rozmowę, w trakcie rozmowy stuknij w nakładce „Nagrywaj całą rozmowę”. Telefon wstrzyma rozmowę i zadzwoni na numer TelePakt. Gdy TelePakt odbierze, stuknij „Scal” (lub „Połącz rozmowy”) - od tej chwili nagrywane są obie strony.</p>
+        </div>
+      )}
+
+      <ul className="space-y-2.5">
+        {(items || []).map(item => {
+          const when = new Date(item.timestamp).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+          return (
+            <li key={item.call_sid} className="rounded-2xl bg-slate-900 border border-slate-800 p-3.5 space-y-2.5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                  <Mic className="w-4 h-4 text-cyan-300" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-white truncate">{item.own_call ? 'Cała rozmowa (nagrana przez Ciebie)' : item.caller_number}</div>
+                  <div className="text-[10px] text-slate-400">
+                    {when}{item.ready ? ` · ${formatDuration(item.duration_seconds)}` : ' · przetwarzanie…'}
+                  </div>
+                </div>
+              </div>
+
+              {playing?.sid === item.call_sid && (
+                <audio controls autoPlay src={playing.url} className="w-full" />
+              )}
+
+              {confirmSid === item.call_sid ? (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2">
+                  <p className="text-[11px] text-rose-100 leading-snug">Nagranie zostanie trwale usunięte z serwera i od operatora telefonii.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => setConfirmSid(null)} className="py-2 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-bold text-white">Anuluj</button>
+                    <button onClick={() => remove(item.call_sid)} disabled={busySid === item.call_sid} className="py-2 rounded-xl bg-rose-600 text-[11px] font-bold text-white disabled:opacity-60">
+                      {busySid === item.call_sid ? 'Usuwanie…' : 'Usuń trwale'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => play(item.call_sid)}
+                    disabled={!item.ready || busySid === item.call_sid}
+                    className="inline-flex items-center justify-center gap-1.5 py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold disabled:opacity-40"
+                  >
+                    <Play className="w-3.5 h-3.5" /> {busySid === item.call_sid ? 'Pobieranie…' : 'Odsłuchaj'}
+                  </button>
+                  <button onClick={() => setConfirmSid(item.call_sid)} className="inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-800 text-rose-300 text-[11px] font-bold">
+                    <Trash2 className="w-3.5 h-3.5" /> Usuń
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ Aplikacja */
 
 export function AccountApp() {
   const [user, setUser] = useState<UserAccount | null>(() => authService.getCurrentUser());
-  const [tab, setTab] = useState<'profile' | 'settings'>('profile');
+  const [tab, setTab] = useState<'profile' | 'recordings' | 'settings'>('profile');
   const [legalDoc, setLegalDoc] = useState<LegalDocType | null>(null);
 
   useEffect(() => authService.subscribe(setUser), []);
@@ -651,14 +796,16 @@ export function AccountApp() {
         <PermissionBanner onOpenSettings={() => setTab('settings')} />
         {tab === 'profile' ? (
           <ProfileTab user={user} onUpdate={setUser} />
+        ) : tab === 'recordings' ? (
+          <RecordingsTab />
         ) : (
           <SettingsTab user={user} onLegal={setLegalDoc} onLogout={() => { NativeOverlayBridge.saveConfig(API_URL, ''); authService.logout(); }} />
         )}
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-slate-950/95 backdrop-blur border-t border-slate-800 pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-md mx-auto grid grid-cols-2">
-          {([['profile', 'Profil', User], ['settings', 'Ustawienia', Settings]] as const).map(([id, label, Icon]) => (
+        <div className="max-w-md mx-auto grid grid-cols-3">
+          {([['profile', 'Profil', User], ['recordings', 'Nagrania', Mic], ['settings', 'Ustawienia', Settings]] as const).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setTab(id)}

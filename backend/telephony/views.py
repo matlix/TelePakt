@@ -25,7 +25,7 @@ from datetime import timedelta
 from functools import wraps
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, StreamingHttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
@@ -36,7 +36,8 @@ from twilio.request_validator import RequestValidator
 from twilio.twiml.voice_response import Dial, VoiceResponse
 
 from .models import CallLog, CustomerReview, InAppPurchaseReceipt, LegalScript
-from accounts.services import ensure_profile
+from accounts.models import Profile
+from accounts.services import ensure_profile, normalize_phone
 from . import providers
 from .retention import erase_recording, maybe_purge_expired
 
@@ -50,6 +51,9 @@ DEFAULT_LEGAL_FORMULA = (
 #: Głos i tempo TwiML <Say> (Amazon Polly, neuronowy polski głos).
 TTS_VOICE = 'Polly.Ola-Neural'
 TTS_RATE = '110%'
+
+#: Etykieta w rejestrze dla rozmowy nagrywanej przez scalenie (3-way) przez samego użytkownika.
+OWN_CALL_LABEL = 'Rozmowa własna (3-way)'
 
 #: Dozwolone typy urządzeń w opiniach (zgodne z ``CustomerReview.DEVICE_CHOICES``).
 REVIEW_DEVICES = {choice[0] for choice in CustomerReview.DEVICE_CHOICES}
@@ -103,6 +107,13 @@ def twilio_conference_bridge(request):
     called = request.POST.get('ForwardedFrom') or request.POST.get('To', 'TelePakt')
     call_sid = request.POST.get('CallSid', 'sid-test')
 
+    # Rozmowa WLASNA (3-way): uzytkownik w trakcie rozmowy dzwoni na numer TelePakt i scala polaczenia.
+    # Wtedy "dzwoniacym" jest jego wlasny numer, a w jego nogach slychac obie strony rozmowy.
+    own_phone = normalize_phone(caller) or ''
+    is_own_call = bool(own_phone) and Profile.objects.filter(phone_protected=own_phone).exists()
+    if is_own_call:
+        caller, called = OWN_CALL_LABEL, own_phone
+
     CallLog.objects.get_or_create(
         call_sid=call_sid,
         defaults={
@@ -125,7 +136,9 @@ def twilio_conference_bridge(request):
         recording_status_callback_event='completed',
         recording_status_callback_method='POST',
         start_conference_on_enter=True,
-        end_conference_on_exit=False,
+        end_conference_on_exit=is_own_call,
+        # Rozmowa wlasna: nic nie moze byc slyszalne dla rozmowcy - bez muzyki oczekiwania i sygnalow.
+        **({'beep': 'false', 'wait_url': ''} if is_own_call else {}),
     )
     response.append(dial)
     return _xml(response)
@@ -233,6 +246,55 @@ def start_recording(request):
 
 start_recording.cls.throttle_scope = 'recording'
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recordings_list(request):
+    """Nagrania zalogowanego użytkownika (połączenia na jego chroniony numer), najnowsze pierwsze."""
+    phone = ensure_profile(request.user).phone_protected
+    if not phone:
+        return Response({"recordings": [], "needs_phone": True})
+    calls = CallLog.objects.filter(recipient_number=phone, recording_started=True,
+                                   deleted_from_server=False).order_by("-timestamp")[:100]
+    return Response({"recordings": [{
+        "call_sid": c.call_sid,
+        "timestamp": c.timestamp.isoformat(),
+        "duration_seconds": c.duration_seconds,
+        "caller_number": c.caller_number,
+        "own_call": c.caller_number == OWN_CALL_LABEL,
+        "ready": bool(c.recording_url),
+    } for c in calls], "needs_phone": False})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recording_audio(request, call_sid):
+    """Strumieniuje nagranie z serwera dostawcy do zalogowanego właściciela (ma własny numer w profilu).
+
+    Dostawca wymaga uwierzytelnienia przy pobieraniu, więc aplikacja nie może użyć adresu nagrania
+    bezpośrednio. Plik nie jest zapisywany u nas - tylko przepuszczany (Zero-Storage).
+    """
+    phone = ensure_profile(request.user).phone_protected
+    call = CallLog.objects.filter(call_sid=call_sid, recipient_number=phone, deleted_from_server=False).first() if phone else None
+    if call is None:
+        return Response({"error": "Nie znaleziono nagrania"}, status=404)
+    if not call.recording_url:
+        return Response({"error": "Nagranie jest jeszcze przetwarzane. Spróbuj za minutę."}, status=409)
+    try:
+        upstream = providers.open_recording(call)
+    except Exception as exc:  # noqa: BLE001 - błąd dostawcy -> czytelny komunikat + log z identyfikatorem
+        logger.exception("Nie udało się pobrać nagrania %s (%s): %s", call.call_sid, call.provider, exc)
+        return Response({"error": f"Nie udało się pobrać nagrania od dostawcy telefonii: {exc}"}, status=502)
+
+    def stream():
+        try:
+            yield from upstream.iter_content(chunk_size=65536)
+        finally:
+            upstream.close()
+
+    response = StreamingHttpResponse(stream(), content_type=upstream.headers.get('Content-Type', 'audio/mpeg'))
+    response["Cache-Control"] = "no-store"
+    return response
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

@@ -207,20 +207,38 @@ class CallOverlayService : Service() {
         sliderTrack.addView(sliderThumb)
         root.addView(sliderTrack)
 
-        // Nagrywanie - działa także zanim odbierzemy (połączenie musi iść przez numer TelePakt)
+        // Nagrywanie CAŁEJ rozmowy: telefon wstrzymuje rozmowę i dzwoni na numer TelePakt; po stuknięciu
+        // "Scal" w aplikacji Telefon numer TelePakt słyszy obie strony i nagrywa (3-way, bez zapowiedzi).
         val recordBtn = Button(this).apply {
-            text = "● NAGRYWAJ TĘ ROZMOWĘ"
+            text = "● NAGRYWAJ CAŁĄ ROZMOWĘ"
             textSize = 12f
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 setColor(Color.parseColor("#DC2626"))
                 cornerRadius = 32f
             }
-            setOnClickListener { startRecording(this) }
+            setOnClickListener { recordWholeCall(this) }
         }
         root.addView(recordBtn, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = 16 })
+
+        if (FORWARDING_ENABLED) {
+            // Tryb przekierowania: nagrywa rozmowę, która już przechodzi przez numer TelePakt.
+            val recordForwardedBtn = Button(this).apply {
+                text = "● NAGRYWAJ (rozmowa przez TelePakt)"
+                textSize = 11f
+                setTextColor(Color.WHITE)
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#7F1D1D"))
+                    cornerRadius = 32f
+                }
+                setOnClickListener { startRecording(this) }
+            }
+            root.addView(recordForwardedBtn, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 12 })
+        }
 
         // Przekierowanie: odrzucenie dzwoniącego połączenia uruchamia u operatora przekierowanie
         // "gdy zajęty" na numer TelePakt (kod ustawiany w aplikacji, ekran Ustawienia).
@@ -272,6 +290,67 @@ class CallOverlayService : Service() {
             Toast.LENGTH_LONG
         ).show()
         if (ended) stopSelf()
+    }
+
+    /**
+     * Nagrywanie całej rozmowy metodą 3-way: pobiera numer TelePakt z serwera i otwiera aplikację Telefon
+     * z wpisanym numerem. Użytkownik wciska "zadzwoń" (rozmowa idzie na wstrzymanie), a gdy TelePakt odbierze -
+     * "Scal". Android nie pozwala aplikacji nagrywać dźwięku zwykłej rozmowy, więc nagrywa serwer.
+     */
+    private fun recordWholeCall(button: Button) {
+        if (apiUrl.isBlank()) {
+            Toast.makeText(this, "Nagrywanie niedostępne: zaloguj się w aplikacji TelePakt", Toast.LENGTH_LONG).show()
+            return
+        }
+        button.isEnabled = false
+        Thread {
+            var number = ""
+            var message = "Nie udało się pobrać numeru TelePakt"
+            try {
+                val conn = java.net.URL("${apiUrl.trimEnd('/')}/api/telephony/forwarding-info/")
+                    .openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                val code = conn.responseCode
+                val body = (if (code in 200..299) conn.inputStream else conn.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }.orEmpty()
+                if (code in 200..299) {
+                    number = org.json.JSONObject(body).optString("number")
+                } else {
+                    message = try {
+                        org.json.JSONObject(body).optString("error", message)
+                    } catch (e: Exception) {
+                        "$message (HTTP $code)"
+                    }
+                    android.util.Log.w("TelePakt", "forwarding-info HTTP $code: $body")
+                }
+                conn.disconnect()
+            } catch (e: Exception) {
+                message = "Brak połączenia z serwerem"
+                android.util.Log.e("TelePakt", "record-whole-call: pobranie numeru nie powiodło się", e)
+            }
+            button.post {
+                button.isEnabled = true
+                if (number.isBlank()) {
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    return@post
+                }
+                try {
+                    val dial = Intent(Intent.ACTION_DIAL, android.net.Uri.fromParts("tel", number, null))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(dial)
+                    button.text = "● GDY TELEPAKT ODBIERZE: STUKNIJ „SCAL”"
+                    Toast.makeText(
+                        this,
+                        "Wciśnij zadzwoń. Gdy TelePakt odbierze, stuknij „Scal” w aplikacji Telefon - wtedy nagrywane są obie strony.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } catch (e: Exception) {
+                    android.util.Log.e("TelePakt", "record-whole-call: nie można otworzyć aplikacji Telefon", e)
+                    Toast.makeText(this, "Nie można otworzyć aplikacji Telefon", Toast.LENGTH_LONG).show()
+                }
+            }
+        }.start()
     }
 
     /** Prosi backend o włączenie nagrywania (Twilio). Rozmówca nie słyszy żadnego komunikatu. */
