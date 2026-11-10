@@ -1015,7 +1015,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <span className="text-2xl leading-none">🛡️</span>
               <div className="space-y-0.5">
                 <strong className="text-white block">Gwarancja 100% Odblokowanych Funkcji:</strong>
-                <span>Auto-Sprzeciw (art. 398 PKE), nagranie rozmowy, Wnioski UKE, Baza Offline, Sprzeciw SMS Twilio, Pływający Suwak i Zero-Storage działają bez ograniczeń w każdym pakiecie.</span>
+                <span>Auto-Sprzeciw (art. 398 PKE), nagranie rozmowy, Wnioski UKE, Baza Offline, Pływający Suwak i Zero-Storage działają bez ograniczeń w każdym pakiecie.</span>
               </div>
             </div>
           </div>
@@ -1063,9 +1063,6 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Sprawdzanie numerów ze zgłoszeń społeczności
-                  </li>
-                  <li className="flex items-center gap-2">
-                    ✓ Bramka SMS (art. 77² K.c.) z gotowymi wzorcami
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Zero-Storage: nagrania wyłącznie w Twoim telefonie
@@ -1133,9 +1130,6 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Nielimitowane zawiadomienia do Prezesa UKE i UODO
-                  </li>
-                  <li className="flex items-center gap-2">
-                    ✓ Bramka SMS (art. 77² K.c.) z natychmiastowym doręczeniem
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Płatność jednorazowa przez sklep z aplikacjami

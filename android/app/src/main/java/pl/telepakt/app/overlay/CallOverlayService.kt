@@ -27,6 +27,15 @@ import androidx.core.app.NotificationCompat
  */
 class CallOverlayService : Service() {
 
+    companion object {
+        /**
+         * Przycisk "Przekieruj do TelePakt" jest chwilowo wylaczony (decyzja wlasciciela, 2026-11-10).
+         * Aby go wlaczyc: ustaw true, dodaj ANSWER_PHONE_CALLS do AndroidManifest.xml i do aliasu "phone"
+         * w TelePaktOverlayPlugin.kt oraz wlacz FEATURES.forwarding w src/config.ts.
+         */
+        private const val FORWARDING_ENABLED = false
+    }
+
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
     private var telephonyManager: TelephonyManager? = null
@@ -215,20 +224,22 @@ class CallOverlayService : Service() {
 
         // Przekierowanie: odrzucenie dzwoniącego połączenia uruchamia u operatora przekierowanie
         // "gdy zajęty" na numer TelePakt (kod ustawiany w aplikacji, ekran Ustawienia).
-        val forwardBtn = Button(this).apply {
-            text = "↪ PRZEKIERUJ DO TELEPAKT"
-            textSize = 12f
-            setTextColor(Color.parseColor("#38BDF8"))
-            background = GradientDrawable().apply {
-                setColor(Color.TRANSPARENT)
-                cornerRadius = 32f
-                setStroke(3, Color.parseColor("#38BDF8"))
+        if (FORWARDING_ENABLED) {
+            val forwardBtn = Button(this).apply {
+                text = "↪ PRZEKIERUJ DO TELEPAKT"
+                textSize = 12f
+                setTextColor(Color.parseColor("#38BDF8"))
+                background = GradientDrawable().apply {
+                    setColor(Color.TRANSPARENT)
+                    cornerRadius = 32f
+                    setStroke(3, Color.parseColor("#38BDF8"))
+                }
+                setOnClickListener { sendToTelePakt() }
             }
-            setOnClickListener { sendToTelePakt() }
+            root.addView(forwardBtn, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 12 })
         }
-        root.addView(forwardBtn, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = 12 })
 
         // Close button
         val closeBtn = Button(this).apply {
@@ -271,7 +282,9 @@ class CallOverlayService : Service() {
         }
         button.isEnabled = false
         Thread {
-            val ok = try {
+            var ok = false
+            var message = "Nie udało się włączyć nagrywania"
+            try {
                 val conn = java.net.URL("${apiUrl.trimEnd('/')}/api/telephony/start-recording/")
                     .openConnection() as java.net.HttpURLConnection
                 conn.requestMethod = "POST"
@@ -282,33 +295,48 @@ class CallOverlayService : Service() {
                 conn.setRequestProperty("Authorization", "Bearer $authToken")
                 conn.outputStream.use { it.write("{}".toByteArray()) }
                 val code = conn.responseCode
+                if (code in 200..299) {
+                    ok = true
+                } else {
+                    // Pokazujemy PRZYCZYNE z serwera (np. "brak trwajacego polaczenia"), nie ogolny blad.
+                    val body = (conn.errorStream ?: conn.inputStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+                    message = try {
+                        org.json.JSONObject(body).optString("error", message)
+                    } catch (e: Exception) {
+                        "$message (HTTP $code)"
+                    }
+                    android.util.Log.w("TelePakt", "start-recording HTTP $code: $body")
+                }
                 conn.disconnect()
-                code in 200..299
             } catch (e: Exception) {
-                false
+                message = "Brak połączenia z serwerem"
+                android.util.Log.e("TelePakt", "start-recording failed", e)
             }
             button.post {
                 if (ok) {
                     button.text = "● NAGRYWANIE TRWA"
                 } else {
                     button.isEnabled = true
-                    Toast.makeText(this, "Nie udało się włączyć nagrywania", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 }
             }
         }.start()
     }
 
+    /**
+     * Suwak auto-sprzeciwu nie wygłasza jeszcze niczego: zwykłej rozmowy komórkowej Android nie pozwala
+     * zagłuszyć ani uzupełnić dźwiękiem z aplikacji. Formułę odtworzy dopiero połączenie przechodzące przez
+     * numer TelePakt. Dlatego mówimy to wprost, zamiast udawać sukces.
+     */
     private fun activateDefense(root: LinearLayout, hint: TextView, thumb: View) {
-        isDefenseActivated = true
-        thumb.visibility = View.GONE
-        hint.text = "✓ SPRZECIW WŁĄCZONY"
-        hint.setTextColor(Color.parseColor("#10B981"))
-        root.background = GradientDrawable().apply {
-            setColor(Color.parseColor("#064E3B"))
-            cornerRadius = 48f
-            setStroke(3, Color.parseColor("#10B981"))
-        }
-        Toast.makeText(this, "TelePakt: Formuła prawna Art. 398 PKE wygłoszona w trakcie połączenia!", Toast.LENGTH_LONG).show()
+        thumb.animate().x(0f).setDuration(200).start()
+        hint.text = "Auto-sprzeciw: wymaga numeru TelePakt (wkrótce)"
+        hint.setTextColor(Color.parseColor("#F59E0B"))
+        Toast.makeText(
+            this,
+            "Auto-sprzeciw zadziała dla rozmów przechodzących przez numer TelePakt - ta funkcja jest jeszcze w przygotowaniu.",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun startForegroundServiceNotification() {

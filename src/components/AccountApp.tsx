@@ -13,7 +13,7 @@ import { Copy, Info, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Loc
 import { UserAccount } from '../types';
 import { authService } from '../services/authService';
 import { NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
-import { API_URL } from '../config';
+import { API_URL, FEATURES } from '../config';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
 
@@ -344,7 +344,7 @@ function StatusRow({ label, desc, granted, onAction, help }: { label: string; de
 }
 
 const OVERLAY_HELP: PermissionHelp = {
-  why: 'Dzięki temu TelePakt może pokazać przyciski „Nagrywaj” i „Przekieruj do TelePakt” na ekranie dzwoniącego połączenia.',
+  why: 'Dzięki temu TelePakt może pokazać swoje przyciski (np. „Nagrywaj”) na ekranie dzwoniącego połączenia.',
   steps: [
     'Dotknij „Włącz” - otworzą się ustawienia Androida.',
     'Jeśli zobaczysz listę aplikacji, wybierz TelePakt (to nie jest aplikacja Telefon).',
@@ -354,9 +354,9 @@ const OVERLAY_HELP: PermissionHelp = {
 };
 
 const PHONE_HELP: PermissionHelp = {
-  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, i może odrzucić rozmowę przyciskiem „Przekieruj do TelePakt”. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
+  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, i może wtedy pokazać swoje przyciski. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
   steps: [
-    'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o zarządzanie połączeniami.',
+    'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o dostęp do stanu telefonu.',
     'Wybierz „Zezwól”.',
     'Jeśli okienko się nie pojawi, otwórz Ustawienia telefonu > Aplikacje > TelePakt > Uprawnienia > Telefon i włącz je ręcznie.',
   ],
@@ -566,7 +566,7 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
         )}
       </section>
 
-      {isNative && <ForwardingSection />}
+      {isNative && FEATURES.forwarding && <ForwardingSection />}
 
       <section className="space-y-2.5">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Prywatność i dokumenty</h2>

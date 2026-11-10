@@ -212,7 +212,7 @@ def start_recording(request):
     )
     call = calls.filter(call_sid=call_sid).first() if call_sid else calls.order_by('-timestamp').first()
     if call is None:
-        return Response({"error": "Brak trwajacego polaczenia do nagrania"}, status=404)
+        return Response({"error": "Brak trwającego połączenia do nagrania. Nagrywanie działa tylko dla rozmów przechodzących przez numer TelePakt."}, status=404)
 
     adapter = providers.adapter_for(call.provider)
     if adapter is None or not adapter.has_credentials():
