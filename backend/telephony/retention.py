@@ -25,7 +25,9 @@ _last_purge_ts = 0.0
 
 def _twilio_client():
     """Zwraca klienta Twilio albo ``None``, gdy brak danych dostępowych."""
-    sid, token = settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN
+    from .providers import twilio_credentials  # dane z panelu admina lub ze zmiennych env
+
+    sid, token = twilio_credentials()
     if not sid or not token:
         return None
     from twilio.rest import Client  # import leniwy: nie wymagamy Twilio w testach
@@ -50,12 +52,22 @@ def delete_twilio_recording(recording_sid: str) -> bool:
         return False
 
 
+def _delete_recording(call: CallLog) -> bool:
+    """Kasuje nagranie u dostawcy, przez którego przeszło połączenie."""
+    if call.provider == 'twilio':
+        return delete_twilio_recording(call.recording_sid)
+    from .providers import adapter_for
+
+    adapter = adapter_for(call.provider)
+    return bool(adapter and adapter.delete_recording(call.recording_sid))
+
+
 def erase_recording(call: CallLog) -> bool:
     """Kasuje nagranie połączenia u operatora i w bazie. ``False`` = nie udało się (spróbuj później).
 
     Gdy połączenie nie ma nagrania (brak ``recording_sid``), czyści tylko wpis w bazie.
     """
-    if call.recording_sid and not delete_twilio_recording(call.recording_sid):
+    if call.recording_sid and not _delete_recording(call):
         return False
     call.recording_url = None
     call.recording_sid = ''

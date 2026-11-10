@@ -10,7 +10,7 @@ export const LEGAL_SCRIPTS: LegalScript[] = [
     badge: 'Maksymalny rygor prawny',
     durationEst: '34 sekundy (~1 min taryfikacji)',
     autoHangup: true,
-    text: `Dzień dobry. Informuję, że ta rozmowa jest nagrywana. Nie wyraziłem zgody na kontakt marketingowy, a zgodnie z art. 398 ustawy – Prawo komunikacji elektronicznej taki kontakt wymaga mojej uprzedniej zgody. Na podstawie art. 21 RODO wnoszę sprzeciw wobec przetwarzania moich danych osobowych, w tym numeru telefonu, w celach marketingu bezpośredniego, a na podstawie art. 17 RODO żądam usunięcia moich danych z Państwa baz. Na podstawie art. 15 RODO proszę o informację, skąd pozyskali Państwo mój numer. W przypadku ponownego kontaktu złożę skargę do Prezesa UKE oraz Prezesa UODO i rozważę dochodzenie roszczeń na drodze sądowej. Do widzenia.`,
+    text: `Dzień dobry. Nie wyraziłem zgody na kontakt marketingowy, a zgodnie z art. 398 ustawy – Prawo komunikacji elektronicznej taki kontakt wymaga mojej uprzedniej zgody. Na podstawie art. 21 RODO wnoszę sprzeciw wobec przetwarzania moich danych osobowych, w tym numeru telefonu, w celach marketingu bezpośredniego, a na podstawie art. 17 RODO żądam usunięcia moich danych z Państwa baz. Na podstawie art. 15 RODO proszę o informację, skąd pozyskali Państwo mój numer. W przypadku ponownego kontaktu złożę skargę do Prezesa UKE oraz Prezesa UODO i rozważę dochodzenie roszczeń na drodze sądowej. Do widzenia.`,
     legalBreakdown: [
       {
         article: 'Art. 398 PKE (od 10.11.2024)',
@@ -35,29 +35,6 @@ export const LEGAL_SCRIPTS: LegalScript[] = [
     ]
   },
   {
-    id: 'script-2-recording-notice',
-    title: 'Informacja o rejestracji połączenia',
-    shortDesc: 'Zwięzła, oficjalna klauzula informacyjna. Do użycia przy każdej wątpliwej rozmowie.',
-    category: 'recording-notice',
-    legalAct: 'Art. 23 i 24 Kodeksu cywilnego (Dobra osobiste)',
-    badge: 'Neutralna informacyjna',
-    durationEst: '8 sekund',
-    autoHangup: false,
-    text: `Informuję, że ta rozmowa jest nagrywana. Kontynuując rozmowę, przyjmuje Pan/Pani to do wiadomości.`,
-    legalBreakdown: [
-      {
-        article: 'Legalność nagrywania własnej rozmowy',
-        description: 'W polskim prawie (art. 267 Kodeksu karnego dotyczy wyłącznie podsłuchu osób trzecich). Uczestnik rozmowy MOŻE ją nagrywać na własny użytek bez zgody drugiej strony.',
-        penalty: 'Brak odpowiedzialności karnej; nagranie stanowi dopuszczalny dowód w sądzie i przed urzędami.'
-      },
-      {
-        article: 'Art. 308 K.p.c. (Dowód z nagrania dźwiękowego)',
-        description: 'Polskie sądy powszechne oraz organy administracji (UKE, UODO, Policja) rutynowo dopuszczają nagrania wykonane przez uczestnika rozmowy jako pełnoprawny dowód.',
-        penalty: 'Materiały audio są kluczem do ukarania nielegalnego call center.'
-      }
-    ]
-  },
-  {
     id: 'script-3-short-rejection',
     title: 'Krótka odmowa z zakazem kontaktu',
     shortDesc: 'Szybkie zakończenie rozmowy bez zbędnej dyskusji, ale z zachowaniem rygoru RODO.',
@@ -66,7 +43,7 @@ export const LEGAL_SCRIPTS: LegalScript[] = [
     badge: 'Ekspresowa odmowa',
     durationEst: '12 sekund',
     autoHangup: true,
-    text: `Nie jestem zainteresowany i nie zgadzam się na kontakt marketingowy. Proszę trwale usunąć mój numer z Państwa listy kontaktowej. Ta rozmowa jest nagrywana jako dowód. Do widzenia.`,
+    text: `Nie jestem zainteresowany i nie zgadzam się na kontakt marketingowy. Proszę trwale usunąć mój numer z Państwa listy kontaktowej. Do widzenia.`,
     legalBreakdown: [
       {
         article: 'Art. 21 ust. 3 RODO',

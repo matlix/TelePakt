@@ -48,7 +48,9 @@ class CallLog(models.Model):
     recording_url = models.URLField(max_length=500, blank=True, null=True, verbose_name="Tymczasowy URL nagrania Twilio (kasowany po pobraniu)")
     recording_sid = models.CharField(max_length=64, blank=True, verbose_name="Twilio Recording SID (do skasowania nagrania)")
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='initiated')
-    downloaded_locally = models.BooleanField(default=False, verbose_name="Zapisano na urządzeniu klienta")
+    provider = models.CharField(max_length=20, default='twilio', verbose_name="Dostawca telefonii")
+    recording_started = models.BooleanField(default=False, verbose_name="Nagrywanie włączone (przyciskiem lub od początku)")
+    downloaded_locally =models.BooleanField(default=False, verbose_name="Zapisano na urządzeniu klienta")
     deleted_from_server = models.BooleanField(default=False, verbose_name="Usunięto z serwerów (Zero-Storage)")
     retention_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Termin autokasowania")
 
@@ -132,3 +134,34 @@ class InAppPurchaseReceipt(models.Model):
     class Meta:
         verbose_name = "Paragon In-App Purchase"
         verbose_name_plural = "Paragony In-App Purchases"
+
+
+class TelephonyProvider(models.Model):
+    """Dostawca telefonii (Twilio, Telnyx...) z danymi dostępowymi ustawianymi w panelu admina.
+
+    Wybór dostawcy: włączeni (``is_enabled``) wg ``priority``; zdrowi przed niezdrowymi.
+    Stan (``status``) aktualizuje okresowe sprawdzanie - patrz :mod:`telephony.providers`.
+    """
+    KIND_CHOICES = [('twilio', 'Twilio'), ('telnyx', 'Telnyx (TeXML)')]
+    STATUS_CHOICES = [('unknown', 'Nie sprawdzono'), ('ok', 'Działa'), ('failing', 'Awaria')]
+
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, unique=True)
+    is_enabled = models.BooleanField(default=False, verbose_name="Włączony")
+    priority = models.PositiveIntegerField(default=10, verbose_name="Priorytet (mniejszy = ważniejszy)")
+    account_sid = models.CharField(max_length=128, blank=True, verbose_name="Account SID / ID konta")
+    secret_encrypted = models.TextField(blank=True, editable=False)
+    phone_number = models.CharField(max_length=32, blank=True, verbose_name="Numer TelePakt u tego dostawcy (E.164)")
+    webhook_token = models.CharField(max_length=64, blank=True, editable=False)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='unknown')
+    consecutive_failures = models.PositiveIntegerField(default=0)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+    last_ok_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ['priority', 'id']
+        verbose_name = "Dostawca telefonii"
+        verbose_name_plural = "Dostawcy telefonii"
+
+    def __str__(self):
+        return self.get_kind_display()

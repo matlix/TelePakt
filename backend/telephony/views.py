@@ -35,6 +35,7 @@ from twilio.request_validator import RequestValidator
 from twilio.twiml.voice_response import Dial, VoiceResponse
 
 from .models import CallLog, CustomerReview, InAppPurchaseReceipt, LegalScript
+from . import providers
 from .retention import erase_recording, maybe_purge_expired
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,13 @@ def twilio_webhook(view):
     @wraps(view)
     def wrapper(request, *args, **kwargs):
         if not settings.DEBUG:
-            token = settings.TWILIO_AUTH_TOKEN
+            if request.GET.get('provider') == 'telnyx':
+                # Telnyx: tajny token w adresie webhooka (ustawiany w panelu admina)
+                if not providers.webhook_token_valid('telnyx', request.GET.get('token', '')):
+                    logger.warning("Odrzucono webhook Telnyx z błędnym tokenem: %s", request.path)
+                    return HttpResponseForbidden("Invalid webhook token")
+                return view(request, *args, **kwargs)
+            token = providers.twilio_credentials()[1]
             signature = request.headers.get('X-Twilio-Signature', '')
             url = request.build_absolute_uri()
             if not token or not RequestValidator(token).validate(url, request.POST.dict(), signature):
@@ -89,7 +96,9 @@ def twilio_conference_bridge(request):
     """
     response = VoiceResponse()
     caller = request.POST.get('From', 'Nieznany')
-    called = request.POST.get('To', 'TelePakt')
+    # Przy przekierowaniu operatora numer użytkownika przychodzi w ForwardedFrom (jeśli operator go przekaże);
+    # po nim przycisk "Nagrywaj" w aplikacji znajduje trwające połączenie.
+    called = request.POST.get('ForwardedFrom') or request.POST.get('To', 'TelePakt')
     call_sid = request.POST.get('CallSid', 'sid-test')
 
     CallLog.objects.get_or_create(
@@ -98,6 +107,8 @@ def twilio_conference_bridge(request):
             'caller_number': caller,
             'recipient_number': called,
             'status': 'initiated',
+            'recording_started': True,  # konferencja ma record-from-start
+            'provider': 'telnyx' if request.GET.get('provider') == 'telnyx' else 'twilio',
             'retention_expires_at': timezone.now() + timedelta(days=settings.DEFAULT_RETENTION_DAYS),
         },
     )
@@ -106,7 +117,8 @@ def twilio_conference_bridge(request):
     dial.conference(
         f"telepakt_bridge_{call_sid}",
         record='record-from-start',
-        recording_status_callback='/api/telephony/recording-callback/',
+        recording_status_callback='/api/telephony/recording-callback/' + (
+            '?' + request.GET.urlencode() if request.GET.get('provider') == 'telnyx' else ''),
         recording_status_callback_event='completed',
         recording_status_callback_method='POST',
         start_conference_on_enter=True,
@@ -171,6 +183,55 @@ def twilio_recording_callback(request):
     call.status = 'recorded'
     call.save()
     return HttpResponse(status=200)
+
+
+@api_view(['POST'])
+@throttle_classes([ScopedRateThrottle])
+def start_recording(request):
+    """Włącza nagrywanie trwającego (lub dopiero dzwoniącego) połączenia - bez zapowiedzi.
+
+    Body: ``{"recipient_number": "+48..."}`` (numer chroniony użytkownika) albo
+    ``{"call_sid": "CA..."}``. Bez ``call_sid`` wybieramy najnowsze połączenie tego numeru
+    z ostatnich 10 minut, które jeszcze nie jest nagrywane. Zapis idzie przez Twilio
+    ``calls(sid).recordings.create`` - nie odtwarzamy żadnego komunikatu stronie rozmówcy.
+
+    TODO: uwierzytelnienie (token Firebase) - dziś kto zna numer chroniony, może włączyć
+    nagrywanie jego trwającego połączenia.
+    """
+    call_sid = str(request.data.get('call_sid') or '')
+    recipient = str(request.data.get('recipient_number') or '')
+    if not call_sid and not recipient:
+        return Response({"error": "Podaj call_sid lub recipient_number"}, status=400)
+
+    calls = CallLog.objects.filter(
+        timestamp__gte=timezone.now() - timedelta(minutes=10),
+        recording_started=False,
+        deleted_from_server=False,
+    )
+    call = calls.filter(call_sid=call_sid).first() if call_sid else (
+        calls.filter(recipient_number=recipient).order_by('-timestamp').first()
+    )
+    if call is None:
+        return Response({"error": "Brak trwającego połączenia do nagrania"}, status=404)
+
+    adapter = providers.adapter_for(call.provider)
+    if adapter is None or not adapter.has_credentials():
+        return Response({"error": "Telefonia nie jest skonfigurowana"}, status=503)
+    callback = request.build_absolute_uri(
+        '/api/telephony/recording-callback/' + providers.callback_query(call.provider)
+    )
+    try:
+        adapter.start_recording(call.call_sid, callback)
+    except Exception as exc:  # noqa: BLE001 - błąd API dostawcy -> 502
+        logger.error("Nie udało się włączyć nagrywania %s: %s", call.call_sid, exc)
+        return Response({"error": "Nie udało się włączyć nagrywania"}, status=502)
+
+    call.recording_started = True
+    call.save(update_fields=['recording_started'])
+    return Response({"status": "recording", "call_sid": call.call_sid})
+
+
+start_recording.cls.throttle_scope = 'recording'
 
 
 @api_view(['POST'])
@@ -303,6 +364,22 @@ def verify_iap_purchase(request):
 
 
 @api_view(['GET'])
+def forwarding_info(request):
+    """Numer aktywnego dostawcy i kody GSM do przekierowania warunkowego (ekran w aplikacji).
+
+    Zwraca 503, gdy żaden dostawca nie ma skonfigurowanych danych i numeru.
+    """
+    for adapter in providers.ordered_providers():
+        if adapter.row.phone_number:
+            return Response({
+                "provider": adapter.kind,
+                "number": adapter.row.phone_number,
+                "codes": providers.forwarding_codes(adapter.row.phone_number),
+            })
+    return Response({"error": "Numer TelePakt nie jest jeszcze skonfigurowany"}, status=503)
+
+
+@api_view(['GET'])
 def health_check(request):
     """Health check dla Render.com (``healthCheckPath`` w ``render.yaml``).
 
@@ -310,6 +387,7 @@ def health_check(request):
     :func:`telephony.retention.maybe_purge_expired`.
     """
     maybe_purge_expired()
+    providers.maybe_run_health_checks()
     return Response({
         "status": "healthy",
         "service": "telepakt-api",

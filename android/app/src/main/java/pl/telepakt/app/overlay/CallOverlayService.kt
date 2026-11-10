@@ -31,6 +31,8 @@ class CallOverlayService : Service() {
     private var overlayView: View? = null
     private var telephonyManager: TelephonyManager? = null
     private var isDefenseActivated = false
+    private var apiUrl = ""
+    private var recipientNumber = ""
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -43,6 +45,10 @@ class CallOverlayService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Konfigurację zapisuje aplikacja (TelePaktOverlayPlugin.saveConfig); CallReceiver nie zna jej z intentu
+        val prefs = getSharedPreferences("telepakt", Context.MODE_PRIVATE)
+        apiUrl = prefs.getString("api_url", "") ?: ""
+        recipientNumber = prefs.getString("recipient_number", "") ?: ""
         val phoneNumber = intent?.getStringExtra("PHONE_NUMBER") ?: "+48 799 555 123"
         showOverlayWindow(phoneNumber)
         return START_NOT_STICKY
@@ -192,6 +198,38 @@ class CallOverlayService : Service() {
         sliderTrack.addView(sliderThumb)
         root.addView(sliderTrack)
 
+        // Nagrywanie - działa także zanim odbierzemy (połączenie musi iść przez numer TelePakt)
+        val recordBtn = Button(this).apply {
+            text = "● NAGRYWAJ TĘ ROZMOWĘ"
+            textSize = 12f
+            setTextColor(Color.WHITE)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#DC2626"))
+                cornerRadius = 32f
+            }
+            setOnClickListener { startRecording(this) }
+        }
+        root.addView(recordBtn, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 16 })
+
+        // Przekierowanie: odrzucenie dzwoniącego połączenia uruchamia u operatora przekierowanie
+        // "gdy zajęty" na numer TelePakt (kod ustawiany w aplikacji, ekran Ustawienia).
+        val forwardBtn = Button(this).apply {
+            text = "↪ PRZEKIERUJ DO TELEPAKT"
+            textSize = 12f
+            setTextColor(Color.parseColor("#38BDF8"))
+            background = GradientDrawable().apply {
+                setColor(Color.TRANSPARENT)
+                cornerRadius = 32f
+                setStroke(3, Color.parseColor("#38BDF8"))
+            }
+            setOnClickListener { sendToTelePakt() }
+        }
+        root.addView(forwardBtn, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 12 })
+
         // Close button
         val closeBtn = Button(this).apply {
             text = "Zamknij Nakładkę"
@@ -206,10 +244,64 @@ class CallOverlayService : Service() {
         windowManager?.addView(overlayView, params)
     }
 
+    /** Odrzuca dzwoniące połączenie; operator przekierowuje je wg ustawienia "gdy zajęty". */
+    private fun sendToTelePakt() {
+        val granted = checkSelfPermission(android.Manifest.permission.ANSWER_PHONE_CALLS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !granted) {
+            Toast.makeText(this, "Włącz uprawnienie do odrzucania połączeń w Ustawieniach TelePakt", Toast.LENGTH_LONG).show()
+            return
+        }
+        val telecom = getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+        @Suppress("DEPRECATION", "MissingPermission")
+        val ended = telecom.endCall()
+        Toast.makeText(
+            this,
+            if (ended) "Połączenie przekierowane do TelePakt (jeśli ustawiono przekierowanie)" else "Nie udało się odrzucić połączenia",
+            Toast.LENGTH_LONG
+        ).show()
+        if (ended) stopSelf()
+    }
+
+    /** Prosi backend o włączenie nagrywania (Twilio). Rozmówca nie słyszy żadnego komunikatu. */
+    private fun startRecording(button: Button) {
+        if (apiUrl.isBlank() || recipientNumber.isBlank()) {
+            Toast.makeText(this, "Nagrywanie niedostępne: brak konfiguracji konta", Toast.LENGTH_LONG).show()
+            return
+        }
+        button.isEnabled = false
+        Thread {
+            val ok = try {
+                val conn = java.net.URL("${apiUrl.trimEnd('/')}/api/telephony/start-recording/")
+                    .openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "application/json")
+                val body = org.json.JSONObject().put("recipient_number", recipientNumber).toString()
+                conn.outputStream.use { it.write(body.toByteArray()) }
+                val code = conn.responseCode
+                conn.disconnect()
+                code in 200..299
+            } catch (e: Exception) {
+                false
+            }
+            button.post {
+                if (ok) {
+                    button.text = "● NAGRYWANIE TRWA"
+                } else {
+                    button.isEnabled = true
+                    Toast.makeText(this, "Nie udało się włączyć nagrywania", Toast.LENGTH_LONG).show()
+                }
+            }
+        }.start()
+    }
+
     private fun activateDefense(root: LinearLayout, hint: TextView, thumb: View) {
         isDefenseActivated = true
         thumb.visibility = View.GONE
-        hint.text = "✓ SPRZECIW WYGŁOSZONY • DOWÓD SHA-256 ZAPISANY"
+        hint.text = "✓ SPRZECIW WŁĄCZONY"
         hint.setTextColor(Color.parseColor("#10B981"))
         root.background = GradientDrawable().apply {
             setColor(Color.parseColor("#064E3B"))

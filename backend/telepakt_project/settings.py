@@ -135,6 +135,7 @@ CORS_ALLOWED_ORIGINS = [
 REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'reviews': os.environ.get('REVIEWS_THROTTLE_RATE', '30/hour'),
+        'recording': os.environ.get('RECORDING_THROTTLE_RATE', '60/hour'),
     },
 }
 

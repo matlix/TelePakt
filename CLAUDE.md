@@ -35,6 +35,12 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - Workflows moved to `.github/workflows` (ci runs lint/build/Django tests; build-apk is manual).
 - Expo was considered and rejected: the app is Capacitor + native Kotlin overlay; Expo would mean a rewrite and wouldn't have shown the cause.
 
+## Telephony providers (Nov 2026, untested against real accounts)
+- `backend/telephony/providers.py`: Twilio + Telnyx (TeXML) adapters; credentials entered in Django admin ("Dostawcy telefonii", secret Fernet-encrypted with a key derived from `DJANGO_SECRET_KEY`). Health checks run in a background thread from `/health/` every `PROVIDER_CHECK_INTERVAL` s (300); 2 failures -> `failing`, next provider by priority is used. Telnyx webhooks use `?provider=telnyx&token=...` (token shown in admin).
+- Failover covers API actions and the number shown in the app (`/forwarding-info/`); the user's GSM forwarding code is fixed to one number, so after a switch they must re-enter the code.
+- Silent recording: overlay button -> `/start-recording/` (looks up the call by `ForwardedFrom`). Telnyx needs `PlayBeep=false` (already set). No recording announcement anywhere by owner's decision.
+- Overlay "Przekieruj do TelePakt" rejects the ringing call (`TelecomManager.endCall`, needs `ANSWER_PHONE_CALLS`) so the carrier's forward-on-busy sends it to the provider; carrier-dependent.
+
 ## Known issues / TODO
 - IAP store verification, zero-storage-delete auth, plaintext `IntegrationCredential.secret_value` (see backend/README.md).
 - Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.

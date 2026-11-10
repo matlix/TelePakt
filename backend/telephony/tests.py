@@ -7,6 +7,8 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from .models import CallLog, CustomerReview, InAppPurchaseReceipt, UkeComplaint
+from . import providers
+from .models import TelephonyProvider
 from .retention import purge_expired
 
 
@@ -49,6 +51,35 @@ class RetentionTests(TestCase):
         call = CallLog.objects.get(call_sid='CA4')
         self.assertEqual(call.recording_sid, '')
         self.assertTrue(call.deleted_from_server)
+
+
+class StartRecordingTests(TestCase):
+    """Przycisk "nagrywaj" przed odebraniem: Twilio REST, bez komunikatu dla rozmówcy."""
+
+    def _call(self, sid='CA9', **kw):
+        return CallLog.objects.create(call_sid=sid, caller_number='x', recipient_number='+48500', **kw)
+
+    def test_starts_recording_for_latest_call_of_number(self):
+        self._call()
+        with mock.patch('telephony.retention._twilio_client') as client, \
+                mock.patch('telephony.providers.twilio_credentials', return_value=('AC1', 'tok')):
+            resp = APIClient().post('/api/telephony/start-recording/', {'recipient_number': '+48500'}, format='json')
+        self.assertEqual(resp.status_code, 200)
+        client.return_value.calls.assert_called_once_with('CA9')
+        self.assertTrue(CallLog.objects.get(call_sid='CA9').recording_started)
+
+    def test_second_press_does_not_start_twice(self):
+        self._call(recording_started=True)
+        with mock.patch('telephony.retention._twilio_client'):
+            resp = APIClient().post('/api/telephony/start-recording/', {'recipient_number': '+48500'}, format='json')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_requires_identifier_and_twilio(self):
+        self.assertEqual(APIClient().post('/api/telephony/start-recording/', {}, format='json').status_code, 400)
+        self._call()
+        with mock.patch('telephony.providers.twilio_credentials', return_value=('', '')):
+            resp = APIClient().post('/api/telephony/start-recording/', {'call_sid': 'CA9'}, format='json')
+        self.assertEqual(resp.status_code, 503)
 
 
 @override_settings(DEBUG=True)
@@ -175,4 +206,80 @@ class PurchaseAndHealthTests(TestCase):
         self.assertEqual(resp.status_code, 502)
 
     def test_health(self):
-        self.assertEqual(self.api.get('/api/telephony/health/').json()['status'], 'healthy')
+        # watek kontroli dostawcow nie moze pisac do bazy testowej rownolegle z testem
+        with mock.patch('telephony.providers.maybe_run_health_checks') as check:
+            self.assertEqual(self.api.get('/api/telephony/health/').json()['status'], 'healthy')
+        check.assert_called_once()
+
+
+class ProviderFailoverTests(TestCase):
+    """Wybor dostawcy, szyfrowanie sekretow, kontrola stanu i przelaczanie."""
+
+    def _provider(self, kind, priority, secret='k', sid='acc', enabled=True, phone='+48111'):
+        row, _ = TelephonyProvider.objects.update_or_create(kind=kind, defaults={
+            'priority': priority, 'account_sid': sid, 'is_enabled': enabled, 'phone_number': phone,
+            'secret_encrypted': providers.encrypt_secret(secret), 'webhook_token': 'tok-' + kind,
+        })
+        return row
+
+    def test_secret_is_encrypted_and_roundtrips(self):
+        row = self._provider('telnyx', 20, secret='KEY123')
+        self.assertNotIn('KEY123', row.secret_encrypted)
+        self.assertEqual(providers.decrypt_secret(row.secret_encrypted), 'KEY123')
+
+    def test_primary_chosen_then_backup_after_two_failures(self):
+        a = self._provider('twilio', 10, phone='+48111')
+        self._provider('telnyx', 20, phone='+48222')
+        self.assertEqual(providers.active_provider().kind, 'twilio')
+        with mock.patch.object(providers.TwilioProvider, 'check', side_effect=RuntimeError('down')):
+            providers.run_check(a)
+            self.assertEqual(providers.active_provider().kind, 'twilio')  # 1 blad to jeszcze nie awaria
+            providers.run_check(a)
+        self.assertEqual(providers.active_provider().kind, 'telnyx')
+        resp = APIClient().get('/api/telephony/forwarding-info/')
+        self.assertEqual(resp.json()['number'], '+48222')
+        self.assertEqual(resp.json()['codes']['when_busy'], '**67*+48222#')
+
+    def test_primary_returns_after_recovery(self):
+        a = self._provider('twilio', 10)
+        self._provider('telnyx', 20)
+        a.status = 'failing'
+        a.save()
+        with mock.patch.object(providers.TwilioProvider, 'check'):
+            providers.run_check(a)
+        self.assertEqual(providers.active_provider().kind, 'twilio')
+
+    def test_disabled_or_credentialless_provider_is_skipped(self):
+        self._provider('twilio', 10, enabled=False)
+        self._provider('telnyx', 20, secret='')
+        with mock.patch('telephony.providers.twilio_credentials', return_value=('', '')):
+            self.assertIsNone(providers.active_provider())
+            self.assertEqual(APIClient().get('/api/telephony/forwarding-info/').status_code, 503)
+
+    def test_telnyx_recording_is_silent_and_uses_texml_endpoint(self):
+        row = self._provider('telnyx', 20, sid='ACC-UUID', secret='KEY')
+        with mock.patch('telephony.providers.requests.request') as req:
+            req.return_value.status_code = 200
+            providers.TelnyxProvider(row).start_recording('CAx', 'https://cb')
+        args, kwargs = req.call_args
+        self.assertEqual(args[0], 'POST')
+        self.assertTrue(args[1].endswith('/ACC-UUID/Calls/CAx/Recordings.json'))
+        self.assertEqual(kwargs['data']['PlayBeep'], 'false')
+        self.assertEqual(kwargs['headers']['Authorization'], 'Bearer KEY')
+
+    def test_telnyx_webhook_requires_token_outside_debug(self):
+        self._provider('telnyx', 20)
+        data = {'From': '+48600', 'To': '+48222', 'CallSid': 'CAT1'}
+        bad = self.client.post('/api/telephony/conference-bridge/?provider=telnyx&token=nope', data)
+        self.assertEqual(bad.status_code, 403)
+        good = self.client.post('/api/telephony/conference-bridge/?provider=telnyx&token=tok-telnyx', data)
+        self.assertEqual(good.status_code, 200)
+        self.assertEqual(CallLog.objects.get(call_sid='CAT1').provider, 'telnyx')
+
+
+@override_settings(DEBUG=True)
+class ForwardedCallTests(TestCase):
+    def test_forwarded_from_becomes_recipient_so_record_button_finds_call(self):
+        self.client.post('/api/telephony/conference-bridge/', {
+            'From': '+48600100200', 'To': '+48221234567', 'ForwardedFrom': '+48500111222', 'CallSid': 'CAF1'})
+        self.assertEqual(CallLog.objects.get(call_sid='CAF1').recipient_number, '+48500111222')

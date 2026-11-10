@@ -1,6 +1,15 @@
 """Panel administracyjny Django dla systemu TelePakt (telepakt.pl)."""
-from django.contrib import admin
-from .models import LegalScript, CallLog, UkeComplaint, CustomerReview, IntegrationCredential, InAppPurchaseReceipt
+import secrets
+
+from django import forms
+from django.conf import settings
+from django.contrib import admin, messages
+
+from . import providers
+from .models import (
+    LegalScript, CallLog, UkeComplaint, CustomerReview, IntegrationCredential,
+    InAppPurchaseReceipt, TelephonyProvider,
+)
 
 @admin.register(LegalScript)
 class LegalScriptAdmin(admin.ModelAdmin):
@@ -53,3 +62,59 @@ class InAppPurchaseReceiptAdmin(admin.ModelAdmin):
     list_display = ('user_email', 'platform', 'product_id', 'is_verified', 'expires_at', 'created_at')
     list_filter = ('platform', 'is_verified')
     search_fields = ('user_email', 'product_id', 'purchase_token')
+
+
+class TelephonyProviderForm(forms.ModelForm):
+    secret = forms.CharField(
+        label="Auth Token / API Key", required=False,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="Zostaw puste, aby nie zmieniać zapisanego sekretu. Przechowywany szyfrowany.",
+    )
+
+    class Meta:
+        model = TelephonyProvider
+        fields = ('kind', 'is_enabled', 'priority', 'account_sid', 'secret', 'phone_number')
+
+
+@admin.register(TelephonyProvider)
+class TelephonyProviderAdmin(admin.ModelAdmin):
+    form = TelephonyProviderForm
+    list_display = ('kind', 'is_enabled', 'priority', 'status', 'has_secret', 'phone_number', 'last_checked_at', 'last_error')
+    list_editable = ('is_enabled', 'priority')
+    readonly_fields = ('status', 'consecutive_failures', 'last_checked_at', 'last_ok_at', 'last_error', 'webhook_urls')
+    actions = ['check_now']
+
+    @admin.display(boolean=True, description="Sekret zapisany")
+    def has_secret(self, obj):
+        return bool(obj.secret_encrypted)
+
+    @admin.display(description="Adresy webhooków do wpisania u dostawcy")
+    def webhook_urls(self, obj):
+        base = settings.APP_BASE_URL.rstrip('/')
+        q = providers.callback_query(obj.kind) if obj.pk else ''
+        return (f"Voice (incoming call): {base}/api/telephony/conference-bridge/{q}  |  "
+                f"Recording callback: {base}/api/telephony/recording-callback/{q}")
+
+    def get_fields(self, request, obj=None):
+        fields = list(super().get_fields(request, obj))
+        extra = ('webhook_urls', 'status', 'consecutive_failures', 'last_checked_at', 'last_ok_at', 'last_error')
+        return fields + [f for f in extra if f not in fields]
+
+    def save_model(self, request, obj, form, change):
+        if not obj.webhook_token:
+            obj.webhook_token = secrets.token_urlsafe(24)
+        if form.cleaned_data.get('secret'):
+            obj.secret_encrypted = providers.encrypt_secret(form.cleaned_data['secret'])
+            obj.status, obj.consecutive_failures = 'unknown', 0
+        super().save_model(request, obj, form, change)
+
+    def changelist_view(self, request, extra_context=None):
+        providers.ensure_default_providers()  # Twilio i Telnyx widoczni od pierwszego wejscia
+        return super().changelist_view(request, extra_context)
+
+    @admin.action(description="Sprawdz teraz polaczenie z wybranymi dostawcami")
+    def check_now(self, request, queryset):
+        for row in queryset:
+            ok = providers.run_check(row)
+            self.message_user(request, f"{row}: {'dziala' if ok else 'BLAD - ' + row.last_error}",
+                              messages.SUCCESS if ok else messages.ERROR)
