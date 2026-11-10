@@ -19,6 +19,17 @@ PLAIN_STATIC = {
 }
 
 
+class PythonCompatTests(TestCase):
+    def test_template_context_can_be_copied_on_this_python(self):
+        """Regresja: Django 5.1 + Python 3.14 -> AttributeError w copy(Context), wszystkie strony panelu 500."""
+        import copy
+        from django.template import Context
+
+        ctx = Context({'a': 1})
+        self.assertEqual(copy.copy(ctx)['a'], 1)
+        self.assertEqual(ctx.new({'b': 2})['b'], 2)
+
+
 @override_settings(STORAGES=PLAIN_STATIC, ALLOWED_HOSTS=['testserver'], DEBUG=False)
 class AdminSmokeTests(TestCase):
     @classmethod

@@ -45,6 +45,9 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - Django admin themed with django-unfold (pinned 0.96.0, the newest that supports Django <5.2; `unfold` must precede `django.contrib.admin`). Layout ported from the `kupus` project: dashboard `templates/admin/index.html` + generic stats page `templates/admin/stats/page.html`, data in `telepakt_project/admin_stats.py` (periods, bucketed series, chart specs), URLs `/admin/stats/{calls,users,feedback}/`. Chart.js is vendored in `backend/static/vendor/` (no CDN). Sidebar lives in `settings.UNFOLD`.
 - `telephony/tests_admin.py` smoke-tests every admin page; tests override STORAGES because there is no collectstatic manifest in tests.
 
+## Python version on Render
+- Render defaults to the newest Python (3.14.x at the time). Django 5.1 breaks on 3.14 (`copy(Context)` -> `'super' object has no attribute 'dicts'`), which made EVERY admin page return 500 (incl. login) while local 3.12 worked. Pinned via `.python-version` (3.12.8) and `PYTHON_VERSION` in render.yaml; `backend/build.sh` prints versions and fails the build on a bad Python/Django pair; `PythonCompatTests` guards the context copy. If you move to Python 3.14, upgrade Django to >=5.2.8 first.
+
 ## Known issues / TODO
 - IAP store verification (verify-purchase is still unauthenticated), plaintext `IntegrationCredential.secret_value` (see backend/README.md).
 - Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.
