@@ -307,6 +307,18 @@ class ProviderFailoverTests(TestCase):
         self.assertEqual(good.status_code, 200)
         self.assertEqual(CallLog.objects.get(call_sid='CAT1').provider, 'telnyx')
 
+    def test_telnyx_check_uses_documented_path_and_explains_404(self):
+        row = self._provider('telnyx', 20, sid='ACC-UUID', secret='KEY')
+        with mock.patch('telephony.providers.requests.request') as req:
+            req.return_value.status_code = 404
+            req.return_value.json.return_value = {'errors': [{'detail': 'Resource not found'}]}
+            with self.assertRaises(providers.ProviderError) as ctx:
+                providers.TelnyxProvider(row).check()
+        self.assertTrue(req.call_args[0][1].endswith('/ACC-UUID/Calls'))  # bez .json
+        self.assertNotIn('KEY', str(ctx.exception))
+        self.assertIn('Resource not found', str(ctx.exception))
+        self.assertIn('Account ID', str(ctx.exception))
+
 
 @override_settings(DEBUG=True)
 class ForwardedCallTests(TestCase):

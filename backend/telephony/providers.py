@@ -129,10 +129,27 @@ class TelnyxProvider(BaseProvider):
         )
         return resp
 
+    @staticmethod
+    def _detail(resp) -> str:
+        """Komunikat bledu z odpowiedzi Telnyx (bez sekretow) - zeby panel pokazywal PRZYCZYNE, nie tylko kod."""
+        try:
+            errors = resp.json().get('errors') or []
+            return '; '.join(str(e.get('detail') or e.get('title') or '') for e in errors)[:200]
+        except Exception:  # noqa: BLE001 - odpowiedz bez JSON
+            return (resp.text or '')[:120]
+
     def check(self):
-        resp = self._request('GET', 'Calls.json', params={'PageSize': 1})
+        # Sciezka wg dokumentacji Telnyx: GET /texml/Accounts/{account_sid}/Calls (bez .json).
+        resp = self._request('GET', 'Calls', params={'PageSize': 1})
         if resp.status_code != 200:
-            raise ProviderError(f"Telnyx HTTP {resp.status_code}")
+            hint = ''
+            if resp.status_code == 404:
+                hint = " (Account ID prawdopodobnie nie należy do konta tego klucza API - sprawdź oba)"
+            elif resp.status_code in (401, 403):
+                hint = " (klucz API jest błędny, wygasł albo nie ma uprawnień)"
+            detail = self._detail(resp)
+            logger.warning("Telnyx check: HTTP %s %s", resp.status_code, detail)
+            raise ProviderError(f"Telnyx HTTP {resp.status_code}{': ' + detail if detail else ''}{hint}")
 
     def start_recording(self, call_sid, callback_url):
         resp = self._request('POST', f'Calls/{call_sid}/Recordings.json', data={
