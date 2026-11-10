@@ -118,7 +118,8 @@ def twilio_conference_bridge(request):
     dial.conference(
         f"telepakt_bridge_{call_sid}",
         record='record-from-start',
-        recording_status_callback='/api/telephony/recording-callback/' + (
+        # Adres bezwzgledny: Telnyx moze nie rozwiazywac adresow wzglednych (Twilio tak).
+        recording_status_callback=request.build_absolute_uri('/api/telephony/recording-callback/') + (
             '?' + request.GET.urlencode() if request.GET.get('provider') == 'telnyx' else ''),
         recording_status_callback_event='completed',
         recording_status_callback_method='POST',

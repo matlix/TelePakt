@@ -314,3 +314,14 @@ class ForwardedCallTests(TestCase):
         self.client.post('/api/telephony/conference-bridge/', {
             'From': '+48600100200', 'To': '+48221234567', 'ForwardedFrom': '+48500111222', 'CallSid': 'CAF1'})
         self.assertEqual(CallLog.objects.get(call_sid='CAF1').recipient_number, '+48500111222')
+
+
+@override_settings(DEBUG=True)
+class BridgeTwimlTests(TestCase):
+    def test_recording_callback_is_absolute_url_and_carries_telnyx_token(self):
+        resp = self.client.post('/api/telephony/conference-bridge/?provider=telnyx&token=tok', {
+            'From': '+48600', 'To': '+48221', 'CallSid': 'CAB1'})
+        body = resp.content.decode()
+        self.assertIn('http://testserver/api/telephony/recording-callback/?provider=telnyx&amp;token=tok', body)
+        resp = self.client.post('/api/telephony/conference-bridge/', {'From': '+48600', 'To': '+48221', 'CallSid': 'CAB2'})
+        self.assertIn('http://testserver/api/telephony/recording-callback/', resp.content.decode())
