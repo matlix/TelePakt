@@ -1,0 +1,134 @@
+{% extends 'admin/base.html' %}
+{% load i18n unfold %}
+{# Pulpit panelu TelePakt: filtr okresu, kafelki KPI (linkują do stron statystyk), stan dostawców
+   telefonii, podziały i ostatnie akcje. Dane: telepakt_project.dashboard.dashboard_callback. #}
+
+{% block title %}
+  {% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}
+{% endblock %}
+
+{% block branding %}
+  {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-4">
+  <form method="get" class="flex flex-wrap items-center gap-2 text-sm">
+    <span class="opacity-70">Okres:</span>
+    {% for key, label in period_choices %}
+      {% if key != 'custom' %}
+        <a href="?period={{ key }}" style="padding:4px 12px;border-radius:999px;border:1px solid rgba(128,128,128,.4);text-decoration:none;color:inherit;{% if period.key == key %}background:#0891B2;border-color:#0891B2;color:#fff;{% endif %}">{{ label }}</a>
+      {% endif %}
+    {% endfor %}
+    <input type="date" name="date_from" value="{{ period.date_from }}" style="border:1px solid rgba(128,128,128,.4);border-radius:8px;padding:3px 8px;background:transparent;color:inherit">
+    <span>–</span>
+    <input type="date" name="date_to" value="{{ period.date_to }}" style="border:1px solid rgba(128,128,128,.4);border-radius:8px;padding:3px 8px;background:transparent;color:inherit">
+    <input type="hidden" name="period" value="custom">
+    <button type="submit" style="padding:4px 12px;border-radius:8px;border:1px solid #0891B2;color:#0891B2;background:transparent;cursor:pointer">Zastosuj</button>
+    <span class="opacity-60">Wybrano: <b>{{ period.label }}</b></span>
+  </form>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <a href="{{ stats_links.calls }}?{{ period_query }}" style="text-decoration:none;color:inherit">
+      {% component "unfold/components/card.html" with label=period.label %}
+        <div class="font-semibold text-2xl text-font-important-light dark:text-font-important-dark">{{ kpi.calls }}</div>
+        <div class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Połączenia · nagrywanych {{ kpi.calls_recorded }}</div>
+        <div class="text-sm" style="color:#0891B2;margin-top:6px">Pokaż statystyki →</div>
+      {% endcomponent %}
+    </a>
+
+    <a href="{{ stats_links.users }}?{{ period_query }}" style="text-decoration:none;color:inherit">
+      {% component "unfold/components/card.html" with label=period.label %}
+        <div class="font-semibold text-2xl text-font-important-light dark:text-font-important-dark">{{ kpi.users_new }}</div>
+        <div class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Nowi użytkownicy · wszystkich {{ kpi.users_total }}</div>
+        <div class="text-sm" style="color:#0891B2;margin-top:6px">Pokaż statystyki →</div>
+      {% endcomponent %}
+    </a>
+
+    <a href="{% url 'admin:telephony_customerreview_changelist' %}?is_approved__exact=0" style="text-decoration:none;color:inherit">
+      {% component "unfold/components/card.html" with label="Teraz" %}
+        <div class="font-semibold text-2xl text-font-important-light dark:text-font-important-dark">{{ kpi.reviews_pending }}</div>
+        <div class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Opinie czekające na moderację</div>
+        <div class="text-sm" style="color:#0891B2;margin-top:6px">Przejdź do moderacji →</div>
+      {% endcomponent %}
+    </a>
+
+    <a href="{% url 'admin:telephony_telephonyprovider_changelist' %}" style="text-decoration:none;color:inherit">
+      {% component "unfold/components/card.html" with label="Telefonia" %}
+        <div class="font-semibold text-2xl text-font-important-light dark:text-font-important-dark">{{ kpi.providers_enabled }}{% if kpi.providers_failing %}<span style="color:#EF4444"> · awaria: {{ kpi.providers_failing }}</span>{% endif %}</div>
+        <div class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Włączonych dostawców{% if not kpi.providers_enabled %} - skonfiguruj Twilio{% endif %}</div>
+        <div class="text-sm" style="color:#0891B2;margin-top:6px">Ustawienia dostawców →</div>
+      {% endcomponent %}
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+    {% component "unfold/components/card.html" with title="Dostawcy telefonii" %}
+      <ul class="flex flex-col gap-2">
+        {% for p in kpi.providers %}
+        <li class="flex items-center justify-between border-b border-base-200 dark:border-base-800 pb-2 last:border-0 last:pb-0 text-sm">
+          <span>{{ p.get_kind_display }}{% if not p.is_enabled %} <span class="opacity-60">(wyłączony)</span>{% endif %}</span>
+          <span style="font-weight:600;color:{% if p.status == 'ok' %}#10B981{% elif p.status == 'failing' %}#EF4444{% else %}#94A3B8{% endif %}">{{ p.get_status_display }}</span>
+        </li>
+        {% empty %}
+        <li class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Otwórz „Dostawcy telefonii”, aby ich dodać.</li>
+        {% endfor %}
+      </ul>
+    {% endcomponent %}
+
+    {% component "unfold/components/card.html" with title="Połączenia wg statusu" %}
+      <ul class="flex flex-col gap-2">
+        {% for row in kpi.calls_by_status %}
+        <li class="flex items-center justify-between border-b border-base-200 dark:border-base-800 pb-2 last:border-0 last:pb-0">
+          <span class="text-font-default-light dark:text-font-default-dark text-sm">{{ row.label }}</span>
+          <span class="font-semibold text-font-important-light dark:text-font-important-dark">{{ row.count }}</span>
+        </li>
+        {% empty %}
+        <li class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Brak połączeń w tym okresie</li>
+        {% endfor %}
+      </ul>
+    {% endcomponent %}
+
+    {% component "unfold/components/card.html" with title="Użytkownicy wg planu" %}
+      <ul class="flex flex-col gap-2">
+        {% for row in kpi.users_by_plan %}
+        <li class="flex items-center justify-between border-b border-base-200 dark:border-base-800 pb-2 last:border-0 last:pb-0">
+          <span class="text-font-default-light dark:text-font-default-dark text-sm">{{ row.label }}</span>
+          <span class="font-semibold text-font-important-light dark:text-font-important-dark">{{ row.count }}</span>
+        </li>
+        {% empty %}
+        <li class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Brak użytkowników</li>
+        {% endfor %}
+      </ul>
+    {% endcomponent %}
+  </div>
+
+  {% component "unfold/components/card.html" with title="Ostatnie akcje" %}
+    {% load log %}
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% if not admin_log %}
+    <p class="text-font-subtle-light dark:text-font-subtle-dark text-sm">Brak</p>
+    {% else %}
+    <ul class="flex flex-col gap-2">
+      {% for entry in admin_log %}
+      <li class="flex items-center justify-between border-b border-base-200 dark:border-base-800 pb-2 last:border-0 last:pb-0 text-sm">
+        <span>
+          {% if entry.is_deletion or not entry.get_admin_url %}
+            {{ entry.object_repr }}
+          {% else %}
+            <a class="text-primary-600 dark:text-primary-500 hover:underline" href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+          {% endif %}
+          {% if entry.content_type %}
+          <span class="text-font-subtle-light dark:text-font-subtle-dark">— {{ entry.content_type.name|capfirst }}</span>
+          {% endif %}
+        </span>
+        <span class="text-font-subtle-light dark:text-font-subtle-dark">
+          {% if entry.is_addition %}Dodano{% elif entry.is_change %}Zmieniono{% elif entry.is_deletion %}Usunięto{% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  {% endcomponent %}
+</div>
+{% endblock %}

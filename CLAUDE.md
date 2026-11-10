@@ -41,6 +41,10 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - Silent recording: overlay button -> `/start-recording/` (looks up the call by `ForwardedFrom`). Telnyx needs `PlayBeep=false` (already set). No recording announcement anywhere by owner's decision.
 - Overlay "Przekieruj do TelePakt" rejects the ringing call (`TelecomManager.endCall`, needs `ANSWER_PHONE_CALLS`) so the carrier's forward-on-busy sends it to the provider; carrier-dependent.
 
+## Admin panel (Nov 2026)
+- Django admin themed with django-unfold (pinned 0.96.0, the newest that supports Django <5.2; `unfold` must precede `django.contrib.admin`). Layout ported from the `kupus` project: dashboard `templates/admin/index.html` + generic stats page `templates/admin/stats/page.html`, data in `telepakt_project/admin_stats.py` (periods, bucketed series, chart specs), URLs `/admin/stats/{calls,users,feedback}/`. Chart.js is vendored in `backend/static/vendor/` (no CDN). Sidebar lives in `settings.UNFOLD`.
+- `telephony/tests_admin.py` smoke-tests every admin page; tests override STORAGES because there is no collectstatic manifest in tests.
+
 ## Known issues / TODO
 - IAP store verification (verify-purchase is still unauthenticated), plaintext `IntegrationCredential.secret_value` (see backend/README.md).
 - Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.

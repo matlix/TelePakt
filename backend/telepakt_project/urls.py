@@ -3,6 +3,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 
+from .admin_stats_views import make_view
+
 def root_landing_view(request):
     """Informacyjny punkt końcowy API dla domeny telepakt.pl."""
     return JsonResponse({
@@ -22,6 +24,9 @@ def root_landing_view(request):
 
 urlpatterns = [
     path('', root_landing_view, name='root'),
+    path('admin/stats/calls/', admin.site.admin_view(make_view('calls')), name='admin_stats_calls'),
+    path('admin/stats/users/', admin.site.admin_view(make_view('users')), name='admin_stats_users'),
+    path('admin/stats/feedback/', admin.site.admin_view(make_view('feedback')), name='admin_stats_feedback'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('accounts.urls')),
     path('api/telephony/', include('telephony.urls')),

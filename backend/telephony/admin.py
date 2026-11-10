@@ -1,40 +1,62 @@
-"""Panel administracyjny Django dla systemu TelePakt (telepakt.pl)."""
+"""Panel administracyjny TelePakt (django-unfold): telefonia, opinie, płatności."""
 import secrets
 
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
+from unfold.admin import ModelAdmin
+from unfold.contrib.filters.admin import RangeDateTimeFilter
+from unfold.decorators import display
+from unfold.widgets import UnfoldAdminPasswordToggleWidget
 
 from . import providers
 from .models import (
-    LegalScript, CallLog, UkeComplaint, CustomerReview, IntegrationCredential,
-    InAppPurchaseReceipt, TelephonyProvider,
+    CallLog, CustomerReview, InAppPurchaseReceipt, IntegrationCredential, LegalScript,
+    TelephonyProvider, UkeComplaint,
 )
 
+
 @admin.register(LegalScript)
-class LegalScriptAdmin(admin.ModelAdmin):
+class LegalScriptAdmin(ModelAdmin):
     list_display = ('title', 'category', 'auto_hangup', 'is_active', 'display_order')
     list_editable = ('auto_hangup', 'is_active', 'display_order')
     search_fields = ('title', 'text_content', 'legal_act')
     list_filter = ('category', 'auto_hangup', 'is_active')
 
+
 @admin.register(CallLog)
-class CallLogAdmin(admin.ModelAdmin):
-    list_display = ('caller_number', 'timestamp', 'duration_seconds', 'status', 'downloaded_locally', 'deleted_from_server')
-    search_fields = ('caller_number', 'call_sid')
-    list_filter = ('status', 'downloaded_locally', 'deleted_from_server')
+class CallLogAdmin(ModelAdmin):
+    list_display = ('caller_number', 'recipient_number', 'timestamp', 'duration_seconds', 'show_status',
+                    'provider', 'recording_started', 'deleted_from_server')
+    search_fields = ('caller_number', 'recipient_number', 'call_sid')
+    list_filter_submit = True
+    list_filter = (('timestamp', RangeDateTimeFilter), 'status', 'provider', 'recording_started',
+                   'downloaded_locally', 'deleted_from_server')
     readonly_fields = ('call_sid', 'recording_sid', 'timestamp')
+    date_hierarchy = 'timestamp'
+    ordering = ('-timestamp',)
+
+    @display(description="Status", label={
+        'initiated': 'info', 'formula_played': 'warning', 'recorded': 'success',
+        'downloaded': 'success', 'deleted': 'danger',
+    })
+    def show_status(self, obj):
+        return obj.status, obj.get_status_display()
+
 
 @admin.register(UkeComplaint)
-class UkeComplaintAdmin(admin.ModelAdmin):
+class UkeComplaintAdmin(ModelAdmin):
     list_display = ('case_reference_number', 'applicant_name', 'call_log', 'submitted_to_epuap', 'created_at')
     search_fields = ('case_reference_number', 'applicant_name', 'applicant_email')
-    list_filter = ('submitted_to_epuap',)
+    list_filter = ('submitted_to_epuap', ('created_at', RangeDateTimeFilter))
+    list_filter_submit = True
+
 
 @admin.register(CustomerReview)
-class CustomerReviewAdmin(admin.ModelAdmin):
+class CustomerReviewAdmin(ModelAdmin):
     list_display = ('author_name', 'rating', 'title', 'is_approved', 'is_featured', 'device_type', 'created_at')
-    list_filter = ('is_approved', 'is_featured', 'rating', 'device_type')
+    list_filter = ('is_approved', 'is_featured', 'rating', 'device_type', ('created_at', RangeDateTimeFilter))
+    list_filter_submit = True
     search_fields = ('author_name', 'title', 'content')
     actions = ['approve_reviews', 'feature_reviews', 'unapprove_reviews']
 
@@ -50,24 +72,27 @@ class CustomerReviewAdmin(admin.ModelAdmin):
     def unapprove_reviews(self, request, queryset):
         queryset.update(is_approved=False, is_featured=False)
 
+
 @admin.register(IntegrationCredential)
-class IntegrationCredentialAdmin(admin.ModelAdmin):
+class IntegrationCredentialAdmin(ModelAdmin):
     list_display = ('name', 'category', 'key', 'is_active', 'last_tested_at')
     list_filter = ('category', 'is_active')
     search_fields = ('name', 'key')
     readonly_fields = ('last_tested_at',)
 
+
 @admin.register(InAppPurchaseReceipt)
-class InAppPurchaseReceiptAdmin(admin.ModelAdmin):
+class InAppPurchaseReceiptAdmin(ModelAdmin):
     list_display = ('user_email', 'platform', 'product_id', 'is_verified', 'expires_at', 'created_at')
-    list_filter = ('platform', 'is_verified')
+    list_filter = ('platform', 'is_verified', ('created_at', RangeDateTimeFilter))
+    list_filter_submit = True
     search_fields = ('user_email', 'product_id', 'purchase_token')
 
 
 class TelephonyProviderForm(forms.ModelForm):
     secret = forms.CharField(
         label="Auth Token / API Key", required=False,
-        widget=forms.PasswordInput(render_value=False),
+        widget=UnfoldAdminPasswordToggleWidget(render_value=False),
         help_text="Zostaw puste, aby nie zmieniać zapisanego sekretu. Przechowywany szyfrowany.",
     )
 
@@ -77,21 +102,26 @@ class TelephonyProviderForm(forms.ModelForm):
 
 
 @admin.register(TelephonyProvider)
-class TelephonyProviderAdmin(admin.ModelAdmin):
+class TelephonyProviderAdmin(ModelAdmin):
     form = TelephonyProviderForm
-    list_display = ('kind', 'is_enabled', 'priority', 'status', 'has_secret', 'phone_number', 'last_checked_at', 'last_error')
+    list_display = ('kind', 'is_enabled', 'priority', 'show_status', 'has_secret', 'phone_number',
+                    'last_checked_at', 'last_error')
     list_editable = ('is_enabled', 'priority')
     readonly_fields = ('status', 'consecutive_failures', 'last_checked_at', 'last_ok_at', 'last_error', 'webhook_urls')
     actions = ['check_now']
 
-    @admin.display(boolean=True, description="Sekret zapisany")
+    @display(description="Stan", label={'ok': 'success', 'failing': 'danger', 'unknown': 'warning'})
+    def show_status(self, obj):
+        return obj.status, obj.get_status_display()
+
+    @display(boolean=True, description="Sekret zapisany")
     def has_secret(self, obj):
         return bool(obj.secret_encrypted)
 
-    @admin.display(description="Adresy webhooków do wpisania u dostawcy")
+    @display(description="Adresy webhooków do wpisania u dostawcy")
     def webhook_urls(self, obj):
         base = settings.APP_BASE_URL.rstrip('/')
-        q = providers.callback_query(obj.kind) if obj.pk else ''
+        q = providers.callback_query(obj.kind) if obj and obj.pk else ''
         return (f"Voice (incoming call): {base}/api/telephony/conference-bridge/{q}  |  "
                 f"Recording callback: {base}/api/telephony/recording-callback/{q}")
 
@@ -109,12 +139,12 @@ class TelephonyProviderAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def changelist_view(self, request, extra_context=None):
-        providers.ensure_default_providers()  # Twilio i Telnyx widoczni od pierwszego wejscia
+        providers.ensure_default_providers()  # Twilio i Telnyx widoczni od pierwszego wejścia
         return super().changelist_view(request, extra_context)
 
-    @admin.action(description="Sprawdz teraz polaczenie z wybranymi dostawcami")
+    @admin.action(description="Sprawdź teraz połączenie z wybranymi dostawcami")
     def check_now(self, request, queryset):
         for row in queryset:
             ok = providers.run_check(row)
-            self.message_user(request, f"{row}: {'dziala' if ok else 'BLAD - ' + row.last_error}",
+            self.message_user(request, f"{row}: {'działa' if ok else 'BŁĄD - ' + row.last_error}",
                               messages.SUCCESS if ok else messages.ERROR)

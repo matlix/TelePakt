@@ -1,0 +1,166 @@
+{% extends 'admin/base.html' %}
+{% load i18n unfold static %}
+{# Generyczna strona statystyk: pasek okresu i filtrów, kafelki KPI, wykresy Chart.js i tabele.
+   Style są w małym bloku <style> (przezroczyste tła, currentColor), więc działają w jasnym i
+   ciemnym motywie Unfold bez zależności od klas Tailwind. Chart.js jest serwowany z naszych
+   plików statycznych (bez CDN). #}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+  {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+<style>
+  .st-nav, .st-bar, .st-kpis { display: flex; flex-wrap: wrap; gap: 8px; }
+  .st-nav a { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(128,128,128,.4); text-decoration: none; color: inherit; font-size: 13px; }
+  .st-nav a.on { background: #0891B2; border-color: #0891B2; color: #fff; }
+  .st-bar { align-items: flex-end; margin: 14px 0; }
+  .st-bar label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; opacity: .8; }
+  .st-bar select, .st-bar input { border: 1px solid rgba(128,128,128,.4); border-radius: 8px; padding: 6px 10px; background: transparent; color: inherit; font-size: 14px; min-width: 120px; }
+  .st-bar button { background: #0891B2; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
+  .st-kpi { border: 1px solid rgba(128,128,128,.3); border-radius: 12px; padding: 12px 16px; min-width: 150px; }
+  .st-kpi b { display: block; font-size: 22px; }
+  .st-kpi span { font-size: 12px; opacity: .7; }
+  .st-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; margin: 16px 0; }
+  .st-card { border: 1px solid rgba(128,128,128,.3); border-radius: 12px; padding: 14px; }
+  .st-card h3 { font-weight: 600; margin-bottom: 8px; }
+  .st-card small { display: block; opacity: .65; margin-top: 6px; font-size: 12px; }
+  .st-canvas { position: relative; height: 280px; }
+  .st-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .st-table th, .st-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(128,128,128,.25); }
+  .st-table th { font-size: 12px; opacity: .7; text-transform: uppercase; }
+  .st-table a { color: #0891B2; text-decoration: underline; }
+  .st-empty { opacity: .6; padding: 12px 0; }
+</style>
+
+<div class="flex flex-col gap-2">
+  <div class="st-nav">
+    <a href="{% url 'admin:index' %}?{{ period.query }}">← Pulpit</a>
+    {% for key, label, url in nav %}
+      <a href="{{ url }}?{{ period.query }}" class="{% if key == page %}on{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <form method="get" class="st-bar">
+    <label>Okres
+      <select name="period" id="stPeriod">
+        {% for key, label in periods %}
+          <option value="{{ key }}" {% if key == period.key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="st-custom">Od <input type="date" name="date_from" value="{{ period.date_from }}"></label>
+    <label class="st-custom">Do <input type="date" name="date_to" value="{{ period.date_to }}"></label>
+    <label>Grupuj
+      <select name="group">
+        {% for key, label in groups %}
+          <option value="{{ key }}" {% if key == group_value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% for f in filters %}
+      <label>{{ f.label }}
+        <select name="{{ f.name }}">
+          {% for value, label in f.options %}
+            <option value="{{ value }}" {% if value == f.value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    {% endfor %}
+    <button type="submit">Pokaż</button>
+  </form>
+
+  <div class="text-sm" style="opacity:.7">Okres: <b>{{ period.label }}</b> · grupowanie: {{ period.group }}</div>
+
+  <div class="st-kpis" style="margin-top:8px">
+    {% for label, value in kpis %}
+      <div class="st-kpi"><b>{{ value }}</b><span>{{ label }}</span></div>
+    {% endfor %}
+  </div>
+
+  <div class="st-grid">
+    {% for c in charts %}
+      <div class="st-card">
+        <h3>{{ c.title }}</h3>
+        <div class="st-canvas"><canvas id="{{ c.id }}"></canvas></div>
+        {% if c.note %}<small>{{ c.note }}</small>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% for t in tables %}
+    <div class="st-card" style="margin-bottom:16px; overflow-x:auto">
+      <h3>{{ t.title }}</h3>
+      {% if t.rows %}
+        <table class="st-table">
+          <thead><tr>{% for h in t.head %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for row in t.rows %}
+              <tr>
+                {% for cell in row %}
+                  <td>{% if cell.url %}<a href="{{ cell.url }}">{{ cell.text }}</a>{% else %}{{ cell }}{% endif %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="st-empty">{{ t.empty }}</div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script>
+  (function () {
+    var specs = {{ charts_json|safe }};
+    var palette = ["#0891B2", "#6366F1", "#F59E0B", "#10B981", "#EF4444", "#8B5CF6", "#EC4899", "#64748B"];
+
+    // Pola dat tylko dla okresu "Własny zakres".
+    var sel = document.getElementById("stPeriod");
+    function toggleCustom() {
+      document.querySelectorAll(".st-custom").forEach(function (el) {
+        el.style.display = sel.value === "custom" ? "" : "none";
+      });
+    }
+    sel.addEventListener("change", toggleCustom);
+    toggleCustom();
+
+    if (!window.Chart) {
+      document.querySelectorAll(".st-canvas").forEach(function (el) {
+        el.innerHTML = "<div class='st-empty'>Nie udało się załadować biblioteki wykresów.</div>";
+      });
+      return;
+    }
+    Chart.defaults.color = getComputedStyle(document.body).color;
+    Chart.defaults.borderColor = "rgba(128,128,128,.25)";
+
+    specs.forEach(function (s) {
+      var isDonut = s.kind === "doughnut";
+      var type = s.kind === "hbar" ? "bar" : s.kind;
+      var datasets = s.datasets.map(function (d, i) {
+        var color = palette[i % palette.length];
+        if (isDonut) return { label: d.label, data: d.data, backgroundColor: palette, borderWidth: 1 };
+        return {
+          label: d.label, data: d.data, backgroundColor: color, borderColor: color,
+          borderWidth: s.kind === "line" ? 2 : 0, tension: 0.25, fill: false, pointRadius: s.kind === "line" ? 2 : 0,
+        };
+      });
+      var options = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: isDonut || s.datasets.length > 1, position: isDonut ? "bottom" : "top" } },
+      };
+      if (!isDonut) {
+        options.indexAxis = s.kind === "hbar" ? "y" : "x";
+        var valueAxis = { beginAtZero: true, stacked: s.stacked, ticks: { precision: 0 } };
+        var labelAxis = { stacked: s.stacked, ticks: { maxRotation: 60, autoSkip: true, maxTicksLimit: 24 } };
+        options.scales = s.kind === "hbar" ? { x: valueAxis, y: labelAxis } : { x: labelAxis, y: valueAxis };
+      }
+      new Chart(document.getElementById(s.id), { type: type, data: { labels: s.labels, datasets: datasets }, options: options });
+    });
+  })();
+</script>
+{% endblock %}

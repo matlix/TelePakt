@@ -36,6 +36,9 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
+    # Motyw panelu (Unfold) musi byc przed django.contrib.admin.
+    'unfold',
+    'unfold.contrib.filters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -103,6 +106,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']  # m.in. Chart.js do statystyk w panelu (bez CDN)
 STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
@@ -165,3 +169,78 @@ TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://telepakt.pl')
 DEFAULT_RETENTION_DAYS = int(os.environ.get('RETENTION_DAYS', '30'))
+
+
+# --- Panel administracyjny (django-unfold) -------------------------------------------------
+from django.urls import reverse_lazy  # noqa: E402
+
+UNFOLD = {
+    "SITE_TITLE": "TelePakt Admin",
+    "SITE_HEADER": "TelePakt",
+    "SITE_SUBHEADER": "Panel administratora",
+    "SITE_SYMBOL": "shield",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": False,
+    "DASHBOARD_CALLBACK": "telepakt_project.dashboard.dashboard_callback",
+    "COLORS": {
+        "primary": {
+            "50": "oklch(97.5% 0.014 215)",
+            "100": "oklch(95% 0.03 215)",
+            "200": "oklch(90% 0.06 215)",
+            "300": "oklch(83% 0.1 215)",
+            "400": "oklch(75% 0.125 215)",
+            "500": "oklch(67% 0.13 220)",
+            "600": "oklch(58% 0.115 225)",
+            "700": "oklch(49% 0.1 230)",
+            "800": "oklch(41% 0.085 235)",
+            "900": "oklch(34% 0.07 240)",
+            "950": "oklch(24% 0.05 245)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Statystyki",
+                "separator": False,
+                "collapsible": False,
+                "items": [
+                    {"title": "Połączenia", "icon": "bar_chart", "link": reverse_lazy("admin_stats_calls")},
+                    {"title": "Użytkownicy", "icon": "monitoring", "link": reverse_lazy("admin_stats_users")},
+                    {"title": "Opinie i zakupy", "icon": "query_stats", "link": reverse_lazy("admin_stats_feedback")},
+                ],
+            },
+            {
+                "title": "Telefonia",
+                "separator": True,
+                "items": [
+                    {"title": "Dostawcy telefonii", "icon": "cell_tower", "link": reverse_lazy("admin:telephony_telephonyprovider_changelist")},
+                    {"title": "Rejestr połączeń", "icon": "call", "link": reverse_lazy("admin:telephony_calllog_changelist")},
+                    {"title": "Formuły prawne", "icon": "gavel", "link": reverse_lazy("admin:telephony_legalscript_changelist")},
+                    {"title": "Wnioski do UKE", "icon": "description", "link": reverse_lazy("admin:telephony_ukecomplaint_changelist")},
+                ],
+            },
+            {
+                "title": "Konta",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {"title": "Profile", "icon": "badge", "link": reverse_lazy("admin:accounts_profile_changelist")},
+                    {"title": "Użytkownicy", "icon": "person", "link": reverse_lazy("admin:auth_user_changelist")},
+                    {"title": "Grupy", "icon": "group", "link": reverse_lazy("admin:auth_group_changelist")},
+                ],
+            },
+            {
+                "title": "Opinie i płatności",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {"title": "Opinie klientów", "icon": "reviews", "link": reverse_lazy("admin:telephony_customerreview_changelist")},
+                    {"title": "Paragony IAP", "icon": "receipt_long", "link": reverse_lazy("admin:telephony_inapppurchasereceipt_changelist")},
+                    {"title": "Poświadczenia API", "icon": "key", "link": reverse_lazy("admin:telephony_integrationcredential_changelist")},
+                ],
+            },
+        ],
+    },
+}
