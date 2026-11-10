@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
 from .models import PasswordResetCode, Profile
-from .services import issue_token, normalize_phone, serialize_user
+from .services import ensure_profile, issue_token, normalize_phone, serialize_user
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +77,9 @@ def register(request):
 def login(request):
     email = str(request.data.get('email', '')).strip().lower()
     user = authenticate(request, username=email, password=str(request.data.get('password', '')))
-    if user is None or not hasattr(user, 'profile'):
+    if user is None:
         return _error('Nieprawidłowy e-mail lub hasło. Sprawdź dane lub zarejestruj się.', 401)
+    ensure_profile(user)  # konto zalozone poza aplikacja (np. administrator) tez moze sie zalogowac
     token = issue_token(user, request.headers.get('User-Agent', ''))
     return Response({'token': token, 'user': serialize_user(user)})
 
@@ -99,7 +100,7 @@ def me(request):
         return Response(serialize_user(user))
     if request.method == 'DELETE':
         return _delete_account(request)
-    profile = user.profile
+    profile = ensure_profile(user)
     if 'name' in request.data:
         name = str(request.data['name']).strip()[:128]
         if not name:
@@ -122,7 +123,7 @@ def _delete_account(request):
     user = request.user
     if not user.check_password(str(request.data.get('password', ''))):
         return _error('Nieprawidłowe hasło.', 403)
-    phone = user.profile.phone_protected
+    phone = ensure_profile(user).phone_protected
     if phone:
         for call in CallLog.objects.filter(recipient_number=phone):
             if not erase_recording(call):

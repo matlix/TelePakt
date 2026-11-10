@@ -44,8 +44,20 @@ def is_expired(token: AuthToken) -> bool:
     return token.last_used_at < timezone.now() - timedelta(days=TOKEN_IDLE_DAYS)
 
 
+def ensure_profile(user):
+    """Zwraca profil uzytkownika; zaklada go, jesli konto powstalo poza aplikacja (np. superuser z panelu admina).
+
+    Jedno konto moze byc jednoczesnie administratorem i uzytkownikiem aplikacji - to ta sama tabela User.
+    """
+    from .models import Profile
+
+    profile, _created = Profile.objects.get_or_create(
+        user=user, defaults={'name': (user.get_full_name() or (user.email or user.username).split('@')[0])[:128]})
+    return profile
+
+
 def serialize_user(user) -> dict:
-    p = user.profile
+    p = ensure_profile(user)
     return {
         'id': str(user.pk),
         'email': user.email,

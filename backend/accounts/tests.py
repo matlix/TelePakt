@@ -133,6 +133,19 @@ class AuthApiTests(TestCase):
         self.assertEqual(resp.status_code, 502)
         self.assertTrue(User.objects.filter(username='jan@example.pl').exists())
 
+    def test_admin_account_without_profile_can_log_in_and_use_the_app(self):
+        """Superuser z panelu admina (bez Profile) logowal sie z bledem "nieprawidlowy e-mail lub haslo"."""
+        User.objects.create_superuser('boss@example.pl', 'boss@example.pl', PASSWORD)
+        self.assertFalse(Profile.objects.filter(user__username='boss@example.pl').exists())
+        self.assertEqual(self._register(email='boss@example.pl').status_code, 409)  # e-mail jest zajety
+        login = self.api.post('/api/auth/login/', {'email': 'boss@example.pl', 'password': PASSWORD}, format='json')
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.json()['user']['subscriptionPlan'], 'free')
+        client = self._auth(login.json()['token'])
+        self.assertEqual(client.get('/api/auth/me/').status_code, 200)
+        self.assertEqual(client.patch('/api/auth/me/', {'phoneProtected': '500123456'}, format='json').status_code, 200)
+        self.assertTrue(User.objects.get(username='boss@example.pl').is_superuser)  # nadal administrator
+
     def test_normalize_phone(self):
         self.assertEqual(normalize_phone('+48 500-123-456'), '+48500123456')
         self.assertEqual(normalize_phone(''), '')

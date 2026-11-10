@@ -36,6 +36,7 @@ from twilio.request_validator import RequestValidator
 from twilio.twiml.voice_response import Dial, VoiceResponse
 
 from .models import CallLog, CustomerReview, InAppPurchaseReceipt, LegalScript
+from accounts.services import ensure_profile
 from . import providers
 from .retention import erase_recording, maybe_purge_expired
 
@@ -198,7 +199,7 @@ def start_recording(request):
     ``{"call_sid": "CA..."}``; bez niego wybieramy najnowsze polaczenie tego numeru
     z ostatnich 10 minut, ktore jeszcze nie jest nagrywane. Rozmowca nie slyszy zadnego komunikatu.
     """
-    phone = request.user.profile.phone_protected
+    phone = ensure_profile(request.user).phone_protected
     if not phone:
         return Response({"error": "Ustaw chroniony numer telefonu w profilu"}, status=400)
     call_sid = str(request.data.get('call_sid') or '')
@@ -249,7 +250,7 @@ def zero_storage_delete(request):
     if not call_sid:
         return Response({"error": "Brak call_sid"}, status=400)
     try:
-        call = CallLog.objects.get(call_sid=call_sid, recipient_number=request.user.profile.phone_protected)
+        call = CallLog.objects.get(call_sid=call_sid, recipient_number=ensure_profile(request.user).phone_protected)
     except CallLog.DoesNotExist:
         return Response({"error": "Połączenie nie istnieje"}, status=404)
 
