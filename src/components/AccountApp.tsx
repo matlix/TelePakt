@@ -8,8 +8,8 @@
  * w systemie Android - ta aplikacja tylko zarządza kontem i uprawnieniami.
  * Nie ma tu żadnych odnośników do strony internetowej.
  */
-import React, { useEffect, useState } from 'react';
-import { Copy, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Copy, Info, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
 import { UserAccount } from '../types';
 import { authService } from '../services/authService';
 import { NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
@@ -296,22 +296,137 @@ function ProfileTab({ user, onUpdate }: { user: UserAccount; onUpdate: (u: UserA
 
 /* ------------------------------------------------------------------ Ustawienia */
 
-function StatusRow({ label, desc, granted, onAction }: { label: string; desc: string; granted: boolean; onAction: () => void }) {
+interface PermissionHelp {
+  why: string;
+  steps: string[];
+}
+
+function StatusRow({ label, desc, granted, onAction, help }: { label: string; desc: string; granted: boolean; onAction: () => void; help?: PermissionHelp }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-900 border border-slate-800">
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-bold text-white leading-snug">{label}</div>
-        <div className="text-[10px] text-slate-400 leading-snug mt-0.5">{desc}</div>
+    <div className="rounded-2xl bg-slate-900 border border-slate-800">
+      <div className="flex items-center gap-3 p-3.5">
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-bold text-white leading-snug">{label}</div>
+          <div className="text-[10px] text-slate-400 leading-snug mt-0.5">{desc}</div>
+        </div>
+        {help && (
+          <button
+            type="button"
+            onClick={() => setOpen(o => !o)}
+            aria-label={`Jak włączyć: ${label}`}
+            aria-expanded={open}
+            className={`shrink-0 p-1.5 rounded-full border ${open ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-200' : 'border-slate-700 text-slate-400'}`}
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        )}
+        {granted ? (
+          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+            <CheckCircle2 className="w-4 h-4" /> Włączone
+          </span>
+        ) : (
+          <button onClick={onAction} className="shrink-0 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold">
+            Włącz
+          </button>
+        )}
       </div>
-      {granted ? (
-        <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
-          <CheckCircle2 className="w-4 h-4" /> Włączone
-        </span>
-      ) : (
-        <button onClick={onAction} className="shrink-0 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold">
-          Włącz
-        </button>
+      {open && help && (
+        <div className="px-3.5 pb-3.5 pt-3 border-t border-slate-800 text-[11px] text-slate-300 leading-snug space-y-2">
+          <p>{help.why}</p>
+          <ol className="list-decimal pl-4 space-y-1">
+            {help.steps.map(step => <li key={step}>{step}</li>)}
+          </ol>
+        </div>
       )}
+    </div>
+  );
+}
+
+const OVERLAY_HELP: PermissionHelp = {
+  why: 'Dzięki temu TelePakt może pokazać przyciski „Nagrywaj” i „Przekieruj do TelePakt” na ekranie dzwoniącego połączenia.',
+  steps: [
+    'Dotknij „Włącz” - otworzą się ustawienia Androida.',
+    'Jeśli zobaczysz listę aplikacji, wybierz TelePakt (to nie jest aplikacja Telefon).',
+    'Włącz opcję „Zezwalaj na wyświetlanie nad innymi aplikacjami”.',
+    'Wróć strzałką wstecz do TelePakt - przy uprawnieniu pojawi się „Włączone”.',
+  ],
+};
+
+const PHONE_HELP: PermissionHelp = {
+  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, i może odrzucić rozmowę przyciskiem „Przekieruj do TelePakt”. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
+  steps: [
+    'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o zarządzanie połączeniami.',
+    'Wybierz „Zezwól”.',
+    'Jeśli okienko się nie pojawi, otwórz Ustawienia telefonu > Aplikacje > TelePakt > Uprawnienia > Telefon i włącz je ręcznie.',
+  ],
+};
+
+/** Status uprawnień natywnej nakładki; odświeża się po powrocie z ustawień systemowych. */
+function useOverlayStatus() {
+  const [status, setStatus] = useState<OverlayStatus | null>(null);
+  const refresh = useCallback(() => { NativeOverlayBridge.checkStatus().then(setStatus); }, []);
+  useEffect(() => {
+    refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [refresh]);
+  return { status, refresh };
+}
+
+/** Baner nad całą aplikacją, dopóki brakuje uprawnień potrzebnych do pracy nakładki na ekranie rozmowy. */
+function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
+  const { status, refresh } = useOverlayStatus();
+  const [busy, setBusy] = useState(false);
+  if (!NativeOverlayBridge.isNative() || !status) return null;
+  if (status.hasOverlayPermission && status.hasPhoneStatePermission) return null;
+
+  const enableAll = async () => {
+    setBusy(true);
+    try {
+      if (!status.hasPhoneStatePermission) await NativeOverlayBridge.requestPhonePermission();
+      const now = await NativeOverlayBridge.checkStatus();
+      if (!now.hasOverlayPermission) await NativeOverlayBridge.requestOverlayPermission();
+    } finally {
+      setBusy(false);
+      refresh();
+    }
+  };
+
+  const item = (ok: boolean, text: string) => (
+    <li className="flex items-center gap-2">
+      {ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" /> : <span className="w-3.5 h-3.5 rounded-full border border-amber-300/70 shrink-0" />}
+      <span className={ok ? 'text-slate-400 line-through' : 'text-amber-100'}>{text}</span>
+    </li>
+  );
+
+  return (
+    <div role="alert" className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 space-y-3">
+      <div className="flex items-start gap-2.5">
+        <ShieldAlert className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <div className="text-xs font-black text-amber-100">Dokończ konfigurację</div>
+          <p className="text-[11px] text-amber-100/80 leading-snug">
+            Bez tych uprawnień TelePakt nie pokaże przycisków na ekranie dzwoniącego połączenia.
+          </p>
+        </div>
+      </div>
+      <ul className="text-[11px] space-y-1.5 pl-1">
+        {item(status.hasPhoneStatePermission, 'Dostęp do stanu telefonu')}
+        {item(status.hasOverlayPermission, 'Wyświetlanie nad innymi aplikacjami')}
+      </ul>
+      <div className="flex gap-2">
+        <button onClick={enableAll} disabled={busy} className="flex-1 py-2.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-black disabled:opacity-60">
+          {busy ? 'Chwileczkę…' : 'Włącz teraz'}
+        </button>
+        <button onClick={onOpenSettings} className="px-3 py-2.5 rounded-xl border border-amber-500/40 text-amber-100 text-xs font-bold">
+          Jak to zrobić?
+        </button>
+      </div>
     </div>
   );
 }
@@ -434,12 +549,14 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
               desc="Pozwala pokazać suwak TelePakt na ekranie przychodzącego połączenia."
               granted={!!status?.hasOverlayPermission}
               onAction={() => NativeOverlayBridge.requestOverlayPermission()}
+              help={OVERLAY_HELP}
             />
             <StatusRow
               label="Dostęp do stanu telefonu"
               desc="Pozwala wykryć, że ktoś do Ciebie dzwoni."
               granted={!!status?.hasPhoneStatePermission}
               onAction={() => NativeOverlayBridge.requestPhonePermission().then(refresh)}
+              help={PHONE_HELP}
             />
           </>
         ) : (
@@ -531,6 +648,7 @@ export function AccountApp() {
       </header>
 
       <main className="flex-1 w-full max-w-md mx-auto px-5 py-6 pb-28">
+        <PermissionBanner onOpenSettings={() => setTab('settings')} />
         {tab === 'profile' ? (
           <ProfileTab user={user} onUpdate={setUser} />
         ) : (
