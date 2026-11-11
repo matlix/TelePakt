@@ -32,6 +32,11 @@ class CallOverlayService : Service() {
 
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
+    private var answerInfoView: TextView? = null
+
+    private companion object {
+        const val ANSWER_INFO = "Najpierw połącz z TelePakt (3-way), potem przesuń komunikat - usłyszą go obie strony."
+    }
     private var telephonyManager: TelephonyManager? = null
     private var apiUrl = ""
     private var authToken = ""
@@ -416,11 +421,12 @@ class CallOverlayService : Service() {
                 }
                 box.removeView(info)
                 box.addView(TextView(this).apply {
-                    text = "Najpierw połącz z TelePakt (3-way), potem przesuń komunikat - usłyszą go obie strony."
+                    text = ANSWER_INFO
                     textSize = 10f
                     setTextColor(Color.parseColor("#94A3B8"))
                     gravity = Gravity.CENTER
                     setPadding(0, 0, 0, 4)
+                    answerInfoView = this
                 })
                 items.forEach { message ->
                     box.addView(
@@ -610,13 +616,22 @@ class CallOverlayService : Service() {
     /** Błąd widoczny na samym suwaku (i w toaście), potem suwak wraca do stanu wyjściowego. */
     private fun failHint(hint: TextView, reason: String, idleText: String, done: () -> Unit) {
         Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
-        hint.text = "✗ $reason"
+        // Suwak wraca od razu (kciuk nie zasłania napisu); pełny powód jest w zawijanej linii nad listą.
+        done()
+        hint.text = "✗ Nie udało się"
         hint.setTextColor(Color.parseColor("#F87171"))
+        answerInfoView?.apply {
+            text = "✗ $reason"
+            setTextColor(Color.parseColor("#F87171"))
+        }
         hint.postDelayed({
             hint.text = idleText
             hint.setTextColor(Color.parseColor("#38BDF8"))
-            done()
-        }, 3000L)
+            answerInfoView?.apply {
+                text = ANSWER_INFO
+                setTextColor(Color.parseColor("#94A3B8"))
+            }
+        }, 6000L)
     }
 
     /** Serwer odtwarza komunikat w rozmowie 3-way przez TelePakt - słyszą go obie strony. */

@@ -266,7 +266,7 @@ def message_speak(request, pk):
         return _error('Nie znaleziono komunikatu.', 404)
     call = _active_own_call(request.user)
     if call is None:
-        return _error('Brak trwającej rozmowy nagrywanej przez TelePakt. Najpierw stuknij „Nagrywaj całą rozmowę” '
+        return _error('Brak trwającej rozmowy nagrywanej przez TelePakt. Najpierw stuknij „Połącz z TelePakt (3-way)” '
                       'i scal rozmowy - wtedy komunikat usłyszy rozmówca.', 409)
     adapter = providers.adapter_for(call.provider)
     if adapter is None or not adapter.has_credentials():

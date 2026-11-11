@@ -346,7 +346,7 @@ function StatusRow({ label, desc, granted, onAction, help }: { label: string; de
 }
 
 const OVERLAY_HELP: PermissionHelp = {
-  why: 'Dzięki temu TelePakt może pokazać swoje przyciski (np. „Nagrywaj”) na ekranie dzwoniącego połączenia.',
+  why: 'Dzięki temu TelePakt może pokazać swój panel („Połącz z TelePakt (3-way)” i suwaki odpowiedzi) nad ekranem rozmowy po jej odebraniu.',
   steps: [
     'Dotknij „Włącz” - otworzą się ustawienia Androida.',
     'Jeśli zobaczysz listę aplikacji, wybierz TelePakt (to nie jest aplikacja Telefon).',
@@ -474,14 +474,14 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
           <>
             <StatusRow
               label="Wyświetlanie nad innymi aplikacjami"
-              desc="Pozwala pokazać suwak TelePakt na ekranie przychodzącego połączenia."
+              desc="Pozwala pokazać panel TelePakt nad rozmową po jej odebraniu."
               granted={!!status?.hasOverlayPermission}
               onAction={() => NativeOverlayBridge.requestOverlayPermission()}
               help={OVERLAY_HELP}
             />
             <StatusRow
               label="Dostęp do stanu telefonu"
-              desc="Pozwala wykryć, że ktoś do Ciebie dzwoni."
+              desc="Pozwala wykryć rozmowę i wybrać numer TelePakt jednym stuknięciem (3-way)."
               granted={!!status?.hasPhoneStatePermission}
               onAction={() => NativeOverlayBridge.requestPhonePermission().then(refresh)}
               help={PHONE_HELP}
@@ -641,7 +641,7 @@ function RecordingsTab() {
       {items && items.length === 0 && !needsPhone && (
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 leading-snug space-y-2">
           <p className="font-bold text-white">Nie masz jeszcze nagrań.</p>
-          <p>Aby nagrać całą rozmowę, w trakcie rozmowy stuknij w nakładce „Nagrywaj całą rozmowę”. Telefon wstrzyma rozmowę i zadzwoni na numer TelePakt. Gdy TelePakt odbierze, stuknij „Scal” (lub „Połącz rozmowy”) - od tej chwili nagrywane są obie strony.</p>
+          <p>Aby nagrać całą rozmowę, w trakcie rozmowy stuknij w nakładce „Połącz z TelePakt (3-way)”. Telefon wstrzyma rozmowę i zadzwoni na numer TelePakt. Gdy TelePakt odbierze, stuknij „Scal” (lub „Połącz rozmowy”) - od tej chwili nagrywane są obie strony.</p>
         </div>
       )}
 
