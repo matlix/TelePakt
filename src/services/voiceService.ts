@@ -97,6 +97,13 @@ export const voiceService = {
     return res.json();
   },
 
+  /** Podgląd: wybrany głos AI czyta komunikat (także z jeszcze niezapisanym głosem, tempem i treścią). */
+  async previewUrl(id: number, options: { voice: string; rate: number; text: string }): Promise<string> {
+    const res = await call(`/messages/${id}/preview/`, { method: 'POST', body: JSON.stringify(options) });
+    if (!res.ok) throw await failure(res, 'Nie udało się wygenerować podglądu');
+    return URL.createObjectURL(await res.blob());
+  },
+
   async audioUrl(id: number): Promise<string> {
     const res = await call(`/messages/${id}/audio/`);
     if (!res.ok) throw await failure(res, 'Nie udało się pobrać nagrania');

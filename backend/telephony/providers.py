@@ -20,6 +20,7 @@ import secrets
 import threading
 import time
 from urllib.parse import urlencode, urlparse
+from xml.sax.saxutils import escape
 
 import requests
 from cryptography.fernet import Fernet, InvalidToken
@@ -209,6 +210,30 @@ class TelnyxProvider(BaseProvider):
             last = resp.status_code
             resp.close()
         raise ProviderError(f"Telnyx HTTP {last}")
+
+    TTS_URL = 'https://api.telnyx.com/v2/text-to-speech/speech'
+
+    def synthesize(self, text: str, voice_id: str, rate: int | None = None) -> tuple[bytes, str]:
+        """Czyta ``text`` głosem Amazon Polly (poza rozmową) i zwraca ``(audio, content_type)``.
+
+        Ten sam głos i tempo są używane w rozmowie (``<Say voice="Polly...">``), więc podgląd brzmi tak samo.
+        ``voice_id`` ma postać ``Polly.Ola-Neural`` - Telnyx oczekuje przedrostka ``aws.``.
+        """
+        key = decrypt_secret(self.row.secret_encrypted)
+        if not key:
+            raise ProviderError("Brak danych dostępowych Telnyx")
+        body = {'voice': f'aws.{voice_id}', 'language': 'pl-PL', 'output_type': 'binary_output'}
+        if rate and rate != 100:  # tempo przez SSML, tak jak <prosody rate> w rozmowie
+            body['text_type'] = 'ssml'
+            body['text'] = f'<speak><prosody rate="{int(rate)}%">{escape(text)}</prosody></speak>'
+        else:
+            body['text'] = text
+        resp = requests.post(self.TTS_URL, json=body, headers={'Authorization': f'Bearer {key}'}, timeout=30)
+        if resp.status_code != 200:
+            detail = self._detail(resp)
+            logger.warning("Telnyx TTS: HTTP %s %s (głos %s)", resp.status_code, detail, voice_id)
+            raise ProviderError(f"Telnyx HTTP {resp.status_code}{': ' + detail if detail else ''}")
+        return resp.content, resp.headers.get('Content-Type', 'audio/mpeg')
 
     def announce(self, call_sid, conference_name, announce_url):
         found = self._request('GET', 'Conferences', params={'FriendlyName': conference_name, 'Status': 'in-progress'})

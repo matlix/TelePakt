@@ -147,6 +147,7 @@ REST_FRAMEWORK = {
         'reviews': os.environ.get('REVIEWS_THROTTLE_RATE', '30/hour'),
         'recording': os.environ.get('RECORDING_THROTTLE_RATE', '60/hour'),
         'speak': os.environ.get('SPEAK_THROTTLE_RATE', '120/hour'),
+        'preview': os.environ.get('PREVIEW_THROTTLE_RATE', '60/hour'),
     },
 }
 

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, Mic, Play, Plus, Square, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Mic, Play, Plus, Square, Trash2, Volume2 } from 'lucide-react';
 import { voiceService, VoiceMessage, VoiceSettings } from '../services/voiceService';
 import { MAX_RECORD_SECONDS, microphoneErrorMessage, VoiceRecorder } from '../utils/wavRecorder';
 
@@ -17,9 +17,11 @@ function ErrorBox({ text }: { text: string }) {
 
 /* ------------------------------------------------------------------ głos i tempo */
 
-function VoiceSettingsCard({ settings, onSaved }: { settings: VoiceSettings; onSaved: (s: VoiceSettings) => void }) {
-  const [voice, setVoice] = useState(settings.voice);
-  const [rate, setRate] = useState(settings.rate);
+function VoiceSettingsCard({ settings, voice, rate, onChange, onSaved }: {
+  settings: VoiceSettings; voice: string; rate: number; onChange: (voice: string, rate: number) => void; onSaved: (s: VoiceSettings) => void;
+}) {
+  const setVoice = (v: string) => onChange(v, rate);
+  const setRate = (r: number) => onChange(voice, r);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ function VoiceSettingsCard({ settings, onSaved }: { settings: VoiceSettings; onS
         <span className="flex justify-between text-[10px] text-slate-500"><span>wolniej</span><span>szybciej</span></span>
       </label>
       <p className="text-[10px] text-slate-500 leading-snug">
-        Dotyczy komunikatów czytanych głosem syntezatora. Własne nagranie jest odtwarzane bez zmian. Brzmienie usłyszysz dopiero w rozmowie - podgląd nie jest dostępny.
+        Dotyczy komunikatów czytanych głosem syntezatora. Własne nagranie jest odtwarzane bez zmian. Przycisk „Odtwórz głosem AI” przy komunikacie pokazuje, jak zabrzmi wybrany głos i tempo (także przed zapisaniem).
       </p>
       {error && <ErrorBox text={error} />}
       <button onClick={save} disabled={!dirty || busy} className="w-full py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-xs font-bold disabled:opacity-40">
@@ -69,8 +71,9 @@ function VoiceSettingsCard({ settings, onSaved }: { settings: VoiceSettings; onS
 
 /* ------------------------------------------------------------------ pojedynczy komunikat */
 
-function MessageCard({ message, settings, onChanged, onDeleted }: {
-  message: VoiceMessage; settings: VoiceSettings; onChanged: (m: VoiceMessage) => void; onDeleted: (id: number) => void;
+function MessageCard({ message, settings, previewVoice, previewRate, onChanged, onDeleted }: {
+  message: VoiceMessage; settings: VoiceSettings; previewVoice: string; previewRate: number;
+  onChanged: (m: VoiceMessage) => void; onDeleted: (id: number) => void;
 }) {
   const [title, setTitle] = useState(message.title);
   const [text, setText] = useState(message.text);
@@ -132,6 +135,8 @@ function MessageCard({ message, settings, onChanged, onDeleted }: {
   };
 
   const listen = () => run(async () => setAudioUrl(await voiceService.audioUrl(message.id)));
+  // Podgląd czyta aktualną treść z pola (także niezapisaną) wybranym głosem i tempem.
+  const preview = () => run(async () => setAudioUrl(await voiceService.previewUrl(message.id, { voice: previewVoice, rate: previewRate, text })));
   const dropRecording = () => run(async () => { setAudioUrl(null); onChanged(await voiceService.removeAudio(message.id)); });
 
   return (
@@ -144,6 +149,9 @@ function MessageCard({ message, settings, onChanged, onDeleted }: {
         className={`${field} min-h-[88px] resize-y`} value={text} onChange={e => setText(e.target.value)} maxLength={1000}
         aria-label="Treść komunikatu" placeholder="Treść czytana głosem syntezatora"
       />
+      <button onClick={preview} disabled={busy || recording || !text.trim()} className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold disabled:opacity-50">
+        <Volume2 className="w-3.5 h-3.5" /> {busy ? 'Generuję…' : 'Odtwórz głosem AI'}
+      </button>
       {dirty && (
         <button onClick={save} disabled={busy} className="w-full py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold disabled:opacity-50">
           Zapisz zmiany
@@ -209,6 +217,7 @@ export function MessagesTab() {
   const [settings, setSettings] = useState<VoiceSettings | null>(null);
   const [messages, setMessages] = useState<VoiceMessage[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [voiceDraft, setVoiceDraft] = useState<{ voice: string; rate: number } | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ title: '', text: '', situation: 'custom' });
   const [addBusy, setAddBusy] = useState(false);
@@ -218,6 +227,7 @@ export function MessagesTab() {
     try {
       const [s, m] = await Promise.all([voiceService.getSettings(), voiceService.list()]);
       setSettings(s);
+      setVoiceDraft(d => d ?? { voice: s.voice, rate: s.rate });
       setMessages(m);
     } catch (err: any) {
       setError(err.message);
@@ -252,15 +262,21 @@ export function MessagesTab() {
       {error && <ErrorBox text={error} />}
       {!settings && !error && <p className="text-[11px] text-slate-400">Ładowanie…</p>}
 
-      {settings && <VoiceSettingsCard settings={settings} onSaved={setSettings} />}
+      {settings && voiceDraft && (
+        <VoiceSettingsCard
+          settings={settings} voice={voiceDraft.voice} rate={voiceDraft.rate}
+          onChange={(voice, rate) => setVoiceDraft({ voice, rate })}
+          onSaved={saved => { setSettings(saved); setVoiceDraft({ voice: saved.voice, rate: saved.rate }); }}
+        />
+      )}
 
-      {settings && messages && (
+      {settings && messages && voiceDraft && (
         <>
           {messages.length === 0 && <p className="text-[11px] text-slate-400">Nie masz jeszcze komunikatów. Dodaj pierwszy poniżej.</p>}
           <ul className="space-y-3">
             {messages.map(m => (
               <MessageCard
-                key={m.id} message={m} settings={settings}
+                key={m.id} message={m} settings={settings} previewVoice={voiceDraft.voice} previewRate={voiceDraft.rate}
                 onChanged={updated => setMessages(list => (list || []).map(x => (x.id === updated.id ? updated : x)))}
                 onDeleted={id => setMessages(list => (list || []).filter(x => x.id !== id))}
               />

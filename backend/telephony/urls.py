@@ -12,6 +12,7 @@ urlpatterns = [
     path('messages/', voice_views.messages_collection, name='messages_collection'),
     path('messages/<int:pk>/', voice_views.message_detail, name='message_detail'),
     path('messages/<int:pk>/audio/', voice_views.message_audio, name='message_audio'),
+    path('messages/<int:pk>/preview/', voice_views.message_preview, name='message_preview'),
     path('messages/<int:pk>/speak/', voice_views.message_speak, name='message_speak'),
     path('announce/<str:token>/', voice_views.announce_twiml, name='announce_twiml'),
     path('announce/<str:token>/audio.wav', voice_views.announce_audio, name='announce_audio'),

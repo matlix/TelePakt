@@ -188,6 +188,46 @@ def message_audio(request, pk):
     return Response(_serialize(message))
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([ScopedRateThrottle])
+def message_preview(request, pk):
+    """Podgląd: czyta komunikat wybranym głosem AI i tempem (można podać wartości jeszcze niezapisane).
+
+    Body (opcjonalnie): ``voice``, ``rate``, ``text``. Audio generuje Telnyx (klucz z panelu admina) - plik
+    nie jest nigdzie zapisywany.
+    """
+    message = _own_message(request.user, pk)
+    if message is None:
+        return _error('Nie znaleziono komunikatu.', 404)
+    profile = ensure_profile(request.user)
+    voice_id = str(request.data.get('voice') or profile.tts_voice)
+    if voice_id not in dict(voice.VOICES):
+        return _error('Nieznany głos.')
+    try:
+        rate = int(request.data.get('rate') or profile.tts_rate)
+    except (TypeError, ValueError):
+        return _error('Tempo musi być liczbą.')
+    if not voice.RATE_MIN <= rate <= voice.RATE_MAX:
+        return _error(f'Tempo musi mieścić się w zakresie {voice.RATE_MIN}-{voice.RATE_MAX}%.')
+    text = str(request.data.get('text') or message.text).strip()
+    if not text or len(text) > voice.MAX_TEXT:
+        return _error(f'Treść musi mieć od 1 do {voice.MAX_TEXT} znaków.')
+    adapter = providers.adapter_for('telnyx')
+    if adapter is None or not adapter.has_credentials():
+        return _error('Podgląd głosu wymaga skonfigurowanego dostawcy Telnyx (panel admina, Dostawcy telefonii).', 503)
+    try:
+        audio, content_type = adapter.synthesize(text, voice_id, rate)
+    except Exception as exc:  # noqa: BLE001 - błąd dostawcy -> czytelny komunikat + log z identyfikatorami
+        logger.exception("Podgląd głosu nie powiódł się (komunikat %s, głos %s): %s", message.pk, voice_id, exc)
+        return _error(f'Nie udało się wygenerować podglądu: {exc}', 502)
+    response = HttpResponse(audio, content_type=content_type)
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
+message_preview.cls.throttle_scope = 'preview'
+
 # --------------------------------------------------------------------------- odtworzenie w rozmowie
 
 def _active_own_call(user):
