@@ -356,7 +356,7 @@ const OVERLAY_HELP: PermissionHelp = {
 };
 
 const PHONE_HELP: PermissionHelp = {
-  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, pokazuje swoje suwaki i może odrzucić rozmowę, gdy przesuniesz odpowiedź. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
+  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, pokazuje swoje suwaki, odrzuca rozmowę po przesunięciu odpowiedzi i wybiera numer TelePakt jednym stuknięciem. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
   steps: [
     'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o zarządzanie połączeniami.',
     'Wybierz „Zezwól”.',
@@ -418,7 +418,7 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
         </div>
       </div>
       <ul className="text-[11px] space-y-1.5 pl-1">
-        {item(status.hasPhoneStatePermission, 'Dostęp do połączeń (wykrywanie i odrzucanie rozmów)')}
+        {item(status.hasPhoneStatePermission, 'Dostęp do połączeń (wykrywanie, odrzucanie i wybieranie numerów)')}
         {item(status.hasOverlayPermission, 'Wyświetlanie nad innymi aplikacjami')}
       </ul>
       <div className="flex gap-2">
@@ -451,6 +451,16 @@ function ForwardingSection() {
   const [info, setInfo] = useState<ForwardingInfo | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [copied, setCopied] = useState<string | null>(null);
+  const [dialError, setDialError] = useState<string | null>(null);
+
+  const dial = async (code: string) => {
+    setDialError(null);
+    try {
+      await NativeOverlayBridge.dial(code);
+    } catch (err: any) {
+      setDialError(err?.message || 'Nie udało się wybrać numeru.');
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -482,8 +492,25 @@ function ForwardingSection() {
         <div className="rounded-2xl bg-slate-900 border border-slate-800 divide-y divide-slate-800 overflow-hidden">
           <div className="px-4 py-3 text-[11px] text-slate-300 leading-snug">
             <PhoneForwarded className="inline w-3.5 h-3.5 mr-1.5 text-cyan-300" />
-            Wpisz kod w aplikacji Telefon i wciśnij zadzwoń. Numer TelePakt: <strong className="text-white">{info.number}</strong>.
-            Działanie zależy od operatora - po ustawieniu wykonaj połączenie próbne. Przekierowane minuty mogą być płatne u operatora.
+            Numer TelePakt: <strong className="text-white">{info.number}</strong>. Działanie zależy od operatora - po ustawieniu
+            wykonaj połączenie próbne. Przekierowane minuty mogą być płatne u operatora.
+          </div>
+          <div className="px-4 py-3 space-y-2">
+            <button onClick={() => dial(info.codes.when_busy)} className="w-full py-2.5 rounded-xl bg-cyan-500 text-slate-950 text-xs font-black">
+              Włącz przekierowanie jednym stuknięciem
+            </button>
+            <button onClick={() => dial(info.codes.cancel_all)} className="w-full py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold">
+              Wyłącz wszystkie przekierowania
+            </button>
+            <p className="text-[10px] text-slate-500 leading-snug">
+              Telefon sam wybierze kod, a operator potwierdzi ustawienie komunikatem na ekranie. Kody poniżej możesz też wpisać ręcznie.
+            </p>
+            {dialError && (
+              <div role="alert" className="flex items-start gap-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-200">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{dialError}</span>
+              </div>
+            )}
           </div>
           {FORWARD_LABELS.map(([key, label, desc]) => (
             <div key={key} className="px-4 py-3 flex items-center gap-3">

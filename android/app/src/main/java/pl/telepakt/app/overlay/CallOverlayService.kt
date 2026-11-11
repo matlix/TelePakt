@@ -315,13 +315,20 @@ class CallOverlayService : Service() {
                     return@post
                 }
                 try {
-                    val dial = Intent(Intent.ACTION_DIAL, android.net.Uri.fromParts("tel", number, null))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    // Z uprawnieniem CALL_PHONE numer jest wybierany od razu (rozmowa idzie na wstrzymanie);
+                    // bez niego otwieramy dialer z wpisanym numerem i trzeba jeszcze wcisnąć "zadzwoń".
+                    val canCall = checkSelfPermission(android.Manifest.permission.CALL_PHONE) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED
+                    val dial = Intent(
+                        if (canCall) Intent.ACTION_CALL else Intent.ACTION_DIAL,
+                        android.net.Uri.parse("tel:" + android.net.Uri.encode(number))
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     startActivity(dial)
                     button.text = "● GDY TELEPAKT ODBIERZE: STUKNIJ „SCAL”"
                     Toast.makeText(
                         this,
-                        "Wciśnij zadzwoń. Gdy TelePakt odbierze, stuknij „Scal” w aplikacji Telefon - wtedy nagrywane są obie strony.",
+                        if (canCall) "Łączę z TelePakt. Gdy odbierze, stuknij „Scal” w aplikacji Telefon - tego kroku Android nie pozwala wykonać za Ciebie."
+                        else "Wciśnij zadzwoń. Gdy TelePakt odbierze, stuknij „Scal” w aplikacji Telefon.",
                         Toast.LENGTH_LONG
                     ).show()
                 } catch (e: Exception) {

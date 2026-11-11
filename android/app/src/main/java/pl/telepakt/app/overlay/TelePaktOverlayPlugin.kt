@@ -17,7 +17,10 @@ import com.getcapacitor.annotation.Permission
 @CapacitorPlugin(
     name = "TelePaktOverlay",
     permissions = [
-        Permission(strings = [Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS], alias = "phone")
+        Permission(
+            strings = [Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS, Manifest.permission.CALL_PHONE],
+            alias = "phone"
+        )
     ]
 )
 class TelePaktOverlayPlugin : Plugin() {
@@ -70,6 +73,33 @@ class TelePaktOverlayPlugin : Plugin() {
         call.resolve()
     }
 
+    /**
+     * Wybiera numer jednym stuknięciem - także kod MMI, np. przekierowanie `**67*+48...#` - bez kopiowania
+     * i wklejania w aplikacji Telefon. Wymaga uprawnienia CALL_PHONE (grupa "Telefon" z banera konfiguracji).
+     */
+    @PluginMethod
+    fun dialNumber(call: PluginCall) {
+        val number = call.getString("number")
+        if (number.isNullOrBlank()) {
+            call.reject("Brak numeru do wybrania.")
+            return
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            call.reject("Brak uprawnienia do wybierania numerów. Włącz je przyciskiem „Włącz teraz” w banerze „Dokończ konfigurację”.")
+            return
+        }
+        try {
+            // '#' i '+' muszą być zakodowane w adresie tel:, inaczej dialer ucina kod.
+            val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:" + Uri.encode(number)))
+                .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+            context.startActivity(intent)
+            call.resolve()
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "dialNumber failed", e)
+            call.reject("Nie udało się wybrać numeru: ${e.message}")
+        }
+    }
+
     @PluginMethod
     fun hideOverlay(call: PluginCall) {
         val serviceIntent = Intent(context, CallOverlayService::class.java)
@@ -81,7 +111,9 @@ class TelePaktOverlayPlugin : Plugin() {
 
     @PluginMethod
     fun checkPhoneStatePermission(call: PluginCall) {
-        val granted = listOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS).all {
+        val granted = listOf(
+            Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS, Manifest.permission.CALL_PHONE
+        ).all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
         val ret = JSObject()

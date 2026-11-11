@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <!-- Odrzucanie dzwoniącej rozmowy suwakiem (przekierowanie do TelePakt) -->
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <!-- Wybieranie numeru jednym stuknięciem: kod przekierowania w Ustawieniach i połączenie 3-way z TelePakt -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
     <!-- Nagrywanie własnego głosu jako komunikatu (zakładka Komunikaty) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
