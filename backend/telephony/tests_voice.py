@@ -156,16 +156,32 @@ class SpeakTests(TestCase):
         row, _ = TelephonyProvider.objects.update_or_create(kind='telnyx', defaults={
             'account_sid': 'acc', 'secret_encrypted': providers.encrypt_secret('KEY'), 'is_enabled': True})
         found = mock.MagicMock(status_code=200)
-        found.json.return_value = {'conferences': [{'sid': 'CFtel'}]}
+        # Konferencja z jedną nogą (3-way) bywa w stanie "init" - też ma przyjąć komunikat; zakończona nie.
+        found.json.return_value = {'conferences': [{'sid': 'CFold', 'status': 'completed'}, {'sid': 'CFtel', 'status': 'init'}]}
         done = mock.MagicMock(status_code=200)
         with mock.patch('telephony.providers.requests.request', side_effect=[found, done]) as req:
             providers.TelnyxProvider(row).announce('CAx', 'telepakt_bridge_CAx', 'https://api/announce/t/')
         first, second = req.call_args_list
         self.assertEqual(first[0][0], 'GET')
-        self.assertEqual(first[1]['params'], {'FriendlyName': 'telepakt_bridge_CAx', 'Status': 'in-progress'})
+        self.assertEqual(first[1]['params'], {'FriendlyName': 'telepakt_bridge_CAx'})
         self.assertEqual(second[0][0], 'POST')
         self.assertTrue(second[0][1].endswith('/acc/Conferences/CFtel/Participants/CAx'))
         self.assertEqual(second[1]['data']['AnnounceUrl'], 'https://api/announce/t/')
+
+
+    def test_telnyx_missing_conference_error_lists_what_telnyx_sees(self):
+        row, _ = TelephonyProvider.objects.update_or_create(kind='telnyx', defaults={
+            'account_sid': 'acc', 'secret_encrypted': providers.encrypt_secret('KEY'), 'is_enabled': True})
+        empty = mock.MagicMock(status_code=200)
+        empty.json.return_value = {'conferences': []}
+        recent = mock.MagicMock(status_code=200)
+        recent.json.return_value = {'conferences': [{'friendly_name': 'inna_nazwa', 'status': 'in-progress'}]}
+        with mock.patch('telephony.providers.requests.request', side_effect=[empty, recent]):
+            with self.assertRaises(providers.ProviderError) as ctx:
+                providers.TelnyxProvider(row).announce('CAx', 'telepakt_bridge_CAx', 'https://api/announce/t/')
+        message = str(ctx.exception)
+        self.assertIn('telepakt_bridge_CAx', message)
+        self.assertIn('inna_nazwa (in-progress)', message)
 
 
 class AnnounceEndpointsTests(TestCase):

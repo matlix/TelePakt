@@ -274,16 +274,32 @@ class TelnyxProvider(BaseProvider):
         raise ProviderError("Telnyx nie przyjął żądania. Próby: " + ' | '.join(attempts))
 
     def announce(self, call_sid, conference_name, announce_url):
-        found = self._request('GET', 'Conferences', params={'FriendlyName': conference_name, 'Status': 'in-progress'})
+        # Bez filtra Status: w 3-way TelePakt ma w konferencji jedną nogę (telefon użytkownika), a Telnyx może trzymać
+        # taką konferencję w stanie "init" zamiast "in-progress". Wykluczamy tylko zakończone.
+        found = self._request('GET', 'Conferences', params={'FriendlyName': conference_name})
         if found.status_code != 200:
             raise ProviderError(f"Telnyx HTTP {found.status_code}: {self._detail(found)}")
-        conferences = found.json().get('conferences') or []
+        conferences = [c for c in (found.json().get('conferences') or []) if c.get('status') != 'completed']
         if not conferences:
-            raise ProviderError("Nie znaleziono trwającej konferencji - czy rozmowy zostały scalone?")
+            raise ProviderError(self._no_conference_message(conference_name))
         resp = self._request('POST', f"Conferences/{conferences[0]['sid']}/Participants/{call_sid}",
                              data={'AnnounceUrl': announce_url, 'AnnounceMethod': 'POST'})
         if resp.status_code not in (200, 201):
             raise ProviderError(f"Telnyx HTTP {resp.status_code}: {self._detail(resp)}")
+
+    def _no_conference_message(self, conference_name: str) -> str:
+        """Komunikat z PRZYCZYNĄ: co Telnyx faktycznie widzi (nazwa i stan ostatnich konferencji), by dało się to zdiagnozować."""
+        seen = ''
+        try:
+            recent = self._request('GET', 'Conferences', params={'PageSize': 5})
+            if recent.status_code == 200:
+                items = recent.json().get('conferences') or []
+                seen = '; '.join(f"{c.get('friendly_name')} ({c.get('status')})" for c in items)
+        except (ProviderError, requests.RequestException, ValueError) as exc:
+            logger.warning("Telnyx: nie udało się wylistować konferencji do diagnostyki: %s", exc)
+        logger.error("Telnyx: brak konferencji %s; ostatnie u dostawcy: %s", conference_name, seen or 'brak')
+        return ("Nie znaleziono trwającej konferencji - czy rozmowy zostały scalone? "
+                f"Szukano: {conference_name}. Telnyx widzi: {seen or 'żadnych konferencji'}")
 
     def delete_recording(self, recording_sid):
         try:
