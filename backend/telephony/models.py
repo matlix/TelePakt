@@ -165,3 +165,30 @@ class TelephonyProvider(models.Model):
 
     def __str__(self):
         return self.get_kind_display()
+
+
+class VoiceMessage(models.Model):
+    """Komunikat użytkownika odtwarzany rozmówcy (głos syntezatora albo własne nagranie WAV)."""
+    owner = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='voice_messages')
+    title = models.CharField(max_length=80, verbose_name="Tytuł")
+    situation = models.CharField(max_length=30, default='custom', verbose_name="Sytuacja")
+    text = models.TextField(max_length=1000, verbose_name="Treść (czytana głosem syntezatora)")
+    audio = models.BinaryField(null=True, blank=True, editable=False)  # własne nagranie WAV (do 2 MB)
+    audio_seconds = models.FloatField(default=0)
+    # Niezgadywalny token w adresie, który pobiera dostawca telefonii (bez logowania).
+    public_token = models.CharField(max_length=40, unique=True, editable=False)
+    position = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True, verbose_name="Pokazuj w nakładce")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position', 'id']
+        verbose_name = "Komunikat głosowy"
+        verbose_name_plural = "Komunikaty głosowe"
+
+    @property
+    def has_audio(self) -> bool:
+        return bool(self.audio)
+
+    def __str__(self):
+        return f"{self.title} ({self.owner})"

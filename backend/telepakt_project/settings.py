@@ -146,6 +146,7 @@ REST_FRAMEWORK = {
         'password_reset_confirm': os.environ.get('RESET_CONFIRM_THROTTLE_RATE', '20/hour'),
         'reviews': os.environ.get('REVIEWS_THROTTLE_RATE', '30/hour'),
         'recording': os.environ.get('RECORDING_THROTTLE_RATE', '60/hour'),
+        'speak': os.environ.get('SPEAK_THROTTLE_RATE', '120/hour'),
     },
 }
 

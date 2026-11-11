@@ -17,6 +17,8 @@ class Profile(models.Model):
     phone_protected = models.CharField(max_length=16, blank=True, verbose_name="Chroniony numer (E.164)")
     # Plan płatny ustawia wyłącznie serwer (admin / weryfikacja zakupu w sklepie), nigdy klient.
     subscription_plan = models.CharField(max_length=10, choices=PLAN_CHOICES, default='free')
+    tts_voice = models.CharField(max_length=40, default='Polly.Ola-Neural', verbose_name="Głos komunikatów")
+    tts_rate = models.PositiveSmallIntegerField(default=110, verbose_name="Tempo komunikatów (%)")
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

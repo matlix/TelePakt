@@ -85,6 +85,14 @@ class BaseProvider:
         """Otwiera strumień audio nagrania (``requests.Response`` ze stream=True)."""
         raise NotImplementedError
 
+    def announce(self, call_sid: str, conference_name: str, announce_url: str) -> None:
+        """Odtwarza audio spod ``announce_url`` na nodze ``call_sid`` w trwającej konferencji.
+
+        Dźwięk idzie w dół nogi do telefonu użytkownika, a tam trafia do konferencji operatora (3-way) -
+        słyszy go więc także rozmówca.
+        """
+        raise NotImplementedError
+
     def has_credentials(self) -> bool:
         return bool(self.row.account_sid and decrypt_secret(self.row.secret_encrypted))
 
@@ -116,6 +124,14 @@ class TwilioProvider(BaseProvider):
     def delete_recording(self, recording_sid):
         from .retention import delete_twilio_recording
         return delete_twilio_recording(recording_sid)
+
+    def announce(self, call_sid, conference_name, announce_url):
+        client = self._client()
+        conferences = client.conferences.list(friendly_name=conference_name, status='in-progress', limit=1)
+        if not conferences:
+            raise ProviderError("Nie znaleziono trwającej konferencji - czy rozmowy zostały scalone?")
+        client.conferences(conferences[0].sid).participants(call_sid).update(
+            announce_url=announce_url, announce_method='POST')
 
     def open_recording(self, url):
         sid, token = twilio_credentials()
@@ -193,6 +209,18 @@ class TelnyxProvider(BaseProvider):
             last = resp.status_code
             resp.close()
         raise ProviderError(f"Telnyx HTTP {last}")
+
+    def announce(self, call_sid, conference_name, announce_url):
+        found = self._request('GET', 'Conferences', params={'FriendlyName': conference_name, 'Status': 'in-progress'})
+        if found.status_code != 200:
+            raise ProviderError(f"Telnyx HTTP {found.status_code}: {self._detail(found)}")
+        conferences = found.json().get('conferences') or []
+        if not conferences:
+            raise ProviderError("Nie znaleziono trwającej konferencji - czy rozmowy zostały scalone?")
+        resp = self._request('POST', f"Conferences/{conferences[0]['sid']}/Participants/{call_sid}",
+                             data={'AnnounceUrl': announce_url, 'AnnounceMethod': 'POST'})
+        if resp.status_code not in (200, 201):
+            raise ProviderError(f"Telnyx HTTP {resp.status_code}: {self._detail(resp)}")
 
     def delete_recording(self, recording_sid):
         try:
