@@ -39,7 +39,6 @@ class CallOverlayService : Service() {
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
     private var telephonyManager: TelephonyManager? = null
-    private var isDefenseActivated = false
     private var apiUrl = ""
     private var authToken = ""
 
@@ -143,69 +142,19 @@ class CallOverlayService : Service() {
         }
         root.addView(callerInfo)
 
-        // Slider Container Track
-        val sliderTrack = FrameLayout(this).apply {
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#020617"))
-                cornerRadius = 36f
-                setStroke(2, Color.parseColor("#334155"))
-            }
-            setPadding(8, 8, 8, 8)
-        }
-
-        val sliderHint = TextView(this).apply {
-            text = "PRZESUŃ, BY WŁĄCZYĆ AUTO-SPRZECIW ➔"
+        // Suwaki komunikatów: po jednym na aktywny komunikat użytkownika (maks. 4), ładowane z serwera.
+        // Przesunięcie suwaka odtwarza komunikat rozmówcy - w rozmowie nagrywanej przez TelePakt (3-way).
+        val messagesBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val messagesInfo = TextView(this).apply {
+            text = "Ładowanie komunikatów…"
             textSize = 11f
-            setTextColor(Color.parseColor("#38BDF8"))
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(Color.parseColor("#94A3B8"))
             gravity = Gravity.CENTER
-            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 120)
+            setPadding(0, 8, 0, 8)
         }
-        sliderTrack.addView(sliderHint)
-
-        val sliderThumb = TextView(this).apply {
-            text = "🛡️ PKE"
-            textSize = 12f
-            setTextColor(Color.parseColor("#020617"))
-            typeface = android.graphics.Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#06B6D4"))
-                cornerRadius = 32f
-            }
-            layoutParams = FrameLayout.LayoutParams(180, 110, Gravity.START or Gravity.CENTER_VERTICAL)
-        }
-
-        sliderThumb.setOnTouchListener(object : View.OnTouchListener {
-            var startX = 0f
-
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        startX = event.rawX
-                        return true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val maxScroll = (sliderTrack.width - v.width - 16).toFloat()
-                        val newX = (event.rawX - startX).coerceIn(0f, maxScroll)
-                        v.x = newX
-                        if (newX >= maxScroll * 0.85f && !isDefenseActivated) {
-                            activateDefense(root, sliderHint, v)
-                        }
-                        return true
-                    }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        if (!isDefenseActivated) {
-                            v.animate().x(0f).setDuration(200).start()
-                        }
-                        return true
-                    }
-                }
-                return false
-            }
-        })
-        sliderTrack.addView(sliderThumb)
-        root.addView(sliderTrack)
+        messagesBox.addView(messagesInfo)
+        root.addView(messagesBox)
+        loadMessages(messagesBox, messagesInfo)
 
         // Nagrywanie CAŁEJ rozmowy: telefon wstrzymuje rozmowę i dzwoni na numer TelePakt; po stuknięciu
         // "Scal" w aplikacji Telefon numer TelePakt słyszy obie strony i nagrywa (3-way, bez zapowiedzi).
@@ -402,20 +351,188 @@ class CallOverlayService : Service() {
         }.start()
     }
 
-    /**
-     * Suwak auto-sprzeciwu nie wygłasza jeszcze niczego: zwykłej rozmowy komórkowej Android nie pozwala
-     * zagłuszyć ani uzupełnić dźwiękiem z aplikacji. Formułę odtworzy dopiero połączenie przechodzące przez
-     * numer TelePakt. Dlatego mówimy to wprost, zamiast udawać sukces.
-     */
-    private fun activateDefense(root: LinearLayout, hint: TextView, thumb: View) {
-        thumb.animate().x(0f).setDuration(200).start()
-        hint.text = "Auto-sprzeciw: wymaga numeru TelePakt (wkrótce)"
-        hint.setTextColor(Color.parseColor("#F59E0B"))
-        Toast.makeText(
-            this,
-            "Auto-sprzeciw zadziała dla rozmów przechodzących przez numer TelePakt - ta funkcja jest jeszcze w przygotowaniu.",
-            Toast.LENGTH_LONG
-        ).show()
+    private data class OverlayMessage(val id: Int, val title: String)
+
+    /** Pobiera aktywne komunikaty użytkownika i dodaje po jednym suwaku na każdy. Powód błędu pokazuje wprost. */
+    private fun loadMessages(box: LinearLayout, info: TextView) {
+        if (apiUrl.isBlank() || authToken.isBlank()) {
+            info.text = "Zaloguj się w aplikacji TelePakt, aby używać komunikatów."
+            return
+        }
+        Thread {
+            var items = emptyList<OverlayMessage>()
+            var error: String? = null
+            try {
+                val conn = java.net.URL("${apiUrl.trimEnd('/')}/api/telephony/messages/")
+                    .openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.setRequestProperty("Authorization", "Bearer $authToken")
+                val code = conn.responseCode
+                val body = (if (code in 200..299) conn.inputStream else conn.errorStream)
+                    ?.bufferedReader()?.use { it.readText() }.orEmpty()
+                if (code in 200..299) {
+                    val arr = org.json.JSONObject(body).getJSONArray("messages")
+                    val list = mutableListOf<OverlayMessage>()
+                    for (i in 0 until arr.length()) {
+                        val m = arr.getJSONObject(i)
+                        if (m.optBoolean("is_active", true)) list.add(OverlayMessage(m.getInt("id"), m.getString("title")))
+                    }
+                    items = list.take(4)
+                } else {
+                    error = try {
+                        org.json.JSONObject(body).optString("error", "Nie udało się pobrać komunikatów")
+                    } catch (e: Exception) {
+                        "Nie udało się pobrać komunikatów (HTTP $code)"
+                    }
+                    android.util.Log.w("TelePakt", "messages HTTP $code: $body")
+                }
+                conn.disconnect()
+            } catch (e: Exception) {
+                error = "Brak połączenia z serwerem"
+                android.util.Log.e("TelePakt", "loadMessages failed", e)
+            }
+            box.post {
+                if (overlayView == null) return@post  // nakładka została już zamknięta
+                if (error != null) {
+                    info.text = error
+                    return@post
+                }
+                if (items.isEmpty()) {
+                    info.text = "Nie masz aktywnych komunikatów. Dodaj je w aplikacji (zakładka Komunikaty)."
+                    return@post
+                }
+                box.removeView(info)
+                items.forEach { message ->
+                    box.addView(
+                        buildSliderRow(message),
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply { topMargin = 10 }
+                    )
+                }
+            }
+        }.start()
+    }
+
+    /** Jeden suwak: przesunięcie do końca odtwarza komunikat; po odtworzeniu suwak wraca na początek. */
+    private fun buildSliderRow(message: OverlayMessage): FrameLayout {
+        val track = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#020617"))
+                cornerRadius = 36f
+                setStroke(2, Color.parseColor("#334155"))
+            }
+            setPadding(8, 8, 8, 8)
+        }
+        val idleText = "${message.title}  ➔"
+        val hint = TextView(this).apply {
+            text = idleText
+            textSize = 11f
+            setTextColor(Color.parseColor("#38BDF8"))
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(200, 0, 24, 0)
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 120)
+        }
+        track.addView(hint)
+        val thumb = TextView(this).apply {
+            text = "▶"
+            textSize = 16f
+            setTextColor(Color.parseColor("#020617"))
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#06B6D4"))
+                cornerRadius = 32f
+            }
+            layoutParams = FrameLayout.LayoutParams(180, 110, Gravity.START or Gravity.CENTER_VERTICAL)
+        }
+        var busy = false
+        thumb.setOnTouchListener(object : View.OnTouchListener {
+            var startX = 0f
+
+            override fun onTouch(v: View, event: MotionEvent): Boolean {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        startX = event.rawX
+                        return true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        if (busy) return true
+                        val maxScroll = (track.width - v.width - 16).toFloat()
+                        val newX = (event.rawX - startX).coerceIn(0f, maxScroll)
+                        v.x = newX
+                        if (newX >= maxScroll * 0.85f) {
+                            busy = true
+                            speakMessage(message, hint, v, idleText) { busy = false }
+                        }
+                        return true
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (!busy) v.animate().x(0f).setDuration(200).start()
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+        track.addView(thumb)
+        return track
+    }
+
+    /** Prosi serwer o odtworzenie komunikatu w trwającej rozmowie. Przy błędzie pokazuje jego przyczynę. */
+    private fun speakMessage(message: OverlayMessage, hint: TextView, thumb: View, idleText: String, onDone: () -> Unit) {
+        hint.text = "Odtwarzam…"
+        Thread {
+            var ok = false
+            var reason = "Nie udało się odtworzyć komunikatu"
+            try {
+                val conn = java.net.URL("${apiUrl.trimEnd('/')}/api/telephony/messages/${message.id}/speak/")
+                    .openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 8000
+                conn.readTimeout = 15000
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Authorization", "Bearer $authToken")
+                conn.outputStream.use { it.write("{}".toByteArray()) }
+                val code = conn.responseCode
+                if (code in 200..299) {
+                    ok = true
+                } else {
+                    val body = (conn.errorStream ?: conn.inputStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+                    reason = try {
+                        org.json.JSONObject(body).optString("error", reason)
+                    } catch (e: Exception) {
+                        "$reason (HTTP $code)"
+                    }
+                    android.util.Log.w("TelePakt", "speak HTTP $code: $body")
+                }
+                conn.disconnect()
+            } catch (e: Exception) {
+                reason = "Brak połączenia z serwerem"
+                android.util.Log.e("TelePakt", "speak failed", e)
+            }
+            hint.post {
+                thumb.animate().x(0f).setDuration(300).start()
+                if (ok) {
+                    hint.text = "✓ ${message.title}"
+                    hint.setTextColor(Color.parseColor("#10B981"))
+                    hint.postDelayed({
+                        hint.text = idleText
+                        hint.setTextColor(Color.parseColor("#38BDF8"))
+                        onDone()
+                    }, 2500)
+                } else {
+                    hint.text = idleText
+                    Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
+                    onDone()
+                }
+            }
+        }.start()
     }
 
     private fun startForegroundServiceNotification() {

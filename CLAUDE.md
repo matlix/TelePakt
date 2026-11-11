@@ -53,6 +53,13 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - App tab "Nagrania" lists/plays/deletes recordings via `/recordings/`, `/recordings/<sid>/audio/` (server streams from the provider; credentials only go to twilio.com / telnyx.com), `/zero-storage-delete/`.
 - Unverified assumptions: the empty `waitUrl` really yields silence, and Telnyx RecordingUrl works with `.mp3` + Bearer. Check with a real call first.
 
+## Voice messages, sliders, share-to-cloud (Nov 2026, untested on a real call)
+- Per-user `VoiceMessage` (text read by Polly TTS or an own WAV recording stored in the DB) + `Profile.tts_voice/tts_rate`. API: `/voice-settings/`, `/messages/`, `/messages/<id>/audio/` (WAV mono 16-bit, <=60 s/2 MB), `/messages/<id>/speak/`. Defaults are seeded on first list (no recording notice, no threats).
+- The overlay builds one slider per active message (max 4). Sliding calls `/speak/`, which finds the user's live own-call (3-way) and asks the provider to play `announce/<token>/` into the conference via participant `AnnounceUrl` (Twilio + Telnyx TeXML). Works only while the call is merged into TelePakt; otherwise the real reason is shown in a toast.
+- Own voice: the app records with MediaRecorder and converts to 8 kHz WAV in the browser (`src/utils/wavRecorder.ts`) because providers cannot play webm. Needs RECORD_AUDIO; WebView mic permission handling by Capacitor is unverified.
+- Cloud: the 'Chmura' button on a recording opens the Android share sheet (Capacitor Share + Filesystem). Automatic upload to Google Drive/Dropbox is NOT built (needs OAuth app registrations).
+- Unverified: that audio played to the TelePakt leg is heard by the other party through the carrier conference, and that Telnyx accepts `Polly.*` voices.
+
 ## Known issues / TODO
 - IAP store verification (verify-purchase is still unauthenticated), plaintext `IntegrationCredential.secret_value` (see backend/README.md).
 - Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.
