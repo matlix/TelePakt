@@ -35,11 +35,6 @@ class CallOverlayService : Service() {
     private var telephonyManager: TelephonyManager? = null
     private var apiUrl = ""
     private var authToken = ""
-    private var threeWayBtn: Button? = null
-    private var chooseSliderView: View? = null
-    private var messagesBoxView: View? = null
-    private var ringingInfoView: View? = null
-    private var answersRevealed = false
 
     // Referencje do nasłuchu stanu linii: bez nich system może je usunąć, a nakładka nigdy się nie zamknie.
     private var telephonyCallback: TelephonyCallback? = null
@@ -132,18 +127,7 @@ class CallOverlayService : Service() {
     private fun handleCallState(state: Int) {
         if (state == TelephonyManager.CALL_STATE_IDLE) {
             stopSelf()  // połączenie zakończone - zamknij nakładkę
-        } else {
-            applyCallState(state)
         }
-    }
-
-    /** Dzwoni: tylko podpowiedź. Rozmowa trwa: przycisk 3-way i suwak "Wybierz odpowiedź" (albo już odsłonięte odpowiedzi). */
-    private fun applyCallState(state: Int) {
-        val inCall = state == TelephonyManager.CALL_STATE_OFFHOOK
-        ringingInfoView?.visibility = if (inCall) View.GONE else View.VISIBLE
-        threeWayBtn?.visibility = if (inCall) View.VISIBLE else View.GONE
-        chooseSliderView?.visibility = if (inCall && !answersRevealed) View.VISIBLE else View.GONE
-        messagesBoxView?.visibility = if (inCall && answersRevealed) View.VISIBLE else View.GONE
     }
 
     @Suppress("DEPRECATION")
@@ -154,7 +138,12 @@ class CallOverlayService : Service() {
             TelephonyManager.CALL_STATE_IDLE
         }
 
-    private fun showOverlayWindow(phoneNumber: String) {
+    /**
+     * Panel nad rozmową: kompaktowy, u góry ekranu (na dole aplikacja Telefon ma "Scal" i "Zakończ"), węższy od
+     * ekranu. Nagłówek: przeciągnij, by przesunąć panel; stuknij, by zwinąć lub rozwinąć; ✕ zamyka.
+     * FLAG_NOT_TOUCH_MODAL sprawia, że dotyk poza panelem trafia do aplikacji Telefon - panel nie blokuje ekranu.
+     */
+    private fun showOverlayWindow(@Suppress("UNUSED_PARAMETER") phoneNumber: String) {
         if (overlayView != null) return
 
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -165,49 +154,76 @@ class CallOverlayService : Service() {
         }
 
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
+            (resources.displayMetrics.widthPixels * 0.94f).toInt(),
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutFlag,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            y = 120
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            y = 90
         }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(40, 36, 40, 36)
+            setPadding(32, 16, 32, 28)
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#0F172A"))
+                setColor(Color.parseColor("#F20F172A"))
                 cornerRadius = 48f
                 setStroke(3, Color.parseColor("#06B6D4"))
             }
         }
 
-        // Header
-        val header = TextView(this).apply {
-            text = "🛡️ TelePakt - Tarcza Prawna Art. 398 PKE"
-            textSize = 15f
+        // Nagłówek: tytuł (przeciąganie i zwijanie) + zamknięcie
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val title = TextView(this).apply {
+            text = "🛡️ TelePakt  ▴"
+            textSize = 14f
             setTextColor(Color.parseColor("#38BDF8"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
+            setPadding(0, 14, 0, 14)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
+        val closeX = TextView(this).apply {
+            text = "✕"
+            textSize = 18f
+            setTextColor(Color.parseColor("#94A3B8"))
+            setPadding(36, 14, 8, 14)
+            setOnClickListener { stopSelf() }
+        }
+        header.addView(title)
+        header.addView(closeX)
         root.addView(header)
 
-        val callerInfo = TextView(this).apply {
-            text = "Rozmowa przychodząca: $phoneNumber"
-            textSize = 12f
-            setTextColor(Color.parseColor("#94A3B8"))
-            gravity = Gravity.CENTER
-            setPadding(0, 8, 0, 24)
-        }
-        root.addView(callerInfo)
+        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(body)
 
-        // Najpierw tylko jeden suwak. Dopiero jego przesunięcie pokazuje możliwe odpowiedzi - po jednym
-        // suwaku na aktywny komunikat użytkownika (maks. 4), pobierane z serwera już przy otwarciu nakładki.
+        // Krok 1: połączenie 3-way z numerem TelePakt (nagrywa rozmowę i pozwala odtwarzać komunikaty).
+        // Wybiera numer od razu, ale scalenie rozmów Android zostawia aplikacji Telefon ("Scal").
+        val threeWay = Button(this).apply {
+            text = "● POŁĄCZ Z TELEPAKT (3-way)"
+            textSize = 12f
+            minHeight = 0
+            minimumHeight = 0
+            setPadding(24, 20, 24, 20)
+            setTextColor(Color.WHITE)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#DC2626"))
+                cornerRadius = 32f
+            }
+            setOnClickListener { recordWholeCall(this) }
+        }
+        body.addView(threeWay, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ))
+
+        // Krok 2: jeden suwak. Dopiero jego przesunięcie pokazuje możliwe odpowiedzi - po jednym suwaku na aktywny
+        // komunikat użytkownika (maks. 4), pobierane z serwera już przy otwarciu nakładki.
         val messagesBox = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             visibility = View.GONE
@@ -220,56 +236,60 @@ class CallOverlayService : Service() {
             setPadding(0, 8, 0, 8)
         }
         messagesBox.addView(messagesInfo)
-        val ringingInfo = TextView(this).apply {
-            text = "Odbierz rozmowę. Potem połącz z TelePakt (3-way) - wtedy pojawią się odpowiedzi do odtworzenia."
-            textSize = 12f
-            setTextColor(Color.parseColor("#94A3B8"))
-            gravity = Gravity.CENTER
-            setPadding(0, 8, 0, 8)
-        }
         val chooseSlider = buildSlider("PRZESUŃ, BY WYBRAĆ ODPOWIEDŹ  ➔", "💬") { track, _, _, _ ->
-            answersRevealed = true
             track.visibility = View.GONE
             messagesBox.visibility = View.VISIBLE
         }
-        chooseSliderView = chooseSlider
-        messagesBoxView = messagesBox
-        ringingInfoView = ringingInfo
-        root.addView(ringingInfo)
-        root.addView(chooseSlider)
-        root.addView(messagesBox)
+        body.addView(chooseSlider, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 14 })
+        body.addView(messagesBox)
         loadMessages(messagesBox, messagesInfo)
 
-        // Rozmowa trwa: połączenie 3-way z numerem TelePakt. TelePakt słyszy obie strony, nagrywa rozmowę i może
-        // odtworzyć komunikat (suwak odpowiedzi). Przycisk pojawia się dopiero po odebraniu rozmowy.
-        val threeWay = Button(this).apply {
-            text = "● POŁĄCZ Z TELEPAKT (3-way)"
-            textSize = 12f
-            setTextColor(Color.WHITE)
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#DC2626"))
-                cornerRadius = 32f
+        // Przeciąganie i zwijanie panelu za nagłówek
+        var downX = 0f
+        var downY = 0f
+        var startX = 0
+        var startY = 0
+        var moved = false
+        title.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.rawX
+                    downY = event.rawY
+                    startX = params.x
+                    startY = params.y
+                    moved = false
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = (event.rawX - downX).toInt()
+                    val dy = (event.rawY - downY).toInt()
+                    if (Math.abs(dx) > 14 || Math.abs(dy) > 14) moved = true
+                    if (moved) {
+                        params.x = startX + dx
+                        params.y = startY + dy
+                        try {
+                            windowManager?.updateViewLayout(root, params)
+                        } catch (e: Exception) {
+                            android.util.Log.w("TelePakt", "updateViewLayout failed", e)
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (!moved) {
+                        val collapse = body.visibility == View.VISIBLE
+                        body.visibility = if (collapse) View.GONE else View.VISIBLE
+                        title.text = if (collapse) "🛡️ TelePakt  ▾" else "🛡️ TelePakt  ▴"
+                    }
+                    true
+                }
+                else -> false
             }
-            setOnClickListener { recordWholeCall(this) }
-            visibility = if (currentCallState() == TelephonyManager.CALL_STATE_OFFHOOK) View.VISIBLE else View.GONE
         }
-        threeWayBtn = threeWay
-        root.addView(threeWay, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = 16 })
-
-        // Close button
-        val closeBtn = Button(this).apply {
-            text = "Zamknij Nakładkę"
-            textSize = 11f
-            setTextColor(Color.parseColor("#64748B"))
-            setBackgroundColor(Color.TRANSPARENT)
-            setOnClickListener { stopSelf() }
-        }
-        root.addView(closeBtn)
 
         overlayView = root
-        applyCallState(currentCallState())
         windowManager?.addView(overlayView, params)
     }
 

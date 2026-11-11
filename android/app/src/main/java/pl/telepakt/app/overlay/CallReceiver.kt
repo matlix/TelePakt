@@ -8,33 +8,37 @@ import android.provider.Settings
 import android.telephony.TelephonyManager
 
 /**
- * BroadcastReceiver odbierający zdarzenia przychodzących połączeń telefonicznych
- * i uruchamiający CallOverlayService na telefonie użytkownika.
+ * Odbiera zmiany stanu telefonu i pokazuje nakładkę TelePakt dopiero PO ODEBRANIU rozmowy przychodzącej.
+ *
+ * Gdy telefon dzwoni, nakładki nie ma - nie zasłania przycisków odbierania/odrzucania. Po odebraniu
+ * użytkownik może połączyć rozmowę 3-way z numerem TelePakt i odtwarzać komunikaty. Rozmowy wychodzące
+ * (bez wcześniejszego dzwonienia) nie pokazują nakładki.
  */
 class CallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == TelephonyManager.ACTION_PHONE_STATE_CHANGED) {
-            val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
-            val incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: "+48 (Nieznany)"
+        if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
+        val prefs = context.getSharedPreferences("telepakt", Context.MODE_PRIVATE)
 
-            if (state == TelephonyManager.EXTRA_STATE_IDLE) {
-                // Koniec rozmowy: zamknij nakładkę (drugi, niezależny od usługi sposób).
-                context.stopService(Intent(context, CallOverlayService::class.java))
-                return
-            }
+        when (intent.getStringExtra(TelephonyManager.EXTRA_STATE)) {
+            TelephonyManager.EXTRA_STATE_RINGING ->
+                // Zapamiętujemy w pamięci trwałej: proces może zostać zabity między zdarzeniami.
+                prefs.edit().putBoolean("incoming_seen", true).apply()
 
-            if (state == TelephonyManager.EXTRA_STATE_RINGING || state == TelephonyManager.EXTRA_STATE_OFFHOOK) {
-                // Sprawdź czy użytkownik nadał uprawnienie SYSTEM_ALERT_WINDOW (wyświetlanie nad innymi)
-                if (Settings.canDrawOverlays(context)) {
-                    val serviceIntent = Intent(context, CallOverlayService::class.java).apply {
-                        putExtra("PHONE_NUMBER", incomingNumber)
-                    }
+            TelephonyManager.EXTRA_STATE_OFFHOOK -> {
+                if (prefs.getBoolean("incoming_seen", false) && Settings.canDrawOverlays(context)) {
+                    val serviceIntent = Intent(context, CallOverlayService::class.java)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         context.startForegroundService(serviceIntent)
                     } else {
                         context.startService(serviceIntent)
                     }
                 }
+            }
+
+            TelephonyManager.EXTRA_STATE_IDLE -> {
+                prefs.edit().putBoolean("incoming_seen", false).apply()
+                // Koniec rozmowy: zamknij nakładkę (drugi, niezależny od usługi sposób).
+                context.stopService(Intent(context, CallOverlayService::class.java))
             }
         }
     }
