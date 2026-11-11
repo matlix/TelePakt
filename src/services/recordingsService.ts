@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { API_URL } from '../config';
 import { authService } from './authService';
 
@@ -51,6 +54,39 @@ export const recordingsService = {
     const res = await call(`/recordings/${encodeURIComponent(callSid)}/audio/`);
     if (!res.ok) throw await failure(res, 'Nie udało się pobrać nagrania');
     return URL.createObjectURL(await res.blob());
+  },
+
+  async audioBlob(callSid: string): Promise<Blob> {
+    const res = await call(`/recordings/${encodeURIComponent(callSid)}/audio/`);
+    if (!res.ok) throw await failure(res, 'Nie udało się pobrać nagrania');
+    return res.blob();
+  },
+
+  /**
+   * Zapisuje nagranie poza TelePakt: na Androidzie otwiera systemowe menu "Udostępnij", w którym wybierasz
+   * Dysk Google, Dropbox, OneDrive, e-mail itp.; w przeglądarce pobiera plik. Nie wymaga kont w chmurach po
+   * naszej stronie - plik trafia tam, dokąd go wyślesz.
+   */
+  async share(callSid: string): Promise<void> {
+    const blob = await this.audioBlob(callSid);
+    const name = `telepakt-nagranie-${callSid.slice(-6)}.${blob.type.includes('wav') ? 'wav' : 'mp3'}`;
+    if (Capacitor.isNativePlatform()) {
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Nie udało się przygotować pliku do udostępnienia.'));
+        reader.readAsDataURL(blob);
+      });
+      const file = await Filesystem.writeFile({ path: name, data: dataUrl.split(',')[1], directory: Directory.Cache });
+      await Share.share({ title: 'Nagranie rozmowy z TelePakt', files: [file.uri] });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
   },
 
   /** Zero-Storage: usuwa nagranie u dostawcy i w naszej bazie. */

@@ -9,12 +9,13 @@
  * Nie ma tu żadnych odnośników do strony internetowej.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { Copy, Info, Mic, Play, RefreshCw, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
+import { Cloud, Copy, Info, MessageSquare, Mic, Play, RefreshCw, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
 import { UserAccount } from '../types';
 import { authService } from '../services/authService';
 import { NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
 import { API_URL, FEATURES } from '../config';
 import { recordingsService, RecordingItem } from '../services/recordingsService';
+import { MessagesTab } from './MessagesTab';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
 
@@ -631,6 +632,7 @@ function RecordingsTab() {
   const [playing, setPlaying] = useState<{ sid: string; url: string } | null>(null);
   const [busySid, setBusySid] = useState<string | null>(null);
   const [confirmSid, setConfirmSid] = useState<string | null>(null);
+  const [sharingSid, setSharingSid] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -659,6 +661,19 @@ function RecordingsTab() {
       setError(err.message);
     } finally {
       setBusySid(null);
+    }
+  };
+
+  const share = async (sid: string) => {
+    setSharingSid(sid);
+    setError(null);
+    try {
+      await recordingsService.share(sid);
+    } catch (err: any) {
+      // Zamknięcie menu "Udostępnij" bez wyboru nie jest błędem.
+      if (!/cancel|dismiss|anulowan/i.test(String(err?.message))) setError(err.message || 'Nie udało się udostępnić nagrania.');
+    } finally {
+      setSharingSid(null);
     }
   };
 
@@ -706,6 +721,12 @@ function RecordingsTab() {
         </div>
       )}
 
+      {items && items.length > 0 && (
+        <p className="text-[10px] text-slate-500 leading-snug">
+          „Chmura” otwiera menu Androida: wybierz Dysk Google, Dropbox, OneDrive, e-mail lub inną aplikację, w której chcesz zachować nagranie. Po zapisaniu możesz je usunąć z naszego serwera.
+        </p>
+      )}
+
       <ul className="space-y-2.5">
         {(items || []).map(item => {
           const when = new Date(item.timestamp).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -738,13 +759,20 @@ function RecordingsTab() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => play(item.call_sid)}
                     disabled={!item.ready || busySid === item.call_sid}
                     className="inline-flex items-center justify-center gap-1.5 py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold disabled:opacity-40"
                   >
                     <Play className="w-3.5 h-3.5" /> {busySid === item.call_sid ? 'Pobieranie…' : 'Odsłuchaj'}
+                  </button>
+                  <button
+                    onClick={() => share(item.call_sid)}
+                    disabled={!item.ready || sharingSid === item.call_sid}
+                    className="inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold disabled:opacity-40"
+                  >
+                    <Cloud className="w-3.5 h-3.5" /> {sharingSid === item.call_sid ? 'Przygotowuję…' : 'Chmura'}
                   </button>
                   <button onClick={() => setConfirmSid(item.call_sid)} className="inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-800 text-rose-300 text-[11px] font-bold">
                     <Trash2 className="w-3.5 h-3.5" /> Usuń
@@ -763,7 +791,7 @@ function RecordingsTab() {
 
 export function AccountApp() {
   const [user, setUser] = useState<UserAccount | null>(() => authService.getCurrentUser());
-  const [tab, setTab] = useState<'profile' | 'recordings' | 'settings'>('profile');
+  const [tab, setTab] = useState<'profile' | 'recordings' | 'messages' | 'settings'>('profile');
   const [legalDoc, setLegalDoc] = useState<LegalDocType | null>(null);
 
   useEffect(() => authService.subscribe(setUser), []);
@@ -798,14 +826,16 @@ export function AccountApp() {
           <ProfileTab user={user} onUpdate={setUser} />
         ) : tab === 'recordings' ? (
           <RecordingsTab />
+        ) : tab === 'messages' ? (
+          <MessagesTab />
         ) : (
           <SettingsTab user={user} onLegal={setLegalDoc} onLogout={() => { NativeOverlayBridge.saveConfig(API_URL, ''); authService.logout(); }} />
         )}
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-slate-950/95 backdrop-blur border-t border-slate-800 pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-md mx-auto grid grid-cols-3">
-          {([['profile', 'Profil', User], ['recordings', 'Nagrania', Mic], ['settings', 'Ustawienia', Settings]] as const).map(([id, label, Icon]) => (
+        <div className="max-w-md mx-auto grid grid-cols-4">
+          {([['profile', 'Profil', User], ['recordings', 'Nagrania', Mic], ['messages', 'Komunikaty', MessageSquare], ['settings', 'Ustawienia', Settings]] as const).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
