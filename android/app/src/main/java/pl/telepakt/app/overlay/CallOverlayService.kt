@@ -503,7 +503,16 @@ class CallOverlayService : Service() {
                 setStroke(2, Color.parseColor("#334155"))
             }
             setPadding(8, 8, 8, 8)
+            clipToOutline = true  // wypełnienie postępu nie wychodzi poza zaokrąglenia
         }
+        // Pasek postępu (przezroczysty turkus) - rośnie od lewej podczas odtwarzania komunikatu.
+        val fill = View(this).apply {
+            setBackgroundColor(Color.parseColor("#4006B6D4"))
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            pivotX = 0f
+            scaleX = 0f
+        }
+        track.addView(fill)
         val hint = TextView(this).apply {
             text = label
             textSize = 11f
@@ -567,14 +576,57 @@ class CallOverlayService : Service() {
     /** Suwak odpowiedzi: przesunięcie do końca odtwarza komunikat przez głośnik telefonu. */
     private fun buildAnswerSlider(message: OverlayMessage): FrameLayout {
         val idle = "${message.title}  ➔"
-        return buildSlider(idle, "▶") { _, hint, _, done -> playMessage(message, hint, idle, done) }
+        return buildSlider(idle, "▶") { track, hint, thumb, done -> playMessage(message, track, hint, thumb, idle, done) }
+    }
+
+    /**
+     * Widoczny ruch podczas odtwarzania: pasek postępu wypełnia suwak, w napisie "tańczy" equalizer, ikona pulsuje.
+     * Zwraca funkcję zatrzymującą animację. Czas jest szacunkiem, gdy odtwarzacz go nie zna (głos telefonu).
+     */
+    private fun startPlayMotion(track: FrameLayout, hint: TextView, thumb: View, durationMs: Long): () -> Unit {
+        val fill = track.getChildAt(0)
+        fill.alpha = 1f
+        val progress = android.animation.ObjectAnimator.ofFloat(fill, "scaleX", 0f, 1f).apply {
+            duration = durationMs.coerceAtLeast(1000L)
+            interpolator = android.view.animation.LinearInterpolator()
+            start()
+        }
+        val pulse = android.animation.ObjectAnimator.ofFloat(thumb, "alpha", 1f, 0.4f).apply {
+            duration = 450
+            repeatMode = android.animation.ValueAnimator.REVERSE
+            repeatCount = android.animation.ValueAnimator.INFINITE
+            start()
+        }
+        val thumbText = thumb as? TextView
+        thumbText?.text = "🔊"
+        val frames = arrayOf("▂▄▆▄▂", "▄▆▄▂▄", "▆▄▂▄▆", "▄▂▄▆▄")
+        var frame = 0
+        val ticker = object : Runnable {
+            override fun run() {
+                val bars = frames[frame++ % frames.size]
+                hint.text = "$bars  Odtwarzam  $bars"
+                handler.postDelayed(this, 160L)
+            }
+        }
+        handler.post(ticker)
+        return {
+            handler.removeCallbacks(ticker)
+            progress.cancel()
+            pulse.cancel()
+            thumb.alpha = 1f
+            thumbText?.text = "▶"
+            fill.animate().alpha(0f).setDuration(300).withEndAction {
+                fill.scaleX = 0f
+                fill.alpha = 1f
+            }.start()
+        }
     }
 
     /**
      * Pobiera dźwięk komunikatu (własne nagranie albo głos AI z serwera) i odtwarza go na głośniku. Rozmówca
      * słyszy go przez mikrofon telefonu. Powód każdej porażki jest pokazywany wprost (toast + logcat).
      */
-    private fun playMessage(message: OverlayMessage, hint: TextView, idleText: String, done: () -> Unit) {
+    private fun playMessage(message: OverlayMessage, track: FrameLayout, hint: TextView, thumb: View, idleText: String, done: () -> Unit) {
         hint.text = "Przygotowuję…"
         Thread {
             var file: java.io.File? = null
@@ -591,7 +643,9 @@ class CallOverlayService : Service() {
             hint.post {
                 val green = Color.parseColor("#10B981")
                 val blue = Color.parseColor("#38BDF8")
+                var stopMotion: (() -> Unit)? = null
                 val finished: (Boolean) -> Unit = { played ->
+                    stopMotion?.invoke()
                     hint.text = if (played) "✓ ${message.title}" else idleText
                     hint.setTextColor(if (played) green else blue)
                     hint.postDelayed({
@@ -603,12 +657,12 @@ class CallOverlayService : Service() {
                 val ready = file
                 if (ready != null) {
                     hint.text = "Odtwarzam przez głośnik…"
-                    playOnSpeaker(ready, finished)
+                    playOnSpeaker(ready, { ms -> stopMotion = startPlayMotion(track, hint, thumb, ms.toLong()) }, finished)
                 } else if (!message.hasAudio && message.text.isNotBlank()) {
                     // Głos AI niedostępny (serwer/Telnyx/sieć) - czytamy tekst głosem samego telefonu, żeby suwak działał.
                     Toast.makeText(this, "Głos AI niedostępny: $reason. Czytam głosem telefonu.", Toast.LENGTH_LONG).show()
                     hint.text = "Czytam głosem telefonu…"
-                    speakWithPhoneVoice(message.text, finished)
+                    speakWithPhoneVoice(message.text, { ms -> stopMotion = startPlayMotion(track, hint, thumb, ms.toLong()) }, finished)
                 } else {
                     Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
                     hint.text = "✗ $reason"
@@ -673,7 +727,7 @@ class CallOverlayService : Service() {
      * Uwaga: to dźwięk akustyczny - rozmówca słyszy go o tyle, o ile mikrofon telefonu go wychwyci;
      * jakość zależy od modelu telefonu i jego tłumienia echa.
      */
-    private fun playOnSpeaker(file: java.io.File, onEnd: (Boolean) -> Unit) {
+    private fun playOnSpeaker(file: java.io.File, onStarted: (Int) -> Unit, onEnd: (Boolean) -> Unit) {
         stopPlayback()
         val audio = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
         @Suppress("DEPRECATION")
@@ -704,6 +758,7 @@ class CallOverlayService : Service() {
             p.prepare()
             player = p
             p.start()
+            onStarted(p.duration)
         } catch (e: Exception) {
             android.util.Log.e("TelePakt", "playOnSpeaker failed", e)
             Toast.makeText(this, "Nie udało się odtworzyć komunikatu: ${e.message}", Toast.LENGTH_LONG).show()
@@ -717,7 +772,7 @@ class CallOverlayService : Service() {
      * Zapasowy głos: Android TextToSpeech (polski) czyta tekst na głośniku. Brzmi inaczej niż głos AI z ustawień,
      * ale działa bez serwera i bez Telnyx. Jeśli telefon nie ma polskiego głosu, mówi o tym wprost.
      */
-    private fun speakWithPhoneVoice(text: String, onEnd: (Boolean) -> Unit) {
+    private fun speakWithPhoneVoice(text: String, onStarted: (Int) -> Unit, onEnd: (Boolean) -> Unit) {
         stopPlayback()
         val audio = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
         @Suppress("DEPRECATION")
@@ -757,6 +812,8 @@ class CallOverlayService : Service() {
                 override fun onError(utteranceId: String?) { fail("Nie udało się przeczytać komunikatu głosem telefonu.") }
             })
             engine.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "telepakt-answer")
+            // Czas czytania głosem telefonu nie jest znany z góry - szacujemy ok. 14 znaków na sekundę.
+            main.post { onStarted(maxOf(2000, text.length * 70)) }
         }
     }
 
