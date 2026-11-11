@@ -39,6 +39,7 @@ from .models import CallLog, CustomerReview, InAppPurchaseReceipt, LegalScript
 from accounts.models import Profile
 from accounts.services import ensure_profile, normalize_phone
 from . import providers
+from .voice_views import first_active_message, message_twiml, pick_armed
 from .retention import erase_recording, maybe_purge_expired
 
 logger = logging.getLogger(__name__)
@@ -113,6 +114,41 @@ def twilio_conference_bridge(request):
     is_own_call = bool(own_phone) and Profile.objects.filter(phone_protected=own_phone).exists()
     if is_own_call:
         caller, called = OWN_CALL_LABEL, own_phone
+
+    # Rozmowa PRZEKIEROWANA po odrzuceniu telefonu suwakiem (tryb "przed odebraniem"): TelePakt odtwarza komunikat
+    # (uzbrojony suwakiem albo domyślny użytkownika) i się rozłącza - rozmówca go słyszy, a użytkownik nie odbiera.
+    forwarded_phone = normalize_phone(request.POST.get('ForwardedFrom', '')) or ''
+    owner = message = armed = None
+    if not is_own_call:
+        armed = pick_armed(forwarded_phone)
+        if armed:
+            owner, message = armed.owner, armed.message
+            forwarded_phone = forwarded_phone or ensure_profile(owner).phone_protected
+        elif forwarded_phone:
+            profile = Profile.objects.filter(phone_protected=forwarded_phone).select_related('user').first()
+            if profile:
+                owner, message = profile.user, first_active_message(profile.user)
+    if owner is not None:
+        CallLog.objects.get_or_create(
+            call_sid=call_sid,
+            defaults={
+                'caller_number': caller,
+                'recipient_number': ensure_profile(owner).phone_protected or forwarded_phone,
+                'status': 'formula_played',
+                'recording_started': False,
+                'provider': 'telnyx' if request.GET.get('provider') == 'telnyx' else 'twilio',
+                'retention_expires_at': timezone.now() + timedelta(days=settings.DEFAULT_RETENTION_DAYS),
+            },
+        )
+        if armed:
+            armed.delete()  # zużyte - jedna rozmowa, jeden komunikat
+        if message is not None:
+            return _xml(message_twiml(request, message, hangup=True))
+        say = response.say(voice=TTS_VOICE, language='pl-PL')
+        say.prosody(DEFAULT_LEGAL_FORMULA, rate=TTS_RATE)
+        response.pause(length=1)
+        response.hangup()
+        return _xml(response)
 
     CallLog.objects.get_or_create(
         call_sid=call_sid,

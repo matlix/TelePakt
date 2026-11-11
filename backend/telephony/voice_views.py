@@ -20,7 +20,7 @@ from twilio.twiml.voice_response import VoiceResponse
 from accounts.services import ensure_profile
 
 from . import providers, voice
-from .models import CallLog, VoiceMessage
+from .models import ArmedMessage, CallLog, VoiceMessage
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 OWN_CALL_LABEL = 'Rozmowa własna (3-way)'
 #: Rozmowa starsza niż to nie jest już traktowana jako trwająca.
 ACTIVE_CALL_MAX_AGE = timedelta(hours=3)
+#: Tyle sekund po przesunięciu suwaka przekierowana rozmowa jest jeszcze łączona z uzbrojonym komunikatem.
+ARM_TTL = timedelta(seconds=120)
 
 
 def _error(message, status=400):
@@ -58,6 +60,46 @@ def _seed_defaults(user) -> None:
                      public_token=secrets.token_hex(20))
         for i, (title, situation, text) in enumerate(voice.DEFAULT_MESSAGES)
     ])
+
+
+seed_defaults = _seed_defaults  # nazwa publiczna dla views.py
+
+
+def first_active_message(user):
+    """Pierwszy aktywny komunikat użytkownika (domyślny przy przekierowanej rozmowie bez uzbrojenia)."""
+    _seed_defaults(user)
+    return VoiceMessage.objects.filter(owner=user, is_active=True).first()
+
+
+def message_twiml(request, message, hangup=False) -> VoiceResponse:
+    """TwiML odtwarzający komunikat: własne nagranie (``<Play>``) albo głos Polly z ustawień konta (``<Say>``)."""
+    response = VoiceResponse()
+    if message.has_audio:
+        response.play(request.build_absolute_uri(reverse('announce_audio', args=[message.public_token])))
+    else:
+        profile = ensure_profile(message.owner)
+        say = response.say(voice=profile.tts_voice, language='pl-PL')
+        say.prosody(message.text, rate=f'{profile.tts_rate}%')
+    if hangup:
+        response.pause(length=1)
+        response.hangup()
+    return response
+
+
+def pick_armed(forwarded_phone: str):
+    """Uzbrojony komunikat dla przekierowanej rozmowy (świeży, najpierw po numerze z ForwardedFrom).
+
+    Gdy operator nie przekazał numeru (``forwarded_phone`` puste), a świeże uzbrojenie jest dokładnie jedno,
+    używamy go - inaczej nie wiadomo, czyja to rozmowa, i nie zgadujemy.
+    """
+    fresh = ArmedMessage.objects.filter(armed_at__gte=timezone.now() - ARM_TTL).select_related('message__owner')
+    if forwarded_phone:
+        armed = fresh.filter(owner__profile__phone_protected=forwarded_phone).first()
+        if armed:
+            return armed
+    elif fresh.count() == 1:
+        return fresh.first()
+    return None
 
 
 def _own_message(user, pk):
@@ -243,6 +285,26 @@ def _active_own_call(user):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @throttle_classes([ScopedRateThrottle])
+def message_arm(request, pk):
+    """Uzbraja komunikat przed odrzuceniem dzwoniącej rozmowy: po przekierowaniu TelePakt odtworzy go i się rozłączy."""
+    message = _own_message(request.user, pk)
+    if message is None:
+        return _error('Nie znaleziono komunikatu.', 404)
+    ArmedMessage.objects.update_or_create(owner=request.user, defaults={'message': message, 'armed_at': timezone.now()})
+    return Response({
+        'status': 'armed',
+        'title': message.title,
+        'expires_in': int(ARM_TTL.total_seconds()),
+        'needs_phone': not ensure_profile(request.user).phone_protected,
+    })
+
+
+message_arm.cls.throttle_scope = 'speak'
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([ScopedRateThrottle])
 def message_speak(request, pk):
     """Odtwarza komunikat w trwającej rozmowie nagrywanej przez TelePakt (po scaleniu 3-way)."""
     message = _own_message(request.user, pk)
@@ -276,14 +338,7 @@ def announce_twiml(request, token):
     message = VoiceMessage.objects.filter(public_token=token).first()
     if message is None:
         return HttpResponse(status=404)
-    response = VoiceResponse()
-    if message.has_audio:
-        response.play(request.build_absolute_uri(reverse('announce_audio', args=[token])))
-    else:
-        profile = ensure_profile(message.owner)
-        say = response.say(voice=profile.tts_voice, language='pl-PL')
-        say.prosody(message.text, rate=f'{profile.tts_rate}%')
-    return HttpResponse(str(response), content_type='application/xml')
+    return HttpResponse(str(message_twiml(request, message)), content_type='application/xml')
 
 
 @csrf_exempt
