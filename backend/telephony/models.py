@@ -192,18 +192,3 @@ class VoiceMessage(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.owner})"
-
-
-class ArmedMessage(models.Model):
-    """Komunikat "uzbrojony" suwakiem przed odrzuceniem rozmowy: odtworzy go TelePakt po przekierowaniu.
-
-    Jeden na użytkownika (kolejne uzbrojenie nadpisuje poprzednie); ważny krótko - patrz
-    ``voice_views.ARM_TTL``. Po użyciu jest kasowany.
-    """
-    owner = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='armed_message')
-    message = models.ForeignKey(VoiceMessage, on_delete=models.CASCADE, related_name='+')
-    armed_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        verbose_name = "Uzbrojony komunikat"
-        verbose_name_plural = "Uzbrojone komunikaty"

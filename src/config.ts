@@ -7,14 +7,8 @@
  */
 export const ASSISTANT_NUMBER: string = (import.meta.env.VITE_ASSISTANT_NUMBER ?? '').trim();
 
-/**
- * Funkcje chwilowo wylaczone (decyzja wlasciciela, 2026-11-10). Kod zostaje - wystarczy przestawic flage.
- * forwarding: przekierowanie polaczen do numeru TelePakt (ekran z kodami GSM i przycisk w nakladce).
- * Przy wlaczeniu odblokuj tez FORWARDING_ENABLED w CallOverlayService.kt oraz uprawnienie ANSWER_PHONE_CALLS.
- */
+/** Przelaczniki funkcji aplikacji. */
 export const FEATURES = {
-  /** Ekran z kodami przekierowania (tryb "przed odebraniem": suwak odrzuca rozmowę, TelePakt odtwarza komunikat). */
-  forwarding: true,
   /** Zakładka Nagrania (rozmowy 3-way nagrywane przez TelePakt). */
   recording: true,
 } as const;

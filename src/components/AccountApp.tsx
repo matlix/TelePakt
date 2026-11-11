@@ -356,9 +356,9 @@ const OVERLAY_HELP: PermissionHelp = {
 };
 
 const PHONE_HELP: PermissionHelp = {
-  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, pokazuje swoje suwaki, odrzuca rozmowę po przesunięciu odpowiedzi i wybiera numer TelePakt jednym stuknięciem. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
+  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, pokazuje swoje suwaki i wybiera numer TelePakt jednym stuknięciem (połączenie 3-way). Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
   steps: [
-    'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o zarządzanie połączeniami.',
+    'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o wykonywanie połączeń i dostęp do stanu telefonu.',
     'Wybierz „Zezwól”.',
     'Jeśli okienko się nie pojawi, otwórz Ustawienia telefonu > Aplikacje > TelePakt > Uprawnienia > Telefon i włącz je ręcznie.',
   ],
@@ -418,7 +418,7 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
         </div>
       </div>
       <ul className="text-[11px] space-y-1.5 pl-1">
-        {item(status.hasPhoneStatePermission, 'Dostęp do połączeń (wykrywanie, odrzucanie i wybieranie numerów)')}
+        {item(status.hasPhoneStatePermission, 'Dostęp do połączeń (wykrywanie rozmów i wybieranie numeru TelePakt)')}
         {item(status.hasOverlayPermission, 'Wyświetlanie nad innymi aplikacjami')}
       </ul>
       <div className="flex gap-2">
@@ -430,103 +430,6 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
         </button>
       </div>
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------ Przekierowanie */
-
-interface ForwardingInfo {
-  number: string;
-  codes: { when_busy: string; when_unanswered: string; when_unreachable: string; cancel_all: string };
-}
-
-const FORWARD_LABELS: Array<[keyof ForwardingInfo['codes'], string, string]> = [
-  ['when_busy', 'Gdy odrzucisz rozmowę (ustaw to koniecznie)', 'Suwak odpowiedzi na ekranie dzwonienia odrzuca rozmowę, a operator przekazuje ją do TelePakt, który odtwarza wybrany komunikat i się rozłącza.'],
-  ['when_unanswered', 'Gdy nie odbierzesz (po 20 s)', 'Rozmowa, której nie odbierzesz, trafi do TelePakt.'],
-  ['when_unreachable', 'Gdy telefon jest wyłączony / bez zasięgu', 'Opcjonalne.'],
-  ['cancel_all', 'Wyłącz wszystkie przekierowania', 'Przywraca zwykłe działanie telefonu.'],
-];
-
-function ForwardingSection() {
-  const [info, setInfo] = useState<ForwardingInfo | null>(null);
-  const [state, setState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
-  const [copied, setCopied] = useState<string | null>(null);
-  const [dialError, setDialError] = useState<string | null>(null);
-
-  const dial = async (code: string) => {
-    setDialError(null);
-    try {
-      await NativeOverlayBridge.dial(code);
-    } catch (err: any) {
-      setDialError(err?.message || 'Nie udało się wybrać numeru.');
-    }
-  };
-
-  useEffect(() => {
-    let alive = true;
-    fetch(`${API_URL}/api/telephony/forwarding-info/`)
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((data: ForwardingInfo) => { if (alive) { setInfo(data); setState('ready'); } })
-      .catch(() => { if (alive) setState('unavailable'); });
-    return () => { alive = false; };
-  }, []);
-
-  const copy = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(code);
-      setTimeout(() => setCopied(null), 1500);
-    } catch { /* schowek niedostępny - kod i tak jest widoczny */ }
-  };
-
-  return (
-    <section className="space-y-2.5">
-      <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Przekierowanie do TelePakt</h2>
-      {state === 'loading' && <p className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400">Sprawdzanie numeru…</p>}
-      {state === 'unavailable' && (
-        <p className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 leading-snug">
-          Numer TelePakt pojawi się po uruchomieniu usługi. Wtedy zobaczysz tu kody przekierowania do wpisania w telefonie.
-        </p>
-      )}
-      {state === 'ready' && info && (
-        <div className="rounded-2xl bg-slate-900 border border-slate-800 divide-y divide-slate-800 overflow-hidden">
-          <div className="px-4 py-3 text-[11px] text-slate-300 leading-snug">
-            <PhoneForwarded className="inline w-3.5 h-3.5 mr-1.5 text-cyan-300" />
-            Numer TelePakt: <strong className="text-white">{info.number}</strong>. Działanie zależy od operatora - po ustawieniu
-            wykonaj połączenie próbne. Przekierowane minuty mogą być płatne u operatora.
-          </div>
-          <div className="px-4 py-3 space-y-2">
-            <button onClick={() => dial(info.codes.when_busy)} className="w-full py-2.5 rounded-xl bg-cyan-500 text-slate-950 text-xs font-black">
-              Włącz przekierowanie jednym stuknięciem
-            </button>
-            <button onClick={() => dial(info.codes.cancel_all)} className="w-full py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold">
-              Wyłącz wszystkie przekierowania
-            </button>
-            <p className="text-[10px] text-slate-500 leading-snug">
-              Telefon sam wybierze kod, a operator potwierdzi ustawienie komunikatem na ekranie. Kody poniżej możesz też wpisać ręcznie.
-            </p>
-            {dialError && (
-              <div role="alert" className="flex items-start gap-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-200">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{dialError}</span>
-              </div>
-            )}
-          </div>
-          {FORWARD_LABELS.map(([key, label, desc]) => (
-            <div key={key} className="px-4 py-3 flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white leading-snug">{label}</div>
-                <div className="text-[10px] text-slate-400 leading-snug mt-0.5">{desc}</div>
-                <code className="block mt-1 text-[11px] text-cyan-200 break-all">{info.codes[key]}</code>
-              </div>
-              <button onClick={() => copy(info.codes[key])} aria-label="Kopiuj kod" className="shrink-0 p-2 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200">
-                {copied === info.codes[key] ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
   );
 }
 
@@ -591,9 +494,7 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
         )}
       </section>
 
-      {isNative && FEATURES.forwarding && <ForwardingSection />}
-
-      <section className="space-y-2.5">
+            <section className="space-y-2.5">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Prywatność i dokumenty</h2>
         <div className="rounded-2xl bg-slate-900 border border-slate-800 divide-y divide-slate-800 overflow-hidden">
           {([['privacy', 'Polityka prywatności'], ['terms', 'Regulamin'], ['rodo', 'Klauzula RODO']] as const).map(([id, label]) => (

@@ -27,10 +27,8 @@ import androidx.core.app.NotificationCompat
  */
 class CallOverlayService : Service() {
 
-    // Dwa tryby suwaków odpowiedzi (wybierane po stanie telefonu):
-    //  - telefon DZWONI: suwak uzbraja komunikat na serwerze i odrzuca rozmowę; operator przekierowuje ją do TelePakt,
-    //    który odtwarza komunikat rozmówcy i się rozłącza (wymaga przekierowania "gdy zajęty" i ANSWER_PHONE_CALLS);
-    //  - rozmowa TRWA: po połączeniu 3-way z numerem TelePakt suwak prosi serwer o odtworzenie komunikatu w rozmowie.
+    // Suwaki odpowiedzi działają w trwającej rozmowie: po połączeniu 3-way z numerem TelePakt suwak prosi serwer o
+    // odtworzenie komunikatu w rozmowie (słyszą go obie strony). Telefon, który dopiero dzwoni, pokazuje tylko podpowiedź.
 
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
@@ -38,6 +36,10 @@ class CallOverlayService : Service() {
     private var apiUrl = ""
     private var authToken = ""
     private var threeWayBtn: Button? = null
+    private var chooseSliderView: View? = null
+    private var messagesBoxView: View? = null
+    private var ringingInfoView: View? = null
+    private var answersRevealed = false
 
     // Referencje do nasłuchu stanu linii: bez nich system może je usunąć, a nakładka nigdy się nie zamknie.
     private var telephonyCallback: TelephonyCallback? = null
@@ -128,11 +130,20 @@ class CallOverlayService : Service() {
     }
 
     private fun handleCallState(state: Int) {
-        when (state) {
-            TelephonyManager.CALL_STATE_IDLE -> stopSelf()  // połączenie zakończone - zamknij nakładkę
-            TelephonyManager.CALL_STATE_OFFHOOK -> threeWayBtn?.visibility = View.VISIBLE
-            TelephonyManager.CALL_STATE_RINGING -> threeWayBtn?.visibility = View.GONE
+        if (state == TelephonyManager.CALL_STATE_IDLE) {
+            stopSelf()  // połączenie zakończone - zamknij nakładkę
+        } else {
+            applyCallState(state)
         }
+    }
+
+    /** Dzwoni: tylko podpowiedź. Rozmowa trwa: przycisk 3-way i suwak "Wybierz odpowiedź" (albo już odsłonięte odpowiedzi). */
+    private fun applyCallState(state: Int) {
+        val inCall = state == TelephonyManager.CALL_STATE_OFFHOOK
+        ringingInfoView?.visibility = if (inCall) View.GONE else View.VISIBLE
+        threeWayBtn?.visibility = if (inCall) View.VISIBLE else View.GONE
+        chooseSliderView?.visibility = if (inCall && !answersRevealed) View.VISIBLE else View.GONE
+        messagesBoxView?.visibility = if (inCall && answersRevealed) View.VISIBLE else View.GONE
     }
 
     @Suppress("DEPRECATION")
@@ -209,10 +220,22 @@ class CallOverlayService : Service() {
             setPadding(0, 8, 0, 8)
         }
         messagesBox.addView(messagesInfo)
+        val ringingInfo = TextView(this).apply {
+            text = "Odbierz rozmowę. Potem połącz z TelePakt (3-way) - wtedy pojawią się odpowiedzi do odtworzenia."
+            textSize = 12f
+            setTextColor(Color.parseColor("#94A3B8"))
+            gravity = Gravity.CENTER
+            setPadding(0, 8, 0, 8)
+        }
         val chooseSlider = buildSlider("PRZESUŃ, BY WYBRAĆ ODPOWIEDŹ  ➔", "💬") { track, _, _, _ ->
+            answersRevealed = true
             track.visibility = View.GONE
             messagesBox.visibility = View.VISIBLE
         }
+        chooseSliderView = chooseSlider
+        messagesBoxView = messagesBox
+        ringingInfoView = ringingInfo
+        root.addView(ringingInfo)
         root.addView(chooseSlider)
         root.addView(messagesBox)
         loadMessages(messagesBox, messagesInfo)
@@ -246,29 +269,8 @@ class CallOverlayService : Service() {
         root.addView(closeBtn)
 
         overlayView = root
+        applyCallState(currentCallState())
         windowManager?.addView(overlayView, params)
-    }
-
-    /** Odrzuca dzwoniącą rozmowę; operator przekierowuje ją wg ustawienia "gdy zajęty". Zwraca, czy się udało. */
-    private fun rejectRingingCall(): Boolean {
-        val granted = checkSelfPermission(android.Manifest.permission.ANSWER_PHONE_CALLS) ==
-            android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !granted) {
-            Toast.makeText(
-                this,
-                "Włącz uprawnienie do rozmów w aplikacji TelePakt (baner „Dokończ konfigurację”), żeby odrzucać rozmowy.",
-                Toast.LENGTH_LONG
-            ).show()
-            return false
-        }
-        val telecom = getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
-        return try {
-            @Suppress("DEPRECATION", "MissingPermission")
-            telecom.endCall()
-        } catch (e: SecurityException) {
-            android.util.Log.e("TelePakt", "endCall: brak uprawnienia", e)
-            false
-        }
     }
 
     /**
@@ -394,11 +396,7 @@ class CallOverlayService : Service() {
                 }
                 box.removeView(info)
                 box.addView(TextView(this).apply {
-                    text = if (currentCallState() == TelephonyManager.CALL_STATE_RINGING) {
-                        "Przesunięcie odrzuci rozmowę, a TelePakt odtworzy wybrany komunikat rozmówcy."
-                    } else {
-                        "W rozmowie: najpierw połącz z TelePakt (3-way), potem przesuń komunikat."
-                    }
+                    text = "Najpierw połącz z TelePakt (3-way), potem przesuń komunikat - usłyszą go obie strony."
                     textSize = 10f
                     setTextColor(Color.parseColor("#94A3B8"))
                     gravity = Gravity.CENTER
@@ -551,17 +549,15 @@ class CallOverlayService : Service() {
         }
     }
 
-    /** Suwak odpowiedzi przesunięty do końca: tryb zależy od stanu telefonu (dzwoni / trwa rozmowa). */
+    /** Suwak odpowiedzi przesunięty do końca: działa w trwającej rozmowie (po połączeniu 3-way z TelePakt). */
     private fun onAnswerSlid(
         message: OverlayMessage, track: FrameLayout, hint: TextView, thumb: View, idleText: String, done: () -> Unit
     ) {
-        when (currentCallState()) {
-            TelephonyManager.CALL_STATE_RINGING -> armAndReject(message, hint, idleText, done)
-            TelephonyManager.CALL_STATE_OFFHOOK -> speakInCall(message, track, hint, thumb, idleText, done)
-            else -> {
-                Toast.makeText(this, "Brak aktywnej rozmowy.", Toast.LENGTH_SHORT).show()
-                done()
-            }
+        if (currentCallState() == TelephonyManager.CALL_STATE_OFFHOOK) {
+            speakInCall(message, track, hint, thumb, idleText, done)
+        } else {
+            Toast.makeText(this, "Najpierw odbierz rozmowę i połącz z TelePakt (3-way).", Toast.LENGTH_LONG).show()
+            done()
         }
     }
 
@@ -601,48 +597,7 @@ class CallOverlayService : Service() {
         }, 3000L)
     }
 
-    /**
-     * Tryb "przed odebraniem": uzbraja komunikat na serwerze i dopiero po potwierdzeniu odrzuca rozmowę. Operator
-     * przekierowuje ją do TelePakt, który odtwarza komunikat rozmówcy i się rozłącza. Gdy uzbrojenie się nie uda,
-     * rozmowa NIE jest odrzucana (można ją odebrać).
-     */
-    private fun armAndReject(message: OverlayMessage, hint: TextView, idleText: String, done: () -> Unit) {
-        hint.text = "Przygotowuję…"
-        Thread {
-            var ok = false
-            var reason = "Nie udało się przygotować komunikatu"
-            try {
-                val (code, body) = postEmpty("/api/telephony/messages/${message.id}/arm/")
-                if (code in 200..299) {
-                    ok = true
-                } else {
-                    reason = serverError(body, "$reason (HTTP $code)")
-                    android.util.Log.w("TelePakt", "arm HTTP $code: $body")
-                }
-            } catch (e: java.io.IOException) {
-                reason = "Brak połączenia z serwerem - rozmowa nie została odrzucona"
-                android.util.Log.e("TelePakt", "arm: sieć", e)
-            } catch (e: Exception) {
-                android.util.Log.e("TelePakt", "arm failed", e)
-            }
-            hint.post {
-                if (!ok) {
-                    failHint(hint, reason, idleText, done)
-                    return@post
-                }
-                hint.text = "Odrzucam - TelePakt odtworzy komunikat…"
-                if (rejectRingingCall()) {
-                    Toast.makeText(this, "Rozmowa przekazana do TelePakt. Odtworzy: ${message.title}", Toast.LENGTH_LONG).show()
-                    hint.postDelayed({ stopSelf() }, 800L)
-                } else {
-                    hint.text = idleText  // nie odrzucono (np. brak uprawnienia) - rozmowa dalej dzwoni
-                    done()
-                }
-            }
-        }.start()
-    }
-
-    /** Tryb "w rozmowie": serwer odtwarza komunikat w rozmowie 3-way przez TelePakt - słyszą go obie strony. */
+    /** Serwer odtwarza komunikat w rozmowie 3-way przez TelePakt - słyszą go obie strony. */
     private fun speakInCall(
         message: OverlayMessage, track: FrameLayout, hint: TextView, thumb: View, idleText: String, done: () -> Unit
     ) {

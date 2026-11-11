@@ -13,7 +13,6 @@ export interface TelePaktOverlayPluginInterface {
   showOverlay(options?: { phoneNumber?: string; callerName?: string }): Promise<{ success: boolean }>;
   hideOverlay(): Promise<{ success: boolean }>;
   saveConfig(options: { apiUrl: string; token: string }): Promise<void>;
-  dialNumber(options: { number: string }): Promise<void>;
   checkPhoneStatePermission(): Promise<{ granted: boolean }>;
   requestPhoneStatePermission(): Promise<{ granted: boolean }>;
 }
@@ -90,12 +89,6 @@ export class NativeOverlayBridge {
     } catch (err) {
       console.warn('Failed to save overlay config:', err);
     }
-  }
-
-  /** Wybiera numer albo kod (np. przekierowania) jednym stuknięciem. Rzuca błąd z czytelnym powodem. */
-  static async dial(number: string): Promise<void> {
-    if (!this.isNative()) throw new Error('Wybieranie numeru działa tylko w aplikacji na telefonie.');
-    await TelePaktOverlayNative.dialNumber({ number });
   }
 
   static async triggerNativeOverlay(phoneNumber = '+48 799 555 123', callerName = 'Potencjalny SPAM (Fotowoltaika)'): Promise<boolean> {

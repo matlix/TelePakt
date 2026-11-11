@@ -286,7 +286,7 @@ export function MessagesTab() {
       <div className="space-y-1">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Komunikaty dla rozmówcy</h2>
         <p className="text-[11px] text-slate-400 leading-snug">
-          Na ekranie rozmowy najpierw przesuwasz suwak „Wybierz odpowiedź”, a potem pojawiają się Twoje komunikaty - każdy to osobny suwak. Gdy telefon DZWONI: przesunięcie odrzuca rozmowę, a TelePakt odtwarza komunikat rozmówcy i się rozłącza (wymaga przekierowania z zakładki Ustawienia). Gdy rozmowa TRWA: połącz z TelePakt (3-way) i przesuń komunikat - usłyszą go obie strony.
+          Odbierz rozmowę i stuknij w nakładce „Połącz z TelePakt (3-way)”. Telefon zadzwoni na numer TelePakt - gdy odbierze, stuknij „Scal” w aplikacji Telefon. Potem przesuń „Wybierz odpowiedź” i suwak komunikatu: usłyszą go obie strony, a rozmowa się nagrywa (zakładka Nagrania).
         </p>
       </div>
 
