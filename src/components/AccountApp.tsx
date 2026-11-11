@@ -514,10 +514,6 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
   const refresh = () => NativeOverlayBridge.checkStatus().then(setStatus);
 
   useEffect(() => {
-    NativeOverlayBridge.saveConfig(API_URL, authService.getToken() ?? '');
-  }, [user.id]);
-
-  useEffect(() => {
     refresh();
     // Po powrocie z systemowych ustawień odśwież status uprawnień.
     const onFocus = () => refresh();
@@ -795,6 +791,13 @@ export function AccountApp() {
   const [legalDoc, setLegalDoc] = useState<LegalDocType | null>(null);
 
   useEffect(() => authService.subscribe(setUser), []);
+
+  // Natywna nakładka na ekranie rozmowy działa poza aplikacją i dostaje adres API oraz token tylko stąd.
+  // Zapis musi się dziać zaraz po zalogowaniu (i przy każdym starcie), a nie dopiero po wejściu w Ustawienia -
+  // inaczej nakładka mówi "zaloguj się", mimo że użytkownik jest zalogowany.
+  useEffect(() => {
+    if (user) NativeOverlayBridge.saveConfig(API_URL, authService.getToken() ?? '');
+  }, [user?.id]);
 
   const legalModal = (
     <LegalDocumentModal isOpen={legalDoc !== null} initialDoc={legalDoc || 'privacy'} onClose={() => setLegalDoc(null)} />
