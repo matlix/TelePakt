@@ -34,6 +34,12 @@ class CallOverlayService : Service() {
          * w TelePaktOverlayPlugin.kt oraz wlacz FEATURES.forwarding w src/config.ts.
          */
         private const val FORWARDING_ENABLED = false
+
+        /**
+         * Przycisk "Nagrywaj całą rozmowę" (3-way przez numer TelePakt) jest chwilowo wyłączony
+         * (decyzja właściciela, 2026-11-11). Aby go włączyć: true + FEATURES.recording w src/config.ts.
+         */
+        private const val RECORD_WHOLE_CALL_ENABLED = false
     }
 
     private var windowManager: WindowManager? = null
@@ -142,9 +148,12 @@ class CallOverlayService : Service() {
         }
         root.addView(callerInfo)
 
-        // Suwaki komunikatów: po jednym na aktywny komunikat użytkownika (maks. 4), ładowane z serwera.
-        // Przesunięcie suwaka odtwarza komunikat rozmówcy - w rozmowie nagrywanej przez TelePakt (3-way).
-        val messagesBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        // Najpierw tylko jeden suwak. Dopiero jego przesunięcie pokazuje możliwe odpowiedzi - po jednym
+        // suwaku na aktywny komunikat użytkownika (maks. 4), pobierane z serwera już przy otwarciu nakładki.
+        val messagesBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
         val messagesInfo = TextView(this).apply {
             text = "Ładowanie komunikatów…"
             textSize = 11f
@@ -153,6 +162,11 @@ class CallOverlayService : Service() {
             setPadding(0, 8, 0, 8)
         }
         messagesBox.addView(messagesInfo)
+        val chooseSlider = buildSlider("PRZESUŃ, BY WYBRAĆ ODPOWIEDŹ  ➔", "💬") { track, _, _, _ ->
+            track.visibility = View.GONE
+            messagesBox.visibility = View.VISIBLE
+        }
+        root.addView(chooseSlider)
         root.addView(messagesBox)
         loadMessages(messagesBox, messagesInfo)
 
@@ -168,9 +182,11 @@ class CallOverlayService : Service() {
             }
             setOnClickListener { recordWholeCall(this) }
         }
-        root.addView(recordBtn, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = 16 })
+        if (RECORD_WHOLE_CALL_ENABLED) {
+            root.addView(recordBtn, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 16 })
+        }
 
         if (FORWARDING_ENABLED) {
             // Tryb przekierowania: nagrywa rozmowę, która już przechodzi przez numer TelePakt.
@@ -351,7 +367,7 @@ class CallOverlayService : Service() {
         }.start()
     }
 
-    private data class OverlayMessage(val id: Int, val title: String)
+    private data class OverlayMessage(val id: Int, val title: String, val hasAudio: Boolean)
 
     /** Pobiera aktywne komunikaty użytkownika i dodaje po jednym suwaku na każdy. Powód błędu pokazuje wprost. */
     private fun loadMessages(box: LinearLayout, info: TextView) {
@@ -376,7 +392,9 @@ class CallOverlayService : Service() {
                     val list = mutableListOf<OverlayMessage>()
                     for (i in 0 until arr.length()) {
                         val m = arr.getJSONObject(i)
-                        if (m.optBoolean("is_active", true)) list.add(OverlayMessage(m.getInt("id"), m.getString("title")))
+                        if (m.optBoolean("is_active", true)) {
+                            list.add(OverlayMessage(m.getInt("id"), m.getString("title"), m.optBoolean("has_audio", false)))
+                        }
                     }
                     items = list.take(4)
                 } else {
@@ -403,9 +421,16 @@ class CallOverlayService : Service() {
                     return@post
                 }
                 box.removeView(info)
+                box.addView(TextView(this).apply {
+                    text = "Odpowiedź usłyszy rozmówca przez głośnik Twojego telefonu - włącz głośnik w rozmowie."
+                    textSize = 10f
+                    setTextColor(Color.parseColor("#94A3B8"))
+                    gravity = Gravity.CENTER
+                    setPadding(0, 0, 0, 4)
+                })
                 items.forEach { message ->
                     box.addView(
-                        buildSliderRow(message),
+                        buildAnswerSlider(message),
                         LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
                         ).apply { topMargin = 10 }
@@ -415,8 +440,15 @@ class CallOverlayService : Service() {
         }.start()
     }
 
-    /** Jeden suwak: przesunięcie do końca odtwarza komunikat; po odtworzeniu suwak wraca na początek. */
-    private fun buildSliderRow(message: OverlayMessage): FrameLayout {
+    /**
+     * Jeden suwak. Przesunięcie do końca wywołuje [onComplete]; suwak wraca na początek dopiero po wywołaniu
+     * przekazanego tam `done` (do tego czasu kolejne przesunięcia są ignorowane).
+     */
+    private fun buildSlider(
+        label: String,
+        icon: String,
+        onComplete: (track: FrameLayout, hint: TextView, thumb: View, done: () -> Unit) -> Unit
+    ): FrameLayout {
         val track = FrameLayout(this).apply {
             background = GradientDrawable().apply {
                 setColor(Color.parseColor("#020617"))
@@ -425,9 +457,8 @@ class CallOverlayService : Service() {
             }
             setPadding(8, 8, 8, 8)
         }
-        val idleText = "${message.title}  ➔"
         val hint = TextView(this).apply {
-            text = idleText
+            text = label
             textSize = 11f
             setTextColor(Color.parseColor("#38BDF8"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -439,7 +470,7 @@ class CallOverlayService : Service() {
         }
         track.addView(hint)
         val thumb = TextView(this).apply {
-            text = "▶"
+            text = icon
             textSize = 16f
             setTextColor(Color.parseColor("#020617"))
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -467,7 +498,10 @@ class CallOverlayService : Service() {
                         v.x = newX
                         if (newX >= maxScroll * 0.85f) {
                             busy = true
-                            speakMessage(message, hint, v, idleText) { busy = false }
+                            onComplete(track, hint, v) {
+                                v.animate().x(0f).setDuration(300).start()
+                                busy = false
+                            }
                         }
                         return true
                     }
@@ -483,56 +517,150 @@ class CallOverlayService : Service() {
         return track
     }
 
-    /** Prosi serwer o odtworzenie komunikatu w trwającej rozmowie. Przy błędzie pokazuje jego przyczynę. */
-    private fun speakMessage(message: OverlayMessage, hint: TextView, thumb: View, idleText: String, onDone: () -> Unit) {
-        hint.text = "Odtwarzam…"
+    /** Suwak odpowiedzi: przesunięcie do końca odtwarza komunikat przez głośnik telefonu. */
+    private fun buildAnswerSlider(message: OverlayMessage): FrameLayout {
+        val idle = "${message.title}  ➔"
+        return buildSlider(idle, "▶") { _, hint, _, done -> playMessage(message, hint, idle, done) }
+    }
+
+    /**
+     * Pobiera dźwięk komunikatu (własne nagranie albo głos AI z serwera) i odtwarza go na głośniku. Rozmówca
+     * słyszy go przez mikrofon telefonu. Powód każdej porażki jest pokazywany wprost (toast + logcat).
+     */
+    private fun playMessage(message: OverlayMessage, hint: TextView, idleText: String, done: () -> Unit) {
+        hint.text = "Przygotowuję…"
         Thread {
-            var ok = false
-            var reason = "Nie udało się odtworzyć komunikatu"
+            var file: java.io.File? = null
+            var reason = "Nie udało się pobrać komunikatu"
             try {
-                val conn = java.net.URL("${apiUrl.trimEnd('/')}/api/telephony/messages/${message.id}/speak/")
-                    .openConnection() as java.net.HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.connectTimeout = 8000
-                conn.readTimeout = 15000
-                conn.doOutput = true
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.setRequestProperty("Authorization", "Bearer $authToken")
-                conn.outputStream.use { it.write("{}".toByteArray()) }
-                val code = conn.responseCode
-                if (code in 200..299) {
-                    ok = true
-                } else {
-                    val body = (conn.errorStream ?: conn.inputStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
-                    reason = try {
-                        org.json.JSONObject(body).optString("error", reason)
-                    } catch (e: Exception) {
-                        "$reason (HTTP $code)"
-                    }
-                    android.util.Log.w("TelePakt", "speak HTTP $code: $body")
-                }
-                conn.disconnect()
-            } catch (e: Exception) {
+                file = fetchMessageAudio(message)
+            } catch (e: java.io.IOException) {
                 reason = "Brak połączenia z serwerem"
-                android.util.Log.e("TelePakt", "speak failed", e)
+                android.util.Log.e("TelePakt", "fetchMessageAudio: sieć", e)
+            } catch (e: Exception) {
+                reason = e.message ?: reason
+                android.util.Log.e("TelePakt", "fetchMessageAudio failed", e)
             }
             hint.post {
-                thumb.animate().x(0f).setDuration(300).start()
-                if (ok) {
-                    hint.text = "✓ ${message.title}"
-                    hint.setTextColor(Color.parseColor("#10B981"))
+                val ready = file
+                if (ready == null) {
+                    hint.text = idleText
+                    Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
+                    done()
+                    return@post
+                }
+                hint.text = "Odtwarzam przez głośnik…"
+                playOnSpeaker(ready) { played ->
+                    hint.text = if (played) "✓ ${message.title}" else idleText
+                    hint.setTextColor(Color.parseColor(if (played) "#10B981" else "#38BDF8"))
                     hint.postDelayed({
                         hint.text = idleText
                         hint.setTextColor(Color.parseColor("#38BDF8"))
-                        onDone()
-                    }, 2500)
-                } else {
-                    hint.text = idleText
-                    Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
-                    onDone()
+                        done()
+                    }, if (played) 1500L else 0L)
                 }
             }
         }.start()
+    }
+
+    /** Własne nagranie pobieramy wprost, komunikat czytany przez AI generuje serwer (Telnyx, ten sam głos co w ustawieniach). */
+    private fun fetchMessageAudio(message: OverlayMessage): java.io.File {
+        val base = apiUrl.trimEnd('/')
+        val path = if (message.hasAudio) "audio" else "preview"
+        val conn = java.net.URL("$base/api/telephony/messages/${message.id}/$path/")
+            .openConnection() as java.net.HttpURLConnection
+        conn.connectTimeout = 8000
+        conn.readTimeout = 30000
+        conn.setRequestProperty("Authorization", "Bearer $authToken")
+        if (!message.hasAudio) {
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.outputStream.use { it.write("{}".toByteArray()) }
+        }
+        val code = conn.responseCode
+        if (code !in 200..299) {
+            val body = (conn.errorStream ?: conn.inputStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
+            android.util.Log.w("TelePakt", "komunikat ${message.id} HTTP $code: $body")
+            conn.disconnect()
+            throw Exception(
+                try {
+                    org.json.JSONObject(body).optString("error", "Błąd serwera (HTTP $code)")
+                } catch (e: Exception) {
+                    "Błąd serwera (HTTP $code)"
+                }
+            )
+        }
+        val ext = if ((conn.contentType ?: "").contains("wav")) "wav" else "mp3"
+        val file = java.io.File(cacheDir, "komunikat_${message.id}.$ext")
+        conn.inputStream.use { input -> file.outputStream().use { output -> input.copyTo(output) } }
+        conn.disconnect()
+        return file
+    }
+
+    private var player: android.media.MediaPlayer? = null
+    private var speakerTouched = false
+    private var speakerWasOn = false
+
+    @Suppress("DEPRECATION")
+    private fun setSpeaker(on: Boolean) {
+        val audio = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        audio.isSpeakerphoneOn = on
+    }
+
+    /**
+     * Odtwarza plik na głośniku (włącza tryb głośnomówiący na czas odtwarzania i potem go przywraca).
+     * Uwaga: to dźwięk akustyczny - rozmówca słyszy go o tyle, o ile mikrofon telefonu go wychwyci;
+     * jakość zależy od modelu telefonu i jego tłumienia echa.
+     */
+    private fun playOnSpeaker(file: java.io.File, onEnd: (Boolean) -> Unit) {
+        stopPlayback()
+        val audio = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        @Suppress("DEPRECATION")
+        speakerWasOn = audio.isSpeakerphoneOn
+        speakerTouched = true
+        setSpeaker(true)
+        val finish: (Boolean) -> Unit = { ok ->
+            stopPlayback()
+            file.delete()
+            onEnd(ok)
+        }
+        try {
+            val p = android.media.MediaPlayer()
+            p.setAudioAttributes(
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            p.setDataSource(file.absolutePath)
+            p.setOnCompletionListener { finish(true) }
+            p.setOnErrorListener { _, what, extra ->
+                android.util.Log.e("TelePakt", "MediaPlayer error what=$what extra=$extra")
+                Toast.makeText(this, "Nie udało się odtworzyć komunikatu (kod $what)", Toast.LENGTH_LONG).show()
+                finish(false)
+                true
+            }
+            p.prepare()
+            player = p
+            p.start()
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "playOnSpeaker failed", e)
+            Toast.makeText(this, "Nie udało się odtworzyć komunikatu: ${e.message}", Toast.LENGTH_LONG).show()
+            finish(false)
+        }
+    }
+
+    private fun stopPlayback() {
+        player?.let {
+            try { it.stop() } catch (e: Exception) { /* już zatrzymany */ }
+            it.release()
+        }
+        player = null
+        if (speakerTouched) {
+            setSpeaker(speakerWasOn)
+            speakerTouched = false
+        }
     }
 
     private fun startForegroundServiceNotification() {
@@ -559,6 +687,7 @@ class CallOverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopPlayback()
         overlayView?.let { windowManager?.removeView(it) }
         overlayView = null
     }

@@ -255,7 +255,7 @@ export function MessagesTab() {
       <div className="space-y-1">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Komunikaty dla rozmówcy</h2>
         <p className="text-[11px] text-slate-400 leading-snug">
-          Każdy komunikat to osobny suwak w nakładce na ekranie rozmowy. Odtwarzają się rozmówcy, gdy nagrywasz całą rozmowę przez TelePakt (przycisk „Nagrywaj całą rozmowę”).
+          Na ekranie rozmowy najpierw przesuwasz suwak „Wybierz odpowiedź”, a potem pojawiają się Twoje komunikaty - każdy to osobny suwak. Przesunięty komunikat odtwarza się przez głośnik telefonu (włącz głośnik w rozmowie), więc rozmówca słyszy go przez mikrofon.
         </p>
       </div>
 

@@ -834,8 +834,8 @@ export function AccountApp() {
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-slate-950/95 backdrop-blur border-t border-slate-800 pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-md mx-auto grid grid-cols-4">
-          {([['profile', 'Profil', User], ['recordings', 'Nagrania', Mic], ['messages', 'Komunikaty', MessageSquare], ['settings', 'Ustawienia', Settings]] as const).map(([id, label, Icon]) => (
+        <div className={`max-w-md mx-auto grid ${FEATURES.recording ? 'grid-cols-4' : 'grid-cols-3'}`}>
+          {([['profile', 'Profil', User], ['recordings', 'Nagrania', Mic], ['messages', 'Komunikaty', MessageSquare], ['settings', 'Ustawienia', Settings]] as const).filter(([id]) => FEATURES.recording || id !== 'recordings').map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setTab(id)}

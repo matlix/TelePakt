@@ -14,6 +14,8 @@ export const ASSISTANT_NUMBER: string = (import.meta.env.VITE_ASSISTANT_NUMBER ?
  */
 export const FEATURES = {
   forwarding: false,
+  /** Nagrywanie całej rozmowy (3-way przez numer TelePakt) i zakładka Nagrania - wyłączone 2026-11-11. */
+  recording: false,
 } as const;
 
 /** Adres API backendu (Render). */
