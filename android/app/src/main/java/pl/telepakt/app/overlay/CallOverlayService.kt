@@ -455,7 +455,9 @@ class CallOverlayService : Service() {
         // Pasek postępu (przezroczysty turkus) - rośnie od lewej podczas odtwarzania komunikatu.
         val fill = View(this).apply {
             setBackgroundColor(Color.parseColor("#4006B6D4"))
-            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            // Stała wysokość jak napis suwaka: dziecko o wysokości MATCH_PARENT w oknie WRAP_CONTENT rozciąga cały tor
+            // na cały dostępny ekran (usterka widoczna po odebraniu rozmowy).
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 120)
             pivotX = 0f
             scaleX = 0f
         }
