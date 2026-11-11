@@ -84,6 +84,7 @@ function MessageCard({ message, settings, previewVoice, previewRate, onChanged, 
   const [seconds, setSeconds] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const recorder = useRef<VoiceRecorder | null>(null);
   const timer = useRef<number | null>(null);
   const dirty = title !== message.title || text !== message.text || situation !== message.situation;
@@ -136,7 +137,32 @@ function MessageCard({ message, settings, previewVoice, previewRate, onChanged, 
 
   const listen = () => run(async () => setAudioUrl(await voiceService.audioUrl(message.id)));
   // Podgląd czyta aktualną treść z pola (także niezapisaną) wybranym głosem i tempem.
-  const preview = () => run(async () => setAudioUrl(await voiceService.previewUrl(message.id, { voice: previewVoice, rate: previewRate, text })));
+  const preview = async () => {
+    setBusy(true);
+    setError(null);
+    setPreviewFailed(false);
+    try {
+      setAudioUrl(await voiceService.previewUrl(message.id, { voice: previewVoice, rate: previewRate, text }));
+    } catch (err: any) {
+      setError(err.message);
+      setPreviewFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Zapasowo: głos samego telefonu (inny niż AI, ale pozwala sprawdzić treść i tempo bez serwera).
+  const phoneVoice = () => {
+    if (!('speechSynthesis' in window)) {
+      setError('Ta aplikacja nie potrafi czytać tekstu głosem telefonu.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pl-PL';
+    utterance.rate = Math.max(0.5, Math.min(1.6, previewRate / 100));
+    window.speechSynthesis.speak(utterance);
+  };
   const dropRecording = () => run(async () => { setAudioUrl(null); onChanged(await voiceService.removeAudio(message.id)); });
 
   return (
@@ -190,6 +216,11 @@ function MessageCard({ message, settings, previewVoice, previewRate, onChanged, 
       </div>
 
       {error && <ErrorBox text={error} />}
+      {previewFailed && (
+        <button onClick={phoneVoice} className="w-full py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold">
+          Posłuchaj głosem telefonu (zapasowo)
+        </button>
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <label className="inline-flex items-center gap-2 text-[11px] text-slate-300">

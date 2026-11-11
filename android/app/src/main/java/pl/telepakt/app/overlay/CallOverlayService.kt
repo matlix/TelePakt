@@ -367,7 +367,7 @@ class CallOverlayService : Service() {
         }.start()
     }
 
-    private data class OverlayMessage(val id: Int, val title: String, val hasAudio: Boolean)
+    private data class OverlayMessage(val id: Int, val title: String, val hasAudio: Boolean, val text: String)
 
     /** Pobiera aktywne komunikaty użytkownika i dodaje po jednym suwaku na każdy. Powód błędu pokazuje wprost. */
     private fun loadMessages(box: LinearLayout, info: TextView) {
@@ -393,7 +393,7 @@ class CallOverlayService : Service() {
                     for (i in 0 until arr.length()) {
                         val m = arr.getJSONObject(i)
                         if (m.optBoolean("is_active", true)) {
-                            list.add(OverlayMessage(m.getInt("id"), m.getString("title"), m.optBoolean("has_audio", false)))
+                            list.add(OverlayMessage(m.getInt("id"), m.getString("title"), m.optBoolean("has_audio", false), m.optString("text", "")))
                         }
                     }
                     items = list.take(4)
@@ -542,22 +542,35 @@ class CallOverlayService : Service() {
                 android.util.Log.e("TelePakt", "fetchMessageAudio failed", e)
             }
             hint.post {
-                val ready = file
-                if (ready == null) {
-                    hint.text = idleText
-                    Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
-                    done()
-                    return@post
-                }
-                hint.text = "Odtwarzam przez głośnik…"
-                playOnSpeaker(ready) { played ->
+                val green = Color.parseColor("#10B981")
+                val blue = Color.parseColor("#38BDF8")
+                val finished: (Boolean) -> Unit = { played ->
                     hint.text = if (played) "✓ ${message.title}" else idleText
-                    hint.setTextColor(Color.parseColor(if (played) "#10B981" else "#38BDF8"))
+                    hint.setTextColor(if (played) green else blue)
                     hint.postDelayed({
                         hint.text = idleText
-                        hint.setTextColor(Color.parseColor("#38BDF8"))
+                        hint.setTextColor(blue)
                         done()
                     }, if (played) 1500L else 0L)
+                }
+                val ready = file
+                if (ready != null) {
+                    hint.text = "Odtwarzam przez głośnik…"
+                    playOnSpeaker(ready, finished)
+                } else if (!message.hasAudio && message.text.isNotBlank()) {
+                    // Głos AI niedostępny (serwer/Telnyx/sieć) - czytamy tekst głosem samego telefonu, żeby suwak działał.
+                    Toast.makeText(this, "Głos AI niedostępny: $reason. Czytam głosem telefonu.", Toast.LENGTH_LONG).show()
+                    hint.text = "Czytam głosem telefonu…"
+                    speakWithPhoneVoice(message.text, finished)
+                } else {
+                    Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
+                    hint.text = "✗ $reason"
+                    hint.setTextColor(Color.parseColor("#F87171"))
+                    hint.postDelayed({
+                        hint.text = idleText
+                        hint.setTextColor(blue)
+                        done()
+                    }, 3000L)
                 }
             }
         }.start()
@@ -651,7 +664,60 @@ class CallOverlayService : Service() {
         }
     }
 
+    private var phoneTts: android.speech.tts.TextToSpeech? = null
+
+    /**
+     * Zapasowy głos: Android TextToSpeech (polski) czyta tekst na głośniku. Brzmi inaczej niż głos AI z ustawień,
+     * ale działa bez serwera i bez Telnyx. Jeśli telefon nie ma polskiego głosu, mówi o tym wprost.
+     */
+    private fun speakWithPhoneVoice(text: String, onEnd: (Boolean) -> Unit) {
+        stopPlayback()
+        val audio = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        @Suppress("DEPRECATION")
+        speakerWasOn = audio.isSpeakerphoneOn
+        speakerTouched = true
+        setSpeaker(true)
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        val finish: (Boolean) -> Unit = { ok -> main.post { stopPlayback(); onEnd(ok) } }
+        val fail: (String) -> Unit = { message ->
+            android.util.Log.e("TelePakt", "phone TTS: $message")
+            main.post { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
+            finish(false)
+        }
+        phoneTts = android.speech.tts.TextToSpeech(this) { status ->
+            val engine = phoneTts
+            if (status != android.speech.tts.TextToSpeech.SUCCESS || engine == null) {
+                fail("Telefon nie ma głosu do czytania tekstu (Ustawienia > Zamiana tekstu na mowę).")
+                return@TextToSpeech
+            }
+            val lang = engine.setLanguage(java.util.Locale("pl", "PL"))
+            if (lang == android.speech.tts.TextToSpeech.LANG_MISSING_DATA ||
+                lang == android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED
+            ) {
+                fail("Telefon nie ma polskiego głosu. Zainstaluj go w Ustawienia > Zamiana tekstu na mowę.")
+                return@TextToSpeech
+            }
+            engine.setAudioAttributes(
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            engine.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {}
+                override fun onDone(utteranceId: String?) { finish(true) }
+                @Deprecated("Deprecated in Java")
+                override fun onError(utteranceId: String?) { fail("Nie udało się przeczytać komunikatu głosem telefonu.") }
+            })
+            engine.speak(text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "telepakt-answer")
+        }
+    }
+
     private fun stopPlayback() {
+        phoneTts?.let {
+            try { it.stop(); it.shutdown() } catch (e: Exception) { /* już wyłączony */ }
+        }
+        phoneTts = null
         player?.let {
             try { it.stop() } catch (e: Exception) { /* już zatrzymany */ }
             it.release()

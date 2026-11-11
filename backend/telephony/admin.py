@@ -108,7 +108,7 @@ class TelephonyProviderAdmin(ModelAdmin):
                     'last_checked_at', 'last_error')
     list_editable = ('is_enabled', 'priority')
     readonly_fields = ('status', 'consecutive_failures', 'last_checked_at', 'last_ok_at', 'last_error', 'webhook_urls')
-    actions = ['check_now', 'rotate_webhook_token']
+    actions = ['check_now', 'check_tts', 'rotate_webhook_token']
 
     @display(description="Stan", label={'ok': 'success', 'failing': 'danger', 'unknown': 'warning'})
     def show_status(self, obj):
@@ -160,3 +160,15 @@ class TelephonyProviderAdmin(ModelAdmin):
             "(Telnyx: pole Voice URL aplikacji TeXML) - stare adresy są już nieważne.",
             messages.WARNING,
         )
+
+    @admin.action(description="Sprawdź syntezę mowy (głos AI) - pełny wynik próby")
+    def check_tts(self, request, queryset):
+        for row in queryset.filter(kind='telnyx'):
+            try:
+                audio, content_type = providers.TelnyxProvider(row).synthesize('Test głosu. Jeden, dwa, trzy.', 'Polly.Ola-Neural', 100)
+            except Exception as exc:  # noqa: BLE001 - pokazujemy pełny powód, żeby dało się go naprawić
+                self.message_user(request, f"Synteza mowy Telnyx - BŁĄD: {exc}", messages.ERROR)
+            else:
+                self.message_user(request, f"Synteza mowy Telnyx działa: {len(audio) // 1024} KB {content_type}.", messages.SUCCESS)
+        if not queryset.filter(kind='telnyx').exists():
+            self.message_user(request, "Zaznacz wiersz Telnyx - synteza mowy (podgląd głosu) używa jego klucza.", messages.WARNING)
