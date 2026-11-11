@@ -211,60 +211,66 @@ class TelnyxProvider(BaseProvider):
             resp.close()
         raise ProviderError(f"Telnyx HTTP {last}")
 
-    #: Dokumentacja Telnyx w różnych miejscach podaje dwa adresy usługi TTS; próbujemy obu (pierwszy, który działa,
-    #: jest zapamiętany w procesie). Zmiana adresu pomaga tylko przy 404/405.
-    TTS_URLS = ['https://api.telnyx.com/v2/text-to-speech/speech', 'https://api.telnyx.com/v2/text-to-speech']
-    _tts_working = None  # (adres, indeks wariantu nazwy głosu) ostatniej udanej kombinacji
+    #: Adres usługi TTS potwierdzony odpowiedziami Telnyx (drugi adres z dokumentacji dawał 404).
+    TTS_URL = 'https://api.telnyx.com/v2/text-to-speech/speech'
+    _tts_working = None  # indeks ostatniego udanego wariantu głosu
 
     @staticmethod
-    def _voice_variants(voice_id: str) -> list[str]:
-        """Nazwy głosu w formacie Telnyx. ``Polly.Ola-Neural`` bywa zapisywane ``aws.Polly.Ola-Neural``
-        albo ``aws.Polly.Neural.Ola`` (Provider.Model.VoiceId) - nie mamy pewności, który przyjmie konto."""
+    def _voice_variants(voice_id: str) -> list[tuple[str, dict | None]]:
+        """Warianty zapisu głosu Polly dla Telnyx: ``(voice, voice_settings)``.
+
+        Wg dokumentacji i odpowiedzi Telnyx nazwa głosu to samo ``aws.Polly.<Voice>``, a silnik wybiera się w
+        ``voice_settings.engine`` (``neural``). Dopisek ``-Neural`` w nazwie jest czytany jako część id głosu
+        (błąd "Value 'Ola-Neural' at 'voiceId'"), a ``Neural.`` z wielkiej litery jako silnik standard.
+        """
         name = voice_id.split('.', 1)[1] if '.' in voice_id else voice_id
         if name.endswith('-Neural'):
-            return [f'aws.Polly.{name}', f'aws.Polly.Neural.{name[:-7]}']
-        return [f'aws.Polly.{name}', f'aws.Polly.Standard.{name}']
+            base = name[:-7]
+            return [(f'aws.Polly.{base}', {'engine': 'neural'}), (f'aws.Polly.neural.{base}', None),
+                    (f'aws.Polly.{base}-neural', None)]
+        return [(f'aws.Polly.{name}', None), (f'aws.Polly.standard.{name}', None)]
 
     def synthesize(self, text: str, voice_id: str, rate: int | None = None) -> tuple[bytes, str]:
         """Czyta ``text`` głosem Amazon Polly (poza rozmową) i zwraca ``(audio, content_type)``.
 
         Ten sam głos i tempo są używane w rozmowie (``<Say voice="Polly...">``), więc podgląd brzmi tak samo.
-        Błędy autoryzacji/płatności (401/402/403) kończą od razu; przy 400/404/405/422 próbujemy innego adresu
-        lub zapisu nazwy głosu. Wszystkie próby trafiają do komunikatu błędu i do logu (bez klucza).
+        Błędy autoryzacji/płatności (401/402/403) kończą od razu; przy innych próbujemy kolejnego zapisu głosu.
+        Wszystkie próby trafiają do komunikatu błędu i do logu (bez klucza).
         """
         key = decrypt_secret(self.row.secret_encrypted)
         if not key:
             raise ProviderError("Brak danych dostępowych Telnyx")
         variants = self._voice_variants(voice_id)
-        combos = [(url, i) for url in self.TTS_URLS for i in range(len(variants))]
-        if self._tts_working in combos:  # najpierw to, co działało ostatnio
-            combos.remove(self._tts_working)
-            combos.insert(0, self._tts_working)
+        order = list(range(len(variants)))
+        if self._tts_working in order:  # najpierw to, co działało ostatnio
+            order.remove(self._tts_working)
+            order.insert(0, self._tts_working)
 
-        attempts, skip_url = [], set()
-        for url, i in combos:
-            if url in skip_url:
-                continue
-            body = {'voice': variants[i], 'language': 'pl-PL', 'output_type': 'binary_output'}
+        attempts = []
+        for i in order:
+            voice, settings = variants[i]
+            body = {'voice': voice, 'language': 'pl-PL', 'output_type': 'binary_output'}
+            if settings:
+                body['voice_settings'] = settings
             if rate and rate != 100:  # tempo przez SSML, tak jak <prosody rate> w rozmowie
                 body['text_type'] = 'ssml'
                 body['text'] = f'<speak><prosody rate="{int(rate)}%">{escape(text)}</prosody></speak>'
             else:
                 body['text'] = text
-            resp = requests.post(url, json=body, headers={'Authorization': f'Bearer {key}'}, timeout=30)
+            resp = requests.post(self.TTS_URL, json=body, headers={'Authorization': f'Bearer {key}'}, timeout=30)
             if resp.status_code == 200:
-                TelnyxProvider._tts_working = (url, i)
+                TelnyxProvider._tts_working = i
                 return resp.content, resp.headers.get('Content-Type', 'audio/mpeg')
             detail = self._detail(resp)
-            path = url.replace('https://api.telnyx.com', '')
-            attempts.append(f"{path} [{variants[i]}] HTTP {resp.status_code}{' ' + detail if detail else ''}")
+            label = f"{voice}{' +' + settings['engine'] if settings else ''}"
+            attempts.append(f"[{label}] HTTP {resp.status_code}{' ' + detail if detail else ''}")
             logger.warning("Telnyx TTS: %s", attempts[-1])
             if resp.status_code in (401, 402, 403):
                 hint = {401: 'klucz API jest błędny', 402: 'brak środków na koncie Telnyx',
                         403: 'klucz nie ma uprawnień do syntezy mowy albo konto jest ograniczone'}[resp.status_code]
                 raise ProviderError(f"Telnyx HTTP {resp.status_code}: {detail or hint} ({hint})")
             if resp.status_code in (404, 405):
-                skip_url.add(url)  # zły adres usługi - nie ma sensu zmieniać nazwy głosu
+                break  # zły adres usługi - zmiana nazwy głosu nic nie da
         raise ProviderError("Telnyx nie przyjął żądania. Próby: " + ' | '.join(attempts))
 
     def announce(self, call_sid, conference_name, announce_url):

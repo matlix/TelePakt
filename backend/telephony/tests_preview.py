@@ -50,7 +50,8 @@ class PreviewTests(TestCase):
         with mock.patch('telephony.providers.requests.post', return_value=self._ok()) as post:
             self.assertEqual(self.api.post(self.url, {}, format='json').status_code, 200)
         body = post.call_args[1]['json']
-        self.assertEqual(body['voice'], 'aws.Polly.Ola-Neural')
+        self.assertEqual(body['voice'], 'aws.Polly.Ola')
+        self.assertEqual(body['voice_settings'], {'engine': 'neural'})   # silnik osobno, nie w nazwie głosu
         self.assertNotIn('text_type', body)
         self.assertEqual(body['text'], self.message['text'])
 
@@ -90,25 +91,36 @@ class RobustSynthesisTests(TestCase):
         r.json.return_value = {'errors': [{'detail': detail}]} if detail else {}
         return r
 
-    def test_tries_the_other_voice_spelling_when_the_first_is_rejected_and_remembers_it(self):
-        responses = [self._resp(422, detail='Voice not found'), self._resp(200, b'AUDIO')]
+    def test_neural_voice_uses_the_engine_setting_not_a_suffix_in_the_name(self):
+        with mock.patch('telephony.providers.requests.post', return_value=self._resp(200, b'AUDIO')) as post:
+            providers.TelnyxProvider(self.row).synthesize('Cześć', 'Polly.Ola-Neural', 110)
+        body = post.call_args[1]['json']
+        self.assertEqual((body['voice'], body['voice_settings']), ('aws.Polly.Ola', {'engine': 'neural'}))
+        self.assertEqual(post.call_args[0][0], 'https://api.telnyx.com/v2/text-to-speech/speech')
+
+    def test_standard_voice_has_no_engine_setting(self):
+        with mock.patch('telephony.providers.requests.post', return_value=self._resp(200, b'AUDIO')) as post:
+            providers.TelnyxProvider(self.row).synthesize('Cześć', 'Polly.Jacek', 100)
+        body = post.call_args[1]['json']
+        self.assertEqual(body['voice'], 'aws.Polly.Jacek')
+        self.assertNotIn('voice_settings', body)
+
+    def test_tries_the_next_spelling_when_rejected_and_remembers_the_working_one(self):
+        responses = [self._resp(400, detail='bad voiceId'), self._resp(200, b'AUDIO')]
         with mock.patch('telephony.providers.requests.post', side_effect=responses) as post:
             audio, _ = providers.TelnyxProvider(self.row).synthesize('Cześć', 'Polly.Ola-Neural', 100)
         self.assertEqual(audio, b'AUDIO')
-        voices = [c[1]['json']['voice'] for c in post.call_args_list]
-        self.assertEqual(voices, ['aws.Polly.Ola-Neural', 'aws.Polly.Neural.Ola'])
+        self.assertEqual([c[1]['json']['voice'] for c in post.call_args_list], ['aws.Polly.Ola', 'aws.Polly.neural.Ola'])
         with mock.patch('telephony.providers.requests.post', return_value=self._resp(200, b'X')) as post:
             providers.TelnyxProvider(self.row).synthesize('Cześć', 'Polly.Ola-Neural', 100)
-        self.assertEqual(post.call_args[1]['json']['voice'], 'aws.Polly.Neural.Ola')  # działającej nie próbujemy od nowa
+        self.assertEqual(post.call_args[1]['json']['voice'], 'aws.Polly.neural.Ola')  # działającego nie próbujemy od nowa
         self.assertEqual(post.call_count, 1)
 
-    def test_tries_the_other_endpoint_on_404(self):
-        responses = [self._resp(404), self._resp(200, b'AUDIO')]
-        with mock.patch('telephony.providers.requests.post', side_effect=responses) as post:
-            providers.TelnyxProvider(self.row).synthesize('Cześć', 'Polly.Jacek', 100)
-        urls = [c[0][0] for c in post.call_args_list]
-        self.assertEqual(urls, ['https://api.telnyx.com/v2/text-to-speech/speech', 'https://api.telnyx.com/v2/text-to-speech'])
-        self.assertEqual(post.call_args_list[1][1]['json']['voice'], 'aws.Polly.Jacek')  # 404 nie zmienia nazwy głosu
+    def test_wrong_service_address_stops_after_one_attempt(self):
+        with mock.patch('telephony.providers.requests.post', return_value=self._resp(404)) as post:
+            with self.assertRaises(providers.ProviderError):
+                providers.TelnyxProvider(self.row).synthesize('x', 'Polly.Jacek', 100)
+        self.assertEqual(post.call_count, 1)
 
     def test_auth_and_payment_errors_stop_immediately_with_a_clear_hint(self):
         for status, hint in ((401, 'klucz API'), (402, 'brak środków'), (403, 'uprawnień')):
@@ -125,7 +137,7 @@ class RobustSynthesisTests(TestCase):
                 providers.TelnyxProvider(self.row).synthesize('x', 'Polly.Maja', 100)
         msg = str(ctx.exception)
         self.assertIn('aws.Polly.Maja', msg)
-        self.assertIn('aws.Polly.Standard.Maja', msg)
+        self.assertIn('aws.Polly.standard.Maja', msg)
         self.assertIn('HTTP 422 bad voice', msg)
 
     def test_admin_action_reports_success_and_the_full_failure_reason(self):
