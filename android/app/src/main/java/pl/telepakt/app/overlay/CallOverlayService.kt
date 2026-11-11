@@ -48,6 +48,28 @@ class CallOverlayService : Service() {
     private var apiUrl = ""
     private var authToken = ""
 
+    // Referencje do nasłuchu stanu linii: bez nich system może je usunąć, a nakładka nigdy się nie zamknie.
+    private var telephonyCallback: TelephonyCallback? = null
+    @Suppress("DEPRECATION")
+    private var legacyListener: PhoneStateListener? = null
+
+    // Zegar awaryjny: gdy nasłuch zawiedzie, sami sprawdzamy stan linii i zamykamy nakładkę po rozmowie.
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var idleChecks = 0
+    private val idleWatcher = object : Runnable {
+        override fun run() {
+            @Suppress("DEPRECATION")
+            val state = try { telephonyManager?.callState } catch (e: SecurityException) { null }
+            idleChecks = if (state == TelephonyManager.CALL_STATE_IDLE) idleChecks + 1 else 0
+            if (idleChecks >= 2) {
+                android.util.Log.i("TelePakt", "linia bezczynna - zamykam nakładkę")
+                stopSelf()
+                return
+            }
+            handler.postDelayed(this, 2000L)
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -65,28 +87,53 @@ class CallOverlayService : Service() {
         authToken = prefs.getString("auth_token", "") ?: ""
         val phoneNumber = intent?.getStringExtra("PHONE_NUMBER") ?: "+48 799 555 123"
         showOverlayWindow(phoneNumber)
+        handler.removeCallbacks(idleWatcher)
+        idleChecks = 0
+        handler.postDelayed(idleWatcher, 4000L)
         return START_NOT_STICKY
     }
 
     private fun registerPhoneListener() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            telephonyManager?.registerTelephonyCallback(
-                mainExecutor,
-                object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val callback = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
                     override fun onCallStateChanged(state: Int) {
                         handleCallState(state)
                     }
                 }
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            telephonyManager?.listen(object : PhoneStateListener() {
-                @Deprecated("Deprecated in Java")
-                override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-                    handleCallState(state)
+                telephonyCallback = callback
+                telephonyManager?.registerTelephonyCallback(mainExecutor, callback)
+            } else {
+                @Suppress("DEPRECATION")
+                val listener = object : PhoneStateListener() {
+                    @Deprecated("Deprecated in Java")
+                    override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                        handleCallState(state)
+                    }
                 }
-            }, PhoneStateListener.LISTEN_CALL_STATE)
+                legacyListener = listener
+                @Suppress("DEPRECATION")
+                telephonyManager?.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
+            }
+        } catch (e: Exception) {
+            // Bez nasłuchu zostaje zegar awaryjny (idleWatcher) - nie wywracamy usługi.
+            android.util.Log.e("TelePakt", "registerPhoneListener failed", e)
         }
+    }
+
+    private fun unregisterPhoneListener() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                telephonyCallback?.let { telephonyManager?.unregisterTelephonyCallback(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                legacyListener?.let { telephonyManager?.listen(it, PhoneStateListener.LISTEN_NONE) }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("TelePakt", "unregisterPhoneListener failed", e)
+        }
+        telephonyCallback = null
+        legacyListener = null
     }
 
     private fun handleCallState(state: Int) {
@@ -753,8 +800,19 @@ class CallOverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        stopPlayback()
-        overlayView?.let { windowManager?.removeView(it) }
+        handler.removeCallbacks(idleWatcher)
+        // Najpierw zdejmujemy okno - żadna późniejsza awaria nie może zostawić nakładki na ekranie.
+        try {
+            overlayView?.let { windowManager?.removeView(it) }
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "removeView failed", e)
+        }
         overlayView = null
+        try {
+            stopPlayback()
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "stopPlayback failed", e)
+        }
+        unregisterPhoneListener()
     }
 }

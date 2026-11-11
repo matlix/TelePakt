@@ -17,6 +17,12 @@ class CallReceiver : BroadcastReceiver() {
             val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
             val incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: "+48 (Nieznany)"
 
+            if (state == TelephonyManager.EXTRA_STATE_IDLE) {
+                // Koniec rozmowy: zamknij nakładkę (drugi, niezależny od usługi sposób).
+                context.stopService(Intent(context, CallOverlayService::class.java))
+                return
+            }
+
             if (state == TelephonyManager.EXTRA_STATE_RINGING || state == TelephonyManager.EXTRA_STATE_OFFHOOK) {
                 // Sprawdź czy użytkownik nadał uprawnienie SYSTEM_ALERT_WINDOW (wyświetlanie nad innymi)
                 if (Settings.canDrawOverlays(context)) {
