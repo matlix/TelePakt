@@ -80,6 +80,8 @@ class AuthApiTests(TestCase):
         self.assertEqual(resp.json()['subscriptionPlan'], 'free')
         self.assertEqual(Profile.objects.get().phone_protected, '+48500123456')
         self.assertEqual(client.patch('/api/auth/me/', {'phoneProtected': '123'}, format='json').status_code, 400)
+        self.assertEqual(client.patch('/api/auth/me/', {'phoneProtected': 'abc'}, format='json').status_code, 400)
+        self.assertEqual(client.patch('/api/auth/me/', {'phoneProtected': ''}, format='json').status_code, 200)
 
     def test_password_reset_flow_logs_out_other_sessions(self):
         old_token = self._register().json()['token']

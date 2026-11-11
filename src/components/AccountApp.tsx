@@ -460,6 +460,7 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
     setDeleting(true);
     try {
       await authService.deleteAccount(deletePassword);
+      NativeOverlayBridge.saveConfig(API_URL, '');  // nakładka nie może zostać z tokenem usuniętego konta
     } catch (err: any) {
       setDeleteError(err.message);
       setDeleting(false);

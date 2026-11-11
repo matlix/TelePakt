@@ -107,8 +107,10 @@ def me(request):
             return _error('Podaj imię i nazwisko lub nazwę firmy.')
         profile.name = name
     if 'phoneProtected' in request.data:
-        phone = normalize_phone(str(request.data['phoneProtected']))
-        if phone is None:
+        raw_phone = str(request.data['phoneProtected'])
+        phone = normalize_phone(raw_phone)
+        # Tekst bez cyfr (np. "abc") to błąd, a nie prośba o wyczyszczenie numeru.
+        if phone is None or (phone == '' and raw_phone.strip()):
             return _error('Podaj numer w formacie 9 cyfr, np. 500 123 456.')
         profile.phone_protected = phone
     profile.save()
