@@ -356,9 +356,9 @@ const OVERLAY_HELP: PermissionHelp = {
 };
 
 const PHONE_HELP: PermissionHelp = {
-  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, i może wtedy pokazać swoje przyciski. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
+  why: 'Dzięki temu TelePakt wie, że ktoś do Ciebie dzwoni, pokazuje swoje suwaki i może odrzucić rozmowę, gdy przesuniesz odpowiedź. Nie odczytuje Twoich kontaktów ani nie słucha rozmów.',
   steps: [
-    'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o dostęp do stanu telefonu.',
+    'Dotknij „Włącz” - pojawi się okienko Androida z pytaniem o zarządzanie połączeniami.',
     'Wybierz „Zezwól”.',
     'Jeśli okienko się nie pojawi, otwórz Ustawienia telefonu > Aplikacje > TelePakt > Uprawnienia > Telefon i włącz je ręcznie.',
   ],
@@ -418,7 +418,7 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
         </div>
       </div>
       <ul className="text-[11px] space-y-1.5 pl-1">
-        {item(status.hasPhoneStatePermission, 'Dostęp do stanu telefonu')}
+        {item(status.hasPhoneStatePermission, 'Dostęp do połączeń (wykrywanie i odrzucanie rozmów)')}
         {item(status.hasOverlayPermission, 'Wyświetlanie nad innymi aplikacjami')}
       </ul>
       <div className="flex gap-2">
@@ -441,7 +441,7 @@ interface ForwardingInfo {
 }
 
 const FORWARD_LABELS: Array<[keyof ForwardingInfo['codes'], string, string]> = [
-  ['when_busy', 'Gdy odrzucisz lub jesteś zajęty', 'Przycisk „Przekieruj do TelePakt” na ekranie dzwonienia odrzuca rozmowę, a operator przekazuje ją do TelePakt.'],
+  ['when_busy', 'Gdy odrzucisz rozmowę (ustaw to koniecznie)', 'Suwak odpowiedzi na ekranie dzwonienia odrzuca rozmowę, a operator przekazuje ją do TelePakt, który odtwarza wybrany komunikat i się rozłącza.'],
   ['when_unanswered', 'Gdy nie odbierzesz (po 20 s)', 'Rozmowa, której nie odbierzesz, trafi do TelePakt.'],
   ['when_unreachable', 'Gdy telefon jest wyłączony / bez zasięgu', 'Opcjonalne.'],
   ['cancel_all', 'Wyłącz wszystkie przekierowania', 'Przywraca zwykłe działanie telefonu.'],

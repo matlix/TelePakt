@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!-- Odrzucanie dzwoniącej rozmowy suwakiem (przekierowanie do TelePakt) -->
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
     <!-- Nagrywanie własnego głosu jako komunikatu (zakładka Komunikaty) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />

@@ -17,7 +17,7 @@ import com.getcapacitor.annotation.Permission
 @CapacitorPlugin(
     name = "TelePaktOverlay",
     permissions = [
-        Permission(strings = [Manifest.permission.READ_PHONE_STATE], alias = "phone")
+        Permission(strings = [Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS], alias = "phone")
     ]
 )
 class TelePaktOverlayPlugin : Plugin() {
@@ -81,10 +81,9 @@ class TelePaktOverlayPlugin : Plugin() {
 
     @PluginMethod
     fun checkPhoneStatePermission(call: PluginCall) {
-        val granted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED
+        val granted = listOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS).all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
         val ret = JSObject()
         ret.put("granted", granted)
         call.resolve(ret)

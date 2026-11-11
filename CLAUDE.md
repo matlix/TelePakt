@@ -60,6 +60,11 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - Cloud: the 'Chmura' button on a recording opens the Android share sheet (Capacitor Share + Filesystem). Automatic upload to Google Drive/Dropbox is NOT built (needs OAuth app registrations).
 - Unverified: that audio played to the TelePakt leg is heard by the other party through the carrier conference, and that Telnyx accepts `Polly.*` voices.
 
+## Slider modes: forwarded call (B) and 3-way (A) (Nov 2026, untested on real calls)
+- The overlay answer sliders pick the mode from the phone state. RINGING: `/messages/<id>/arm/` stores an `ArmedMessage` (120 s), then `TelecomManager.endCall()` rejects the call; the carrier's forward-on-busy (code in Settings) sends it to the TelePakt number; the bridge (`conference-bridge`) recognises the forwarded call (ForwardedFrom matches a profile, or a fresh arming exists) and plays the message (own WAV via `<Play>` or Polly `<Say>`) then hangs up (CallLog `formula_played`). OFFHOOK: the user merges a 3-way call with the TelePakt number (button) and the slider calls `/messages/<id>/speak/` (provider participant `AnnounceUrl`).
+- The old 'play through the phone speaker' path was removed: Android's echo cancellation silences it for the other party (confirmed on the owner's phone). Needs ANSWER_PHONE_CALLS (alias `phone`). Forwarding UI and Nagrania tab are on again (`FEATURES`).
+- Unverified: carriers passing ForwardedFrom (fallback: single fresh arming), forward-on-busy triggered by a reject, Telnyx accepting `Polly.*` voices in `<Say>`.
+
 ## Known issues / TODO
 - IAP store verification (verify-purchase is still unauthenticated), plaintext `IntegrationCredential.secret_value` (see backend/README.md).
 - Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.

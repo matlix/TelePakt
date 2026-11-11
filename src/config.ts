@@ -13,9 +13,10 @@ export const ASSISTANT_NUMBER: string = (import.meta.env.VITE_ASSISTANT_NUMBER ?
  * Przy wlaczeniu odblokuj tez FORWARDING_ENABLED w CallOverlayService.kt oraz uprawnienie ANSWER_PHONE_CALLS.
  */
 export const FEATURES = {
-  forwarding: false,
-  /** Nagrywanie całej rozmowy (3-way przez numer TelePakt) i zakładka Nagrania - wyłączone 2026-11-11. */
-  recording: false,
+  /** Ekran z kodami przekierowania (tryb "przed odebraniem": suwak odrzuca rozmowę, TelePakt odtwarza komunikat). */
+  forwarding: true,
+  /** Zakładka Nagrania (rozmowy 3-way nagrywane przez TelePakt). */
+  recording: true,
 } as const;
 
 /** Adres API backendu (Render). */
