@@ -20,6 +20,11 @@ class Profile(models.Model):
     tts_voice = models.CharField(max_length=40, default='Polly.Ola-Neural', verbose_name="Głos komunikatów")
     tts_rate = models.PositiveSmallIntegerField(default=110, verbose_name="Tempo komunikatów (%)")
     created_at = models.DateTimeField(default=timezone.now)
+    # Wynik sprawdzenia w aplikacji, czy operator użytkownika pozwala na rozmowy konferencyjne (3-way). None = nie
+    # sprawdzano. False = operator nie wspiera - usługa nie zadziała i klientowi należy się przeprosiny i zwrot.
+    conference_supported = models.BooleanField(null=True, blank=True, verbose_name="Operator wspiera 3-way")
+    carrier_note = models.CharField(max_length=120, blank=True, verbose_name="Operator (z aplikacji)")
+    carrier_checked_at = models.DateTimeField(null=True, blank=True, verbose_name="Sprawdzono")
 
     class Meta:
         verbose_name = "Profil"

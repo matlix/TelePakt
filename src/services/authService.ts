@@ -178,6 +178,12 @@ class AuthService {
     this.clearSession();
   }
 
+  /** Zgłasza serwerowi, czy operator telefonu pozwala na rozmowy konferencyjne (3-way) - do wglądu w panelu admina. */
+  public async reportCarrier(supported: boolean, carriers: string): Promise<void> {
+    if (!this.token) return;
+    await this.request('POST', '/carrier-report/', { supported, carriers });
+  }
+
   /** Zmienia imię i/lub chroniony numer. Plan subskrypcji ustawia tylko serwer. */
   public async updateProfile(updates: Partial<UserAccount>): Promise<UserAccount> {
     if (!this.currentUser) throw new Error('Brak aktywnej sesji użytkownika.');

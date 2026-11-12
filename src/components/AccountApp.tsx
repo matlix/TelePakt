@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Cloud, Copy, Info, MessageSquare, Mic, Play, RefreshCw, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
 import { UserAccount } from '../types';
 import { authService } from '../services/authService';
-import { NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
+import { ConferenceSupport, NativeOverlayBridge, OverlayStatus, SimNumber } from '../services/nativeOverlayBridge';
 import { API_URL, FEATURES } from '../config';
 import { recordingsService, RecordingItem } from '../services/recordingsService';
 import { MessagesTab } from './MessagesTab';
@@ -209,6 +209,37 @@ function ProfileTab({ user, onUpdate }: { user: UserAccount; onUpdate: (u: UserA
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+  const [detected, setDetected] = useState<SimNumber[] | null>(null);
+  const [detectNote, setDetectNote] = useState<string | null>(null);
+
+  // Numer z karty SIM: tylko podpowiedź - użytkownik zatwierdza go przyciskiem "Zapisz zmiany".
+  const detectNumber = async () => {
+    setError(null);
+    setDetectNote(null);
+    setDetected(null);
+    setDetecting(true);
+    try {
+      const { numbers, sims } = await NativeOverlayBridge.getPhoneNumbers();
+      if (numbers.length === 0) {
+        setDetectNote(
+          sims > 0
+            ? 'Telefon nie zna numeru swojej karty SIM - wielu operatorów go na niej nie zapisuje. Wpisz numer ręcznie.'
+            : 'Nie wykryto aktywnej karty SIM. Wpisz numer ręcznie.'
+        );
+      } else if (numbers.length === 1) {
+        setPhone(numbers[0].number);
+        setDetectNote('Wykryto numer z karty SIM. Sprawdź go i stuknij „Zapisz zmiany”.');
+      } else {
+        setDetected(numbers);
+        setDetectNote('Wykryto kilka numerów (dual SIM). Wybierz ten, z którego dzwonisz.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Nie udało się odczytać numeru z telefonu.');
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,6 +311,28 @@ function ProfileTab({ user, onUpdate }: { user: UserAccount; onUpdate: (u: UserA
           </div>
           <span className="block text-[10px] text-slate-500 leading-snug">Numer, który chronisz. Trafia do zawiadomień jako numer pokrzywdzonego abonenta.</span>
         </label>
+
+        {NativeOverlayBridge.isNative() && (
+          <div className="space-y-2">
+            <button type="button" onClick={detectNumber} disabled={detecting} className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold disabled:opacity-60">
+              {detecting ? 'Odczytuję…' : 'Wykryj numer z telefonu'}
+            </button>
+            {detected && (
+              <div className="flex flex-wrap gap-2">
+                {detected.map(n => (
+                  <button
+                    type="button" key={`${n.slot}-${n.number}`}
+                    onClick={() => { setPhone(n.number); setDetected(null); setDetectNote('Wybrano numer. Stuknij „Zapisz zmiany”.'); }}
+                    className="px-3 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold"
+                  >
+                    SIM {n.slot}: {n.number}{n.label ? ` (${n.label})` : ''}
+                  </button>
+                ))}
+              </div>
+            )}
+            {detectNote && <p className="text-[10px] text-slate-400 leading-snug">{detectNote}</p>}
+          </div>
+        )}
 
         {error && (
           <div role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-200">
@@ -378,6 +431,63 @@ function useOverlayStatus() {
     };
   }, [refresh]);
   return { status, refresh };
+}
+
+/**
+ * Po przyznaniu uprawnienia do telefonu sprawdza, czy operator pozwala na rozmowy konferencyjne (3-way). Bez nich
+ * TelePakt nie zadziała, więc klient dostaje jasną informację i przeprosiny, a serwer zapis do wglądu (admin).
+ * Brak aktywnej karty SIM albo błąd odczytu to NIE jest brak wsparcia - wtedy nic nie ogłaszamy.
+ */
+function CarrierNotice() {
+  const { status } = useOverlayStatus();
+  const [support, setSupport] = useState<ConferenceSupport | null>(null);
+  const granted = !!status?.hasPhoneStatePermission;
+
+  useEffect(() => {
+    if (!granted) return;
+    let alive = true;
+    NativeOverlayBridge.checkConferenceSupport().then(result => {
+      if (!alive || !result || !result.known) return;
+      setSupport(result);
+      const carriers = result.sims.map(s => `SIM${s.slot} ${s.carrier}${s.supported ? '' : ' (bez 3-way)'}`).join('; ');
+      const key = `carrier_report:${result.anySupported}:${carriers}`;
+      try {
+        if (localStorage.getItem('carrier_reported') === key) return;
+      } catch { /* brak pamięci lokalnej: zgłosimy jeszcze raz */ }
+      authService.reportCarrier(result.anySupported, carriers)
+        .then(() => { try { localStorage.setItem('carrier_reported', key); } catch { /* ignoruj */ } })
+        .catch(err => console.warn('Carrier report failed:', err));
+    });
+    return () => { alive = false; };
+  }, [granted]);
+
+  if (!support) return null;
+  const names = support.sims.map(s => s.carrier).filter(Boolean).join(', ') || 'Twój operator';
+  if (!support.anySupported) {
+    return (
+      <div role="alert" className="mb-5 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/40 space-y-2">
+        <div className="flex items-start gap-2.5">
+          <AlertCircle className="w-5 h-5 text-rose-300 shrink-0 mt-0.5" />
+          <div className="space-y-1.5 text-[11px] text-rose-100 leading-snug">
+            <div className="text-xs font-black">Przepraszamy - ta usługa nie zadziała u Twojego operatora</div>
+            <p>
+              {names} nie pozwala na rozmowy konferencyjne (3-way). Bez nich TelePakt nie może dołączyć do Twojej rozmowy,
+              nagrywać jej ani odtwarzać komunikatów rozmówcy.
+            </p>
+            <p>Jeśli za usługę zapłaciłeś, zwrócimy Ci pieniądze. Bardzo przepraszamy za kłopot.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const blocked = support.sims.filter(s => !s.supported);
+  if (blocked.length === 0) return null;
+  return (
+    <div role="status" className="mb-5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-[11px] text-amber-100 leading-snug">
+      Operator karty SIM {blocked.map(s => s.slot).join(', ')} nie pozwala na rozmowy konferencyjne (3-way). TelePakt zadziała
+      tylko przy rozmowach prowadzonych z drugiej karty SIM.
+    </div>
+  );
 }
 
 /** Baner nad całą aplikacją, dopóki brakuje uprawnień potrzebnych do pracy nakładki na ekranie rozmowy. */
@@ -754,6 +864,7 @@ export function AccountApp() {
 
       <main className="flex-1 w-full max-w-md mx-auto px-5 py-6 pb-28">
         <PermissionBanner onOpenSettings={() => setTab('settings')} />
+        <CarrierNotice />
         {tab === 'profile' ? (
           <ProfileTab user={user} onUpdate={setUser} />
         ) : tab === 'recordings' ? (

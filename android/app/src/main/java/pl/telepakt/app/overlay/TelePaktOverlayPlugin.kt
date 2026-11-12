@@ -20,6 +20,11 @@ import com.getcapacitor.annotation.Permission
         Permission(
             strings = [Manifest.permission.READ_PHONE_STATE, Manifest.permission.CALL_PHONE],
             alias = "phone"
+        ),
+        // Odczyt numeru własnej karty SIM (tylko na życzenie, przyciskiem w Profilu).
+        Permission(
+            strings = [Manifest.permission.READ_PHONE_NUMBERS, Manifest.permission.READ_PHONE_STATE],
+            alias = "numbers"
         )
     ]
 )
@@ -100,5 +105,111 @@ class TelePaktOverlayPlugin : Plugin() {
     @com.getcapacitor.annotation.PermissionCallback
     private fun phoneStateCallback(call: PluginCall) {
         checkPhoneStatePermission(call)
+    }
+
+    /**
+     * Numery własnych kart SIM (także dual SIM). Prosi o uprawnienie, jeśli go brak. Zwraca `{ numbers: [{slot, number,
+     * label}], sims: <liczba aktywnych kart> }`. Lista może być pusta mimo kart: wielu operatorów nie zapisuje numeru
+     * na karcie, a system nie ma go skąd wziąć - aplikacja pokazuje wtedy prośbę o wpisanie numeru ręcznie.
+     */
+    /**
+     * Czy operator (każdej aktywnej karty SIM) pozwala na rozmowy konferencyjne - bez nich scalenie 3-way z TelePakt
+     * nie jest możliwe. Czyta konfigurację operatora z telefonu (CarrierConfig: support_conference_call_bool).
+     * To wskazówka, nie gwarancja: ustawienie "true" nie ręczy, że abonament lub sieć nie blokuje scalania, więc
+     * ostatecznie sprawdza je pierwsza próba. `supported=false` jest natomiast pewne: operator wyłączył konferencje.
+     * Wymaga READ_PHONE_STATE (grupa "Telefon" z banera konfiguracji).
+     */
+    @PluginMethod
+    @Suppress("MissingPermission")
+    fun checkConferenceSupport(call: PluginCall) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            call.reject("Brak uprawnienia do stanu telefonu.")
+            return
+        }
+        try {
+            val sm = context.getSystemService(android.content.Context.TELEPHONY_SUBSCRIPTION_SERVICE)
+                as android.telephony.SubscriptionManager
+            val cm = context.getSystemService(android.content.Context.CARRIER_CONFIG_SERVICE)
+                as android.telephony.CarrierConfigManager
+            val subs = sm.activeSubscriptionInfoList.orEmpty()
+            val sims = org.json.JSONArray()
+            var anySupported = false
+            for (sub in subs) {
+                val config = cm.getConfigForSubId(sub.subscriptionId)
+                val supported = config?.getBoolean(android.telephony.CarrierConfigManager.KEY_SUPPORT_CONFERENCE_CALL_BOOL, true) ?: true
+                if (supported) anySupported = true
+                sims.put(org.json.JSONObject()
+                    .put("slot", sub.simSlotIndex + 1)
+                    .put("supported", supported)
+                    .put("carrier", (sub.carrierName ?: sub.displayName ?: "").toString()))
+            }
+            val ret = JSObject()
+            ret.put("sims", sims)
+            // Brak aktywnej karty SIM: nie wiemy nic - nie wolno ogłaszać braku wsparcia.
+            ret.put("anySupported", subs.isEmpty() || anySupported)
+            ret.put("known", subs.isNotEmpty())
+            call.resolve(ret)
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "checkConferenceSupport failed", e)
+            call.reject("Nie udało się sprawdzić operatora: ${e.message}")
+        }
+    }
+
+    @PluginMethod
+    fun getPhoneNumbers(call: PluginCall) {
+        val granted = listOf(Manifest.permission.READ_PHONE_NUMBERS, Manifest.permission.READ_PHONE_STATE).all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!granted) {
+            requestPermissionForAlias("numbers", call, "phoneNumbersCallback")
+            return
+        }
+        readPhoneNumbers(call)
+    }
+
+    @com.getcapacitor.annotation.PermissionCallback
+    private fun phoneNumbersCallback(call: PluginCall) {
+        val granted = listOf(Manifest.permission.READ_PHONE_NUMBERS, Manifest.permission.READ_PHONE_STATE).all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!granted) {
+            call.reject("Brak zgody na odczyt numeru telefonu. Wpisz numer ręcznie albo zezwól w Ustawienia telefonu > Aplikacje > TelePakt > Uprawnienia > Telefon.")
+            return
+        }
+        readPhoneNumbers(call)
+    }
+
+    @Suppress("DEPRECATION", "MissingPermission")
+    private fun readPhoneNumbers(call: PluginCall) {
+        try {
+            val sm = context.getSystemService(android.content.Context.TELEPHONY_SUBSCRIPTION_SERVICE)
+                as android.telephony.SubscriptionManager
+            val tm = context.getSystemService(android.content.Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
+            val subs = sm.activeSubscriptionInfoList.orEmpty()
+            val out = org.json.JSONArray()
+            val seen = HashSet<String>()
+            for (sub in subs) {
+                val number = try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) sm.getPhoneNumber(sub.subscriptionId)
+                    else tm.createForSubscriptionId(sub.subscriptionId).line1Number ?: sub.number
+                } catch (e: Exception) {
+                    android.util.Log.w("TelePakt", "number for sub ${sub.subscriptionId} unavailable", e)
+                    ""
+                }.orEmpty().trim()
+                if (number.isNotEmpty() && seen.add(number)) {
+                    out.put(org.json.JSONObject()
+                        .put("slot", sub.simSlotIndex + 1)
+                        .put("number", number)
+                        .put("label", (sub.carrierName ?: sub.displayName ?: "").toString()))
+                }
+            }
+            val ret = JSObject()
+            ret.put("numbers", out)
+            ret.put("sims", subs.size)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "getPhoneNumbers failed", e)
+            call.reject("Nie udało się odczytać numeru z telefonu: ${e.message}")
+        }
     }
 }

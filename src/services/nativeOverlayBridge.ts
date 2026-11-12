@@ -15,6 +15,22 @@ export interface TelePaktOverlayPluginInterface {
   saveConfig(options: { apiUrl: string; token: string }): Promise<void>;
   checkPhoneStatePermission(): Promise<{ granted: boolean }>;
   requestPhoneStatePermission(): Promise<{ granted: boolean }>;
+  getPhoneNumbers(): Promise<{ numbers: SimNumber[]; sims: number }>;
+  checkConferenceSupport(): Promise<ConferenceSupport>;
+}
+
+/** Czy operator pozwala na rozmowy konferencyjne (3-way). `known=false`: brak aktywnej karty SIM, nic nie wiadomo. */
+export interface ConferenceSupport {
+  anySupported: boolean;
+  known: boolean;
+  sims: { slot: number; supported: boolean; carrier: string }[];
+}
+
+/** Numer własnej karty SIM odczytany z telefonu (slot 1 lub 2 przy dual SIM). */
+export interface SimNumber {
+  slot: number;
+  number: string;
+  label: string;
 }
 
 const TelePaktOverlayNative = registerPlugin<TelePaktOverlayPluginInterface>('TelePaktOverlay');
@@ -79,6 +95,23 @@ export class NativeOverlayBridge {
       console.warn('Failed to request phone state permission:', err);
       return false;
     }
+  }
+
+  /** Sprawdza w telefonie, czy operator pozwala na rozmowy konferencyjne; null, gdy nie da się tego ustalić. */
+  static async checkConferenceSupport(): Promise<ConferenceSupport | null> {
+    if (!this.isNative()) return null;
+    try {
+      return await TelePaktOverlayNative.checkConferenceSupport();
+    } catch (err) {
+      console.warn('Failed to check conference support:', err);
+      return null;
+    }
+  }
+
+  /** Numery własnych kart SIM; pusta lista = operator nie zapisał numeru na karcie. Rzuca błąd z czytelnym powodem. */
+  static async getPhoneNumbers(): Promise<{ numbers: SimNumber[]; sims: number }> {
+    if (!this.isNative()) throw new Error('Odczyt numeru działa tylko w aplikacji na telefonie.');
+    return TelePaktOverlayNative.getPhoneNumbers();
   }
 
   /** Przekazuje do natywnej nakładki adres API i token sesji (przycisk "Nagrywaj"); pusty token po wylogowaniu. */

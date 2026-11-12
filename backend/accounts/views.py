@@ -91,6 +91,27 @@ def logout(request):
     return Response({'status': 'ok'})
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def carrier_report(request):
+    """Aplikacja zgłasza, czy operator telefonu pozwala na rozmowy konferencyjne (3-way): ``{supported, carriers}``.
+
+    ``supported=false`` oznacza, że usługa nie zadziała u tego klienta - zapisujemy to w profilu (widać w adminie),
+    żeby można było go przeprosić i oddać pieniądze. Wynik pochodzi z konfiguracji operatora w telefonie.
+    """
+    supported = request.data.get('supported')
+    if not isinstance(supported, bool):
+        return _error('Pole "supported" musi być true albo false.')
+    profile = ensure_profile(request.user)
+    profile.conference_supported = supported
+    profile.carrier_note = str(request.data.get('carriers') or '')[:120]
+    profile.carrier_checked_at = timezone.now()
+    profile.save(update_fields=['conference_supported', 'carrier_note', 'carrier_checked_at'])
+    if not supported:
+        logger.warning("Operator bez rozmów konferencyjnych: użytkownik %s, operator: %s", request.user.pk, profile.carrier_note)
+    return Response({'status': 'ok'})
+
+
 @api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def me(request):

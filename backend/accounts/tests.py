@@ -71,6 +71,18 @@ class AuthApiTests(TestCase):
         self.assertEqual(client.post('/api/auth/logout/').status_code, 200)
         self.assertEqual(client.get('/api/auth/me/').status_code, 401)
 
+    def test_carrier_report_is_stored_for_the_owner_to_see(self):
+        client = self._auth(self._register().json()['token'])
+        bad = client.post('/api/auth/carrier-report/', {'supported': 'nie'}, format='json')
+        self.assertEqual(bad.status_code, 400)
+        ok = client.post('/api/auth/carrier-report/', {'supported': False, 'carriers': 'Operator X'}, format='json')
+        self.assertEqual(ok.status_code, 200)
+        profile = Profile.objects.get()
+        self.assertIs(profile.conference_supported, False)
+        self.assertEqual(profile.carrier_note, 'Operator X')
+        self.assertIsNotNone(profile.carrier_checked_at)
+        self.assertEqual(APIClient().post('/api/auth/carrier-report/', {'supported': True}, format='json').status_code, 401)
+
     def test_patch_profile_normalizes_phone_and_ignores_plan(self):
         client = self._auth(self._register().json()['token'])
         resp = client.patch('/api/auth/me/', {'name': 'Jan K.', 'phoneProtected': '500 123 456',
