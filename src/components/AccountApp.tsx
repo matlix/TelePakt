@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Cloud, Copy, Info, MessageSquare, Mic, Play, RefreshCw, ShieldAlert, PhoneForwarded, Eye, EyeOff, LogOut, Mail, Lock, Phone, Trash2, User, CheckCircle2, AlertCircle, ChevronRight, Settings } from 'lucide-react';
 import { UserAccount } from '../types';
 import { authService } from '../services/authService';
-import { ConferenceSupport, NativeOverlayBridge, OverlayStatus, SimNumber } from '../services/nativeOverlayBridge';
+import { ConferenceSupport, NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
 import { API_URL, FEATURES } from '../config';
 import { recordingsService, RecordingItem } from '../services/recordingsService';
 import { MessagesTab } from './MessagesTab';
@@ -209,37 +209,29 @@ function ProfileTab({ user, onUpdate }: { user: UserAccount; onUpdate: (u: UserA
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [detecting, setDetecting] = useState(false);
-  const [detected, setDetected] = useState<SimNumber[] | null>(null);
-  const [detectNote, setDetectNote] = useState<string | null>(null);
+  const [autoFilled, setAutoFilled] = useState(false);
 
-  // Numer z karty SIM: tylko podpowiedź - użytkownik zatwierdza go przyciskiem "Zapisz zmiany".
-  const detectNumber = async () => {
-    setError(null);
-    setDetectNote(null);
-    setDetected(null);
-    setDetecting(true);
-    try {
-      const { numbers, sims } = await NativeOverlayBridge.getPhoneNumbers();
-      if (numbers.length === 0) {
-        setDetectNote(
-          sims > 0
-            ? 'Telefon nie zna numeru swojej karty SIM - wielu operatorów go na niej nie zapisuje. Wpisz numer ręcznie.'
-            : 'Nie wykryto aktywnej karty SIM. Wpisz numer ręcznie.'
-        );
-      } else if (numbers.length === 1) {
-        setPhone(numbers[0].number);
-        setDetectNote('Wykryto numer z karty SIM. Sprawdź go i stuknij „Zapisz zmiany”.');
-      } else {
-        setDetected(numbers);
-        setDetectNote('Wykryto kilka numerów (dual SIM). Wybierz ten, z którego dzwonisz.');
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Nie udało się odczytać numeru z telefonu.');
-    } finally {
-      setDetecting(false);
-    }
-  };
+  // Puste pole numeru w aplikacji na telefonie: wstawiamy numer karty SIM i zapisujemy go (jeśli telefon go zna).
+  useEffect(() => {
+    if (!NativeOverlayBridge.isNative() || phone.trim()) return;
+    let alive = true;
+    NativeOverlayBridge.getPhoneNumbers()
+      .then(async ({ numbers }) => {
+        if (!alive || numbers.length === 0) return;
+        const number = numbers[0].number;
+        setPhone(number);
+        setAutoFilled(true);
+        try {
+          const updated = await authService.updateProfile({ name: user.name, phoneProtected: number });
+          if (alive) onUpdate(updated);
+        } catch (err) {
+          console.warn('Auto-save of SIM number failed:', err);
+        }
+      })
+      .catch(err => console.warn('SIM number read failed:', err));
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,27 +304,7 @@ function ProfileTab({ user, onUpdate }: { user: UserAccount; onUpdate: (u: UserA
           <span className="block text-[10px] text-slate-500 leading-snug">Numer, który chronisz. Trafia do zawiadomień jako numer pokrzywdzonego abonenta.</span>
         </label>
 
-        {NativeOverlayBridge.isNative() && (
-          <div className="space-y-2">
-            <button type="button" onClick={detectNumber} disabled={detecting} className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold disabled:opacity-60">
-              {detecting ? 'Odczytuję…' : 'Wykryj numer z telefonu'}
-            </button>
-            {detected && (
-              <div className="flex flex-wrap gap-2">
-                {detected.map(n => (
-                  <button
-                    type="button" key={`${n.slot}-${n.number}`}
-                    onClick={() => { setPhone(n.number); setDetected(null); setDetectNote('Wybrano numer. Stuknij „Zapisz zmiany”.'); }}
-                    className="px-3 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold"
-                  >
-                    SIM {n.slot}: {n.number}{n.label ? ` (${n.label})` : ''}
-                  </button>
-                ))}
-              </div>
-            )}
-            {detectNote && <p className="text-[10px] text-slate-400 leading-snug">{detectNote}</p>}
-          </div>
-        )}
+        {autoFilled && <p className="text-[10px] text-emerald-300 leading-snug">Numer wstawiony automatycznie z karty SIM telefonu.</p>}
 
         {error && (
           <div role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-[11px] text-rose-200">
@@ -491,7 +463,14 @@ function CarrierNotice() {
     );
   }
   const blocked = support.sims.filter(s => !s.supported);
-  if (blocked.length === 0) return null;
+  if (blocked.length === 0) {
+    return (
+      <div role="status" className="mb-5 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-100 leading-snug">
+        Sprawdzono: telefon zgłasza, że {names} pozwala na rozmowy konferencyjne (3-way). To wskazówka z ustawień operatora -
+        pewność daje dopiero próbna rozmowa.
+      </div>
+    );
+  }
   return (
     <div role="status" className="mb-5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-[11px] text-amber-100 leading-snug">
       Operator karty SIM {blocked.map(s => s.slot).join(', ')} nie pozwala na rozmowy konferencyjne (3-way). TelePakt zadziała
@@ -505,14 +484,19 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { status, refresh } = useOverlayStatus();
   const [busy, setBusy] = useState(false);
   if (!NativeOverlayBridge.isNative() || !status) return null;
-  if (status.hasOverlayPermission && status.hasPhoneStatePermission) return null;
+  if (status.hasOverlayPermission && status.hasPhoneStatePermission && status.hasMergeService) return null;
 
   const enableAll = async () => {
     setBusy(true);
     try {
       if (!status.hasPhoneStatePermission) await NativeOverlayBridge.requestPhonePermission();
       const now = await NativeOverlayBridge.checkStatus();
-      if (!now.hasOverlayPermission) await NativeOverlayBridge.requestOverlayPermission();
+      if (!now.hasOverlayPermission) {
+        await NativeOverlayBridge.requestOverlayPermission();
+      } else if (!now.hasMergeService) {
+        // Po pozostałych uprawnieniach: ułatwienia dostępu (automatyczne scalanie), jedno ustawienie na stuknięcie.
+        await NativeOverlayBridge.openAccessibilitySettings();
+      }
     } finally {
       setBusy(false);
       refresh();
@@ -540,7 +524,16 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
       <ul className="text-[11px] space-y-1.5 pl-1">
         {item(status.hasPhoneStatePermission, 'Dostęp do połączeń (wykrywanie rozmów i wybieranie numeru TelePakt)')}
         {item(status.hasOverlayPermission, 'Wyświetlanie nad innymi aplikacjami')}
+        {item(!!status.hasMergeService, 'Automatyczne scalanie rozmowy (opcjonalne, Ułatwienia dostępu)')}
       </ul>
+      {!status.hasMergeService && (
+        <p className="text-[10px] text-amber-100/80 leading-snug p-2.5 rounded-xl bg-amber-500/10">
+          <strong>Automatyczne scalanie:</strong> po stuknięciu „Włącz teraz” otworzą się Ułatwienia dostępu. Wybierz na liście
+          „TelePakt - automatyczne scalanie rozmowy” (może być w „Zainstalowane aplikacje”), włącz przełącznik u góry i potwierdź
+          „Zezwól”. Jeśli opcja jest wyszarzona: Ustawienia telefonu → Aplikacje → TelePakt → menu ⋮ → „Zezwól na ustawienia
+          z ograniczeniami”. Na końcu wróć do TelePakt.
+        </p>
+      )}
       <div className="flex gap-2">
         <button onClick={enableAll} disabled={busy} className="flex-1 py-2.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-black disabled:opacity-60">
           {busy ? 'Chwileczkę…' : 'Włącz teraz'}
