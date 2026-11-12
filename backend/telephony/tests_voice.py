@@ -169,6 +169,15 @@ class SpeakTests(TestCase):
         self.assertEqual(second[1]['data']['AnnounceUrl'], 'https://api/announce/t/')
 
 
+    def test_telnyx_slow_announce_response_is_not_reported_as_failure(self):
+        import requests
+        row, _ = TelephonyProvider.objects.update_or_create(kind='telnyx', defaults={
+            'account_sid': 'acc', 'secret_encrypted': providers.encrypt_secret('KEY'), 'is_enabled': True})
+        found = mock.MagicMock(status_code=200)
+        found.json.return_value = {'conferences': [{'sid': 'CFtel', 'status': 'init'}]}
+        with mock.patch('telephony.providers.requests.request', side_effect=[found, requests.ReadTimeout('slow')]):
+            providers.TelnyxProvider(row).announce('CAx', 'telepakt_bridge_CAx', 'https://api/announce/t/')  # bez wyjątku
+
     def test_telnyx_missing_conference_error_lists_what_telnyx_sees(self):
         row, _ = TelephonyProvider.objects.update_or_create(kind='telnyx', defaults={
             'account_sid': 'acc', 'secret_encrypted': providers.encrypt_secret('KEY'), 'is_enabled': True})

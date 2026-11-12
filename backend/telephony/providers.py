@@ -34,6 +34,8 @@ logger = logging.getLogger(__name__)
 #: Po tylu kolejnych błędach dostawca dostaje status "failing".
 FAILURE_THRESHOLD = 2
 HTTP_TIMEOUT = 10
+#: Dłuższy limit dla odtwarzania komunikatu w rozmowie (Telnyx odpowiada na to wolno).
+ANNOUNCE_TIMEOUT = 15
 
 _check_lock = threading.Lock()
 _last_check_ts = 0.0
@@ -152,13 +154,13 @@ class TelnyxProvider(BaseProvider):
     kind = 'telnyx'
     BASE = 'https://api.telnyx.com/v2/texml/Accounts'
 
-    def _request(self, method, path, **kw):
+    def _request(self, method, path, timeout=HTTP_TIMEOUT, **kw):
         key = decrypt_secret(self.row.secret_encrypted)
         if not (self.row.account_sid and key):
             raise ProviderError("Brak danych dostępowych Telnyx")
         resp = requests.request(
             method, f"{self.BASE}/{self.row.account_sid}/{path}",
-            headers={'Authorization': f'Bearer {key}'}, timeout=HTTP_TIMEOUT, **kw,
+            headers={'Authorization': f'Bearer {key}'}, timeout=timeout, **kw,
         )
         return resp
 
@@ -282,8 +284,15 @@ class TelnyxProvider(BaseProvider):
         conferences = [c for c in (found.json().get('conferences') or []) if c.get('status') != 'completed']
         if not conferences:
             raise ProviderError(self._no_conference_message(conference_name))
-        resp = self._request('POST', f"Conferences/{conferences[0]['sid']}/Participants/{call_sid}",
-                             data={'AnnounceUrl': announce_url, 'AnnounceMethod': 'POST'})
+        try:
+            resp = self._request('POST', f"Conferences/{conferences[0]['sid']}/Participants/{call_sid}", timeout=ANNOUNCE_TIMEOUT,
+                                 data={'AnnounceUrl': announce_url, 'AnnounceMethod': 'POST'})
+        except requests.ReadTimeout:
+            # Telnyx potrafi odpowiadać na to żądanie wolno, choć już pobiera komunikat (widać to w logu: Telnyx
+            # odpytuje adres announce/<token>/ w tej samej chwili). Zgłaszanie błędu byłoby wtedy nieprawdą.
+            logger.warning("Telnyx: brak odpowiedzi na AnnounceUrl w %s s (rozmowa %s) - komunikat zapewne jest odtwarzany",
+                           ANNOUNCE_TIMEOUT, call_sid)
+            return
         if resp.status_code not in (200, 201):
             raise ProviderError(f"Telnyx HTTP {resp.status_code}: {self._detail(resp)}")
 

@@ -643,7 +643,7 @@ class CallOverlayService : Service() {
             var ok = false
             var reason = "Nie udało się odtworzyć komunikatu"
             try {
-                val (code, body) = postEmpty("/api/telephony/messages/${message.id}/speak/", 20000)
+                val (code, body) = postEmpty("/api/telephony/messages/${message.id}/speak/", 35000)
                 if (code in 200..299) {
                     ok = true
                 } else {
