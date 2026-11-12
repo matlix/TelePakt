@@ -179,6 +179,8 @@ class VoiceMessage(models.Model):
     public_token = models.CharField(max_length=40, unique=True, editable=False)
     position = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True, verbose_name="Pokazuj w nakładce")
+    # Gdy jest własne nagranie: czy odtwarzać je (True) czy głos AI z treści (False). Nagranie zostaje w obu przypadkach.
+    use_recording = models.BooleanField(default=True, verbose_name="Używaj własnego nagrania")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -189,6 +191,11 @@ class VoiceMessage(models.Model):
     @property
     def has_audio(self) -> bool:
         return bool(self.audio)
+
+    @property
+    def plays_recording(self) -> bool:
+        """Czy rozmówca usłyszy własne nagranie (jest i użytkownik je wybrał); w przeciwnym razie czyta głos AI."""
+        return bool(self.audio) and self.use_recording
 
     def __str__(self):
         return f"{self.title} ({self.owner})"

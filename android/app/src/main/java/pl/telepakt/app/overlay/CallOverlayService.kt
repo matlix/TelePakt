@@ -350,12 +350,19 @@ class CallOverlayService : Service() {
                         if (canCall) Intent.ACTION_CALL else Intent.ACTION_DIAL,
                         android.net.Uri.parse("tel:" + android.net.Uri.encode(number))
                     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    // Usługa dostępności (jeśli włączona w Ustawieniach) sama naciśnie „Scal”, gdy TelePakt odbierze.
+                    val autoMerge = MergeAccessibilityService.isEnabled(this)
+                    if (autoMerge) MergeAccessibilityService.arm()
                     startActivity(dial)
-                    button.text = "● GDY TELEPAKT ODBIERZE: STUKNIJ „SCAL”"
+                    button.text = if (autoMerge) "● ŁĄCZĘ I SCALAM AUTOMATYCZNIE…" else "● GDY TELEPAKT ODBIERZE: STUKNIJ „SCAL”"
                     Toast.makeText(
                         this,
-                        if (canCall) "Łączę z TelePakt. Gdy odbierze, stuknij „Scal” w aplikacji Telefon - tego kroku Android nie pozwala wykonać za Ciebie."
-                        else "Wciśnij zadzwoń. Gdy TelePakt odbierze, stuknij „Scal” w aplikacji Telefon.",
+                        when {
+                            autoMerge && canCall -> "Łączę z TelePakt. Gdy odbierze, scalę rozmowy sam."
+                            autoMerge -> "Wciśnij zadzwoń. Gdy TelePakt odbierze, scalę rozmowy sam."
+                            canCall -> "Łączę z TelePakt. Gdy odbierze, stuknij „Scal” w aplikacji Telefon. (Automatyczne scalanie włączysz w Ustawieniach aplikacji.)"
+                            else -> "Wciśnij zadzwoń. Gdy TelePakt odbierze, stuknij „Scal” w aplikacji Telefon."
+                        },
                         Toast.LENGTH_LONG
                     ).show()
                 } catch (e: Exception) {
@@ -392,7 +399,7 @@ class CallOverlayService : Service() {
                     for (i in 0 until arr.length()) {
                         val m = arr.getJSONObject(i)
                         if (m.optBoolean("is_active", true)) {
-                            list.add(OverlayMessage(m.getInt("id"), m.getString("title"), m.optBoolean("has_audio", false), m.optString("text", ""), m.optDouble("audio_seconds", 0.0)))
+                            list.add(OverlayMessage(m.getInt("id"), m.getString("title"), m.optBoolean("plays_audio", false), m.optString("text", ""), m.optDouble("audio_seconds", 0.0)))
                         }
                     }
                     items = list.take(4)

@@ -99,6 +99,26 @@ class OwnRecordingTests(TestCase):
         removed = self.api.delete(f'/api/telephony/messages/{self.pk}/audio/')
         self.assertEqual(removed.json()['source'], 'tts')
 
+    def test_user_can_switch_between_recording_and_ai_voice_keeping_the_recording(self):
+        self._upload(make_wav(2.0))
+        off = self.api.patch(f'/api/telephony/messages/{self.pk}/', {'use_recording': False}, format='json').json()
+        self.assertEqual((off['source'], off['has_audio'], off['plays_audio']), ('tts', True, False))
+        twiml = APIClient().post(f"/api/telephony/announce/{VoiceMessage.objects.get(pk=self.pk).public_token}/").content.decode()
+        self.assertIn('<Say', twiml)
+        self.assertNotIn('<Play', twiml)
+        on = self.api.patch(f'/api/telephony/messages/{self.pk}/', {'use_recording': True}, format='json').json()
+        self.assertEqual((on['source'], on['plays_audio']), ('recorded', True))
+        # nowe nagranie wraca do używania nagrania
+        self.api.patch(f'/api/telephony/messages/{self.pk}/', {'use_recording': False}, format='json')
+        self.assertEqual(self._upload(make_wav(1.0)).json()['source'], 'recorded')
+
+    def test_default_messages_are_short_and_have_no_greeting(self):
+        defaults = authed_client(email='d@telepakt.test', phone=PHONE).get('/api/telephony/messages/').json()['messages']
+        for m in defaults:
+            self.assertNotIn('Dzień dobry', m['text'])
+            self.assertNotIn('Do widzenia', m['text'])
+            self.assertLess(len(m['text']), 160)
+
     def test_invalid_audio_is_rejected_with_a_reason(self):
         cases = [(b'not a wav at all', 'WAV'), (make_wav(0.1), 'krótkie'), (make_wav(1, channels=2), 'mono'),
                  (make_wav(65, rate=8000), 'za długie'), (make_wav(1, rate=4000), 'częstotliwość')]

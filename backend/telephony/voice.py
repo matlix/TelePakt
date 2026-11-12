@@ -35,18 +35,14 @@ MAX_TEXT = 1000
 #: Komunikaty tworzone przy pierwszym wejściu (bez zapowiedzi nagrywania i bez gróźb - zasady produktu).
 DEFAULT_MESSAGES = [
     ('Sprzeciw wobec marketingu', 'objection',
-     'Dzień dobry. Nie wyraziłem zgody na kontakt marketingowy. Na podstawie artykułu 398 Prawa komunikacji '
-     'elektronicznej oraz artykułu 21 RODO wnoszę sprzeciw i żądam usunięcia mojego numeru z Państwa baz. '
-     'Proszę o informację, skąd mają Państwo mój numer. Do widzenia.'),
+     'Nie wyrażam zgody na kontakt marketingowy. Na podstawie artykułu 398 Prawa komunikacji elektronicznej '
+     'żądam usunięcia mojego numeru z waszych baz.'),
     ('Krótka odmowa', 'short_refusal',
-     'Nie jestem zainteresowany i nie zgadzam się na kontakt marketingowy. Proszę trwale usunąć mój numer '
-     'z listy kontaktowej. Do widzenia.'),
+     'Nie jestem zainteresowany. Proszę usunąć mój numer z listy kontaktowej.'),
     ('Nie podaję danych przez telefon', 'identity',
-     'Nie udzielam żadnych informacji przez telefon. Jeśli reprezentują Państwo instytucję, proszę o kontakt '
-     'pisemny na adres, który mają Państwo w dokumentach. Do widzenia.'),
+     'Nie udzielam informacji przez telefon. Proszę o kontakt pisemny.'),
     ('Oferta dla firmy', 'b2b',
-     'Nie wyrażam zgody na przesyłanie ofert handlowych na ten numer, również w związku z prowadzoną '
-     'działalnością. Proszę o usunięcie numeru z bazy. Do widzenia.'),
+     'Nie wyrażam zgody na oferty handlowe na ten numer, także firmowe. Proszę usunąć numer z bazy.'),
 ]
 
 #: Własne nagranie: WAV mono 16-bit PCM, do 60 s / 2 MB (tyle bezpiecznie mieści się w bazie).

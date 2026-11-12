@@ -3,5 +3,7 @@
     <string name="app_name">TelePakt</string>
     <string name="title_activity_main">TelePakt</string>
     <string name="package_name">pl.telepakt.app</string>
+    <string name="merge_service_label">TelePakt - automatyczne scalanie rozmowy</string>
+    <string name="merge_service_description">Naciska „Scal” w aplikacji Telefon, gdy stukniesz w TelePakt „Połącz z TelePakt (3-way)”. Działa tylko przez 90 sekund po tym stuknięciu, patrzy wyłącznie na ekran aplikacji Telefon i niczego nie zapisuje ani nie wysyła.</string>
     <string name="custom_url_scheme">pl.telepakt.app</string>
 </resources>

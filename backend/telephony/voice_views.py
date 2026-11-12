@@ -42,8 +42,10 @@ def _serialize(m: VoiceMessage) -> dict:
         'situation': m.situation,
         'situation_label': dict(voice.SITUATIONS).get(m.situation, m.situation),
         'text': m.text,
-        'source': 'recorded' if m.has_audio else 'tts',
+        'source': 'recorded' if m.plays_recording else 'tts',
         'has_audio': m.has_audio,
+        'use_recording': m.use_recording,
+        'plays_audio': m.plays_recording,
         'audio_seconds': m.audio_seconds,
         'is_active': m.is_active,
         'position': m.position,
@@ -64,7 +66,7 @@ def _seed_defaults(user) -> None:
 def message_twiml(request, message, hangup=False) -> VoiceResponse:
     """TwiML odtwarzający komunikat: własne nagranie (``<Play>``) albo głos Polly z ustawień konta (``<Say>``)."""
     response = VoiceResponse()
-    if message.has_audio:
+    if message.plays_recording:
         response.play(request.build_absolute_uri(reverse('announce_audio', args=[message.public_token])))
     else:
         profile = ensure_profile(message.owner)
@@ -165,6 +167,8 @@ def message_detail(request, pk):
         message.situation = str(data['situation'])
     if 'is_active' in data:
         message.is_active = bool(data['is_active'])
+    if 'use_recording' in data:
+        message.use_recording = bool(data['use_recording'])
     if 'position' in data:
         try:
             message.position = max(0, int(data['position']))
@@ -200,7 +204,8 @@ def message_audio(request, pk):
     except ValueError as exc:
         return _error(str(exc))
     message.audio, message.audio_seconds = data, info['seconds']
-    message.save(update_fields=['audio', 'audio_seconds'])
+    message.use_recording = True  # świeżo nagrane - domyślnie to je odtwarzamy (można przełączyć na głos AI)
+    message.save(update_fields=['audio', 'audio_seconds', 'use_recording'])
     return Response(_serialize(message))
 
 

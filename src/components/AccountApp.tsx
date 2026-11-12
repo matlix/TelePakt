@@ -417,6 +417,16 @@ const PHONE_HELP: PermissionHelp = {
   ],
 };
 
+const MERGE_HELP: PermissionHelp = {
+  why: 'Android nie pozwala aplikacjom scalać rozmów, więc zwykle trzeba stuknąć „Scal” samemu. Ta opcja robi to za Ciebie. Działa wyłącznie przez 90 sekund po stuknięciu „Połącz z TelePakt (3-way)”, patrzy tylko na ekran aplikacji Telefon, szuka przycisku „Scal” i go naciska. Niczego nie czyta poza tym, nie zapisuje ani nie wysyła. Jest opcjonalna - bez niej wystarczy stuknąć „Scal” ręcznie.',
+  steps: [
+    'Dotknij „Włącz” - otworzą się Ułatwienia dostępu w Androidzie.',
+    'Wybierz „TelePakt - automatyczne scalanie rozmowy” (czasem w sekcji „Zainstalowane aplikacje”) i włącz je.',
+    'Jeśli Android pisze, że ustawienie jest ograniczone: Ustawienia telefonu > Aplikacje > TelePakt > menu ⋮ > „Zezwól na ustawienia z ograniczeniami”, a potem włącz usługę ponownie.',
+    'Wróć do TelePakt - przy opcji pojawi się „Włączone”.',
+  ],
+};
+
 /** Status uprawnień natywnej nakładki; odświeża się po powrocie z ustawień systemowych. */
 function useOverlayStatus() {
   const [status, setStatus] = useState<OverlayStatus | null>(null);
@@ -551,7 +561,11 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
   const [deleting, setDeleting] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
 
-  const refresh = () => NativeOverlayBridge.checkStatus().then(setStatus);
+  const [dialerLabels, setDialerLabels] = useState('');
+  const refresh = () => {
+    NativeOverlayBridge.checkStatus().then(setStatus);
+    NativeOverlayBridge.getDialerLabels().then(setDialerLabels);
+  };
 
   useEffect(() => {
     refresh();
@@ -597,6 +611,18 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
               onAction={() => NativeOverlayBridge.requestPhonePermission().then(refresh)}
               help={PHONE_HELP}
             />
+            <StatusRow
+              label="Automatyczne scalanie rozmowy"
+              desc="Opcjonalne: TelePakt sam naciśnie „Scal”, gdy połączysz się w trybie 3-way."
+              granted={!!status?.hasMergeService}
+              onAction={() => NativeOverlayBridge.openAccessibilitySettings()}
+              help={MERGE_HELP}
+            />
+            {dialerLabels && (
+              <p className="px-1 text-[10px] text-slate-500 leading-snug break-words">
+                Diagnostyka: w aplikacji Telefon widziałem przyciski: {dialerLabels}
+              </p>
+            )}
           </>
         ) : (
           <p className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 leading-snug">

@@ -87,6 +87,33 @@ class TelePaktOverlayPlugin : Plugin() {
         call.resolve(ret)
     }
 
+    /** Czy włączono usługę automatycznego scalania rozmowy (Ustawienia > Ułatwienia dostępu). */
+    @PluginMethod
+    fun checkMergeService(call: PluginCall) {
+        val ret = JSObject()
+        ret.put("enabled", MergeAccessibilityService.isEnabled(context))
+        call.resolve(ret)
+    }
+
+    /** Etykiety przycisków, które usługa scalania widziała ostatnio w aplikacji Telefon (diagnostyka). */
+    @PluginMethod
+    fun getDialerLabels(call: PluginCall) {
+        val ret = JSObject()
+        ret.put("labels", context.getSharedPreferences("telepakt", android.content.Context.MODE_PRIVATE).getString("dialer_labels", "") ?: "")
+        call.resolve(ret)
+    }
+
+    @PluginMethod
+    fun openAccessibilitySettings(call: PluginCall) {
+        try {
+            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            call.resolve()
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "openAccessibilitySettings failed", e)
+            call.reject("Nie udało się otworzyć ustawień ułatwień dostępu: ${e.message}")
+        }
+    }
+
     @PluginMethod
     fun checkPhoneStatePermission(call: PluginCall) {
         val granted = listOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.CALL_PHONE).all {

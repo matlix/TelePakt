@@ -167,14 +167,23 @@ function MessageCard({ message, settings, previewVoice, previewRate, onChanged, 
 
   return (
     <li className={`rounded-2xl border p-3.5 space-y-3 ${message.is_active ? 'bg-slate-900 border-slate-800' : 'bg-slate-950 border-slate-800/60 opacity-80'}`}>
-      <input className={field} value={title} onChange={e => setTitle(e.target.value)} maxLength={80} aria-label="Tytuł komunikatu" />
-      <select className={field} value={situation} onChange={e => setSituation(e.target.value)} aria-label="Sytuacja">
-        {settings.situations.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-      </select>
-      <textarea
-        className={`${field} min-h-[88px] resize-y`} value={text} onChange={e => setText(e.target.value)} maxLength={1000}
-        aria-label="Treść komunikatu" placeholder="Treść czytana głosem syntezatora"
-      />
+      <label className="block space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nazwa na suwaku</span>
+        <input className={field} value={title} onChange={e => setTitle(e.target.value)} maxLength={80} aria-label="Nazwa na suwaku" />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Rodzaj komunikatu</span>
+        <select className={field} value={situation} onChange={e => setSituation(e.target.value)} aria-label="Rodzaj komunikatu">
+          {settings.situations.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+        </select>
+      </label>
+      <label className="block space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Treść komunikatu</span>
+        <textarea
+          className={`${field} min-h-[72px] resize-y`} value={text} onChange={e => setText(e.target.value)} maxLength={1000}
+          aria-label="Treść komunikatu" placeholder="Krótko, np. „Nie wyrażam zgody na kontakt marketingowy.”"
+        />
+      </label>
       <button onClick={preview} disabled={busy || recording || !text.trim()} className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold disabled:opacity-50">
         <Volume2 className="w-3.5 h-3.5" /> {busy ? 'Generuję…' : 'Odtwórz głosem AI'}
       </button>
@@ -185,10 +194,26 @@ function MessageCard({ message, settings, previewVoice, previewRate, onChanged, 
       )}
 
       <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 space-y-2">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="font-bold text-white">{message.has_audio ? 'Własne nagranie' : 'Głos syntezatora'}</span>
-          {message.has_audio && <span className="text-slate-400">{message.audio_seconds.toFixed(1)} s</span>}
-        </div>
+        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Co usłyszy rozmówca</div>
+        {message.has_audio ? (
+          <div role="radiogroup" aria-label="Co usłyszy rozmówca" className="grid grid-cols-2 gap-2">
+            {([
+              [true, `Moje nagranie (${message.audio_seconds.toFixed(1)} s)`],
+              [false, 'Głos AI z treści'],
+            ] as [boolean, string][]).map(([useRecording, label]) => (
+              <button
+                key={String(useRecording)} type="button" role="radio" aria-checked={message.use_recording === useRecording}
+                disabled={busy || recording}
+                onClick={() => message.use_recording !== useRecording && run(async () => onChanged(await voiceService.update(message.id, { use_recording: useRecording })))}
+                className={`py-2 px-2 rounded-xl border text-[11px] font-bold disabled:opacity-50 ${message.use_recording === useRecording ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-100' : 'border-slate-700 text-slate-300'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-slate-300 leading-snug">Głos AI czyta treść powyżej. Możesz nagrać własny głos - wtedy wybierzesz, którego użyć.</p>
+        )}
         {recording ? (
           <button onClick={stopRecording} className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-black">
             <Square className="w-3.5 h-3.5" /> Zatrzymaj ({seconds} s / {MAX_RECORD_SECONDS} s)
@@ -203,14 +228,14 @@ function MessageCard({ message, settings, previewVoice, previewRate, onChanged, 
                 <Play className="w-3.5 h-3.5" /> Odsłuchaj
               </button>
             ) : (
-              <span className="text-[10px] text-slate-500 leading-snug self-center">Bez nagrania komunikat czyta syntezator.</span>
+              <span className="text-[10px] text-slate-500 leading-snug self-center">Nagranie zachowa się obok głosu AI.</span>
             )}
           </div>
         )}
         {audioUrl && <audio controls autoPlay src={audioUrl} className="w-full" />}
         {message.has_audio && !recording && (
           <button onClick={dropRecording} disabled={busy} className="w-full py-1.5 text-[10px] text-slate-400 underline disabled:opacity-50">
-            Usuń nagranie i wróć do głosu syntezatora
+            Usuń moje nagranie
           </button>
         )}
       </div>

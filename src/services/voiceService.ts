@@ -21,6 +21,8 @@ export interface VoiceMessage {
   text: string;
   source: 'tts' | 'recorded';
   has_audio: boolean;
+  use_recording: boolean;
+  plays_audio: boolean;
   audio_seconds: number;
   is_active: boolean;
   position: number;
@@ -73,7 +75,7 @@ export const voiceService = {
     return res.json();
   },
 
-  async update(id: number, changes: Partial<Pick<VoiceMessage, 'title' | 'text' | 'situation' | 'is_active'>>): Promise<VoiceMessage> {
+  async update(id: number, changes: Partial<Pick<VoiceMessage, 'title' | 'text' | 'situation' | 'is_active' | 'use_recording'>>): Promise<VoiceMessage> {
     const res = await call(`/messages/${id}/`, { method: 'PATCH', body: JSON.stringify(changes) });
     if (!res.ok) throw await failure(res, 'Nie udało się zapisać komunikatu');
     return res.json();
