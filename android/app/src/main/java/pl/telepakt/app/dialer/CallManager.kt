@@ -180,11 +180,32 @@ object CallManager {
                 if (dialing || pending != null) {
                     dialing = false
                     pending = null; active = false
-                    setStatus("TelePakt nie odebrał lub rozłączył rozmowę. Spróbuj ponownie.", true)
+                    val why = describeDisconnect(leg)
+                    Log.w(TAG, "rozmowa z TelePakt zakończona: $why")
+                    setStatus("TelePakt nie odebrał lub rozłączył rozmowę. Powód z telefonu: $why", true)
                 }
             }
             else -> {}
         }
+    }
+
+    /** Powód zakończenia rozmowy podany przez system (kod + opis operatora), do pokazania wprost użytkownikowi. */
+    private fun describeDisconnect(call: Call): String {
+        val cause = call.details.disconnectCause ?: return "brak informacji"
+        val kind = when (cause.code) {
+            android.telecom.DisconnectCause.LOCAL -> "zakończona przez telefon"
+            android.telecom.DisconnectCause.REMOTE -> "rozłączona przez TelePakt/sieć"
+            android.telecom.DisconnectCause.REJECTED -> "odrzucona"
+            android.telecom.DisconnectCause.BUSY -> "zajęte"
+            android.telecom.DisconnectCause.MISSED -> "bez odpowiedzi"
+            android.telecom.DisconnectCause.CANCELED -> "anulowana"
+            android.telecom.DisconnectCause.RESTRICTED -> "zablokowana przez operatora (ograniczenie połączeń)"
+            android.telecom.DisconnectCause.ERROR -> "błąd sieci/operatora"
+            else -> "kod ${cause.code}"
+        }
+        val extra = listOfNotNull(cause.label?.toString()?.takeIf { it.isNotBlank() },
+            cause.description?.toString()?.takeIf { it.isNotBlank() }, cause.reason?.takeIf { it.isNotBlank() })
+        return if (extra.isEmpty()) kind else "$kind (${extra.joinToString("; ")})"
     }
 
     private fun dial(ctx: Context) {
