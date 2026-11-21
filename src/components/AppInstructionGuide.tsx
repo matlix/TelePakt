@@ -31,7 +31,7 @@ const STEPS: StepData[] = [
     subtitle: 'Dzwoni natrętne call center lub bot (fotowoltaika, finanse, garnki)',
     description: 'Odbierasz telefon w normalny sposób. Nie musisz się rozłączać ani denerwować. Gdy tylko rozmówca zaczyna czytać ofertę handlową, stukasz komunikat w aplikacji TelePakt.',
     technicalDetails: [
-      'Android: pełna obsługa. iPhone: połączenie 3-way scalasz ręcznie',
+      'Telefon z Androidem (10 lub nowszy)',
       'Operator musi pozwalać na rozmowy konferencyjne - aplikacja sprawdza to w Twoim telefonie',
       'Nie wymaga dodawania numeru do żadnej listy'
     ],
@@ -53,7 +53,7 @@ const STEPS: StepData[] = [
     description: 'Gdy TelePakt jest Twoją aplikacją Telefon, ekran rozmowy ma przyciski komunikatów. Stukasz ten, który chcesz odtworzyć - aplikacja sama dzwoni do TelePakt, scala rozmowy i odtwarza komunikat. Zajmuje to kilka sekund.',
     technicalDetails: [
       'Android: TelePakt jako domyślna aplikacja Telefon (zalecane) albo nakładka na ekranie rozmowy',
-      'iPhone: scalasz rozmowę ręcznie („Dodaj połączenie”, „Scal”), a komunikat wybierasz w aplikacji TelePakt',
+      'Można też zostać przy swojej aplikacji Telefon: wtedy TelePakt pokazuje nakładkę na ekranie rozmowy',
       'Komunikat czyta głos AI albo odtwarza Twoje własne nagranie'
     ],
     screenState: {

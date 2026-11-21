@@ -32,7 +32,7 @@ Teleoakt.pl rozwiązuje problem setek tysięcy niechcianych telefonów generowan
 - **putomatyczny generator pozwów i skarg do UKE / UODO:** Generuje gotowe do podpisu pisma oDF ze znacznikami czasu i transkrypcją.
 - **Nagrania na Życzenie i orywatność (Zero Retention):** Możliwość pobierania nagrań bezpośrednio na telefon lub chmurę użytkownika (Google Drive, Dropbox, OneDrive, WebDpV) z opcją natychmiastowego usunięcia z serwerów.
 - **Moderacja Opinii Społeczności:** Baza nieuczciwych numerów z moderacją administratorską.
-- **Aplikacja Android jako Telefon (tryb zalecany):** TelePakt może być domyślną aplikacją Telefon (ekran rozmowy, klawiatura, wstrzymanie, głośnik). Stuknięcie komunikatu samo dzwoni do numeru TelePakt, scala rozmowy (3-way) i odtwarza komunikat rozmówcy; serwer nagrywa rozmowę. Bez zmiany aplikacji Telefon działa nakładka na ekranie rozmowy. iPhone: scalanie rozmowy ręczne (system nie pozwala aplikacjom na więcej). Wymaga, by operator pozwalał na rozmowy konferencyjne. Szczegóły techniczne: `CLAUDE.md`, sekcja „Default-dialer mode”.
+- **Aplikacja Android jako Telefon (tryb zalecany):** TelePakt może być domyślną aplikacją Telefon (ekran rozmowy, klawiatura, wstrzymanie, głośnik). Stuknięcie komunikatu samo dzwoni do numeru TelePakt, scala rozmowy (3-way) i odtwarza komunikat rozmówcy; serwer nagrywa rozmowę. Bez zmiany aplikacji Telefon działa nakładka na ekranie rozmowy. TelePakt działa na razie tylko na Androidzie (iOS nie pozwala aplikacjom scalać rozmów ani rysować nad ekranem rozmowy). Wymaga, by operator pozwalał na rozmowy konferencyjne. Szczegóły techniczne: `CLAUDE.md`, sekcja „Default-dialer mode”.
 
 ---
 

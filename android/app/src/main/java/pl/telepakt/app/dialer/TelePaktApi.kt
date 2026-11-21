@@ -22,7 +22,7 @@ object TelePaktApi {
     fun isConfigured(ctx: Context): Boolean =
         !prefs(ctx).getString("api_url", "").isNullOrBlank() && !prefs(ctx).getString("auth_token", "").isNullOrBlank()
 
-    private fun request(ctx: Context, method: String, path: String, readTimeoutMs: Int): Pair<Int, String> {
+    private fun request(ctx: Context, method: String, path: String, readTimeoutMs: Int, json: String = "{}"): Pair<Int, String> {
         val apiUrl = prefs(ctx).getString("api_url", "") ?: ""
         val token = prefs(ctx).getString("auth_token", "") ?: ""
         if (apiUrl.isBlank() || token.isBlank()) throw ApiException("Zaloguj się w aplikacji TelePakt.")
@@ -35,7 +35,7 @@ object TelePaktApi {
             if (method == "POST") {
                 conn.doOutput = true
                 conn.setRequestProperty("Content-Type", "application/json")
-                conn.outputStream.use { it.write("{}".toByteArray()) }
+                conn.outputStream.use { it.write(json.toByteArray()) }
             }
             val code = conn.responseCode
             val body = (if (code in 200..299) conn.inputStream else conn.errorStream)
@@ -85,5 +85,24 @@ object TelePaktApi {
         if (code in 200..299) return Pair(code, null)
         Log.w(TAG, "speak HTTP $code: $body")
         return Pair(code, errorOf(body, "Nie udało się odtworzyć komunikatu (HTTP $code)"))
+    }
+
+    /** Ile różnych użytkowników TelePakt zgłosiło numer (0 = brak wystarczających zgłoszeń; to NIE znaczy „bezpieczny”). */
+    fun reputation(ctx: Context, number: String): Int {
+        val (code, body) = request(ctx, "GET", "/api/telephony/number-reputation/?number=" + java.net.URLEncoder.encode(number, "UTF-8"), 8000)
+        if (code !in 200..299) {
+            Log.w(TAG, "number-reputation HTTP $code: $body")
+            throw ApiException(errorOf(body, "Nie udało się sprawdzić numeru (HTTP $code)"))
+        }
+        val json = JSONObject(body)
+        return if (json.optBoolean("warn")) json.optInt("reports") else 0
+    }
+
+    fun reportNumber(ctx: Context, number: String, category: String = "telemarketing") {
+        val (code, body) = request(ctx, "POST", "/api/telephony/report-number/", 8000, JSONObject().put("number", number).put("category", category).toString())
+        if (code !in 200..299) {
+            Log.w(TAG, "report-number HTTP $code: $body")
+            throw ApiException(errorOf(body, "Nie udało się zgłosić numeru (HTTP $code)"))
+        }
     }
 }

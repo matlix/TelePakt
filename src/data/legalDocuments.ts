@@ -25,13 +25,13 @@ Wersja obowiązująca od: 10 listopada 2024 r. (zgodna z ustawą Prawo komunikac
 
 § 4. WARUNKI TECHNICZNE
 1. Do prawidłowego działania Aplikacji wymagane jest:
-   a) Posiadanie urządzenia z systemem Android (wersja 10.0+) lub iOS (wersja 15.0+);
+   a) Posiadanie urządzenia z systemem Android (wersja 10.0+);
    b) Aktywna karta SIM z włączoną przez operatora telekomunikacyjnego obsługą połączeń konferencyjnych (tzw. połączenia trójstronne / telekonferencja);
    c) Dostęp do sieci Internet (LTE/5G/Wi-Fi) na potrzeby synchronizacji statusu i pobierania nagrań.
 
 § 5. PŁATNOŚCI I SUBSKRYPCJE
 1. Korzystanie z Aplikacji w wersji podstawowej (do 3 interwencji miesięcznie) jest bezpłatne.
-2. Dostęp do pakietu PRO (nielimitowane interwencje, nagrania do pobrania, własny głos w formule, integracja z prywatną chmurą) realizowany jest wyłącznie za pośrednictwem oficjalnych sklepów z aplikacjami: Google Play Store, Apple App Store, Samsung Galaxy Store oraz Huawei AppGallery.
+2. Dostęp do pakietu PRO (nielimitowane interwencje, nagrania do pobrania, własny głos w formule, integracja z prywatną chmurą) realizowany jest wyłącznie za pośrednictwem oficjalnych sklepów z aplikacjami: Google Play Store, Samsung Galaxy Store oraz Huawei AppGallery.
 3. Opłaty są obsługiwane wyłącznie przez wybrany sklep z aplikacjami, zgodnie z jego regulaminem.
 4. Konsument ma prawo odstąpić od umowy zawartej na odległość w terminie 14 dni bez podawania przyczyny, zgodnie z zasadami danego sklepu mobilnego.
 
@@ -54,7 +54,7 @@ c) Pliki audio z nagrań rozmów: przetwarzane wyłącznie w locie (in-transit) 
 
 3. UNIKALNA PROCEDURA „ZERO-STORAGE” (BEZWZGLĘDNA PRYWATNOŚĆ)
 Aplikacja TelePakt została zaprojektowana zgodnie z rygorystyczną zasadą Privacy by Design i Privacy by Default (art. 25 RODO):
-- Po zakończeniu połączenia plik nagrania audio i protokół dowodowy trafiają bezpośrednio do pamięci telefonu Użytkownika lub na jego prywatną chmurę (Google Drive, iCloud, Dropbox).
+- Po zakończeniu połączenia plik nagrania audio i protokół dowodowy trafiają bezpośrednio do pamięci telefonu Użytkownika lub na jego prywatną chmurę (Google Drive, Dropbox).
 - Serwery TelePakt w ogóle NIE przechowują nagrań użytkownika – dane w buforze węzła telekomunikacyjnego są natychmiast, bezpowrotnie niszczone (cyfrowy shredding) od razu po pomyślnym przesłaniu na telefon.
 - Żaden pracownik, administrator ani podmiot trzeci nie ma i nie będzie miał wglądu do treści rozmów prowadzonych przez Użytkownika.
 
@@ -98,14 +98,13 @@ KROK 2: ODEBRANIE POŁĄCZENIA OD TELEMARKETERA
 3. Treść komunikatów ustawiasz w zakładce Komunikaty: czyta je głos AI albo odtwarza Twoje własne nagranie.
 
 KROK 3: TELEKONFERENCJA I ODTWORZENIE KOMUNIKATU
-• NA ANDROID (zalecane): ustaw TelePakt jako aplikację Telefon (baner „Ustaw TelePakt jako Telefon” albo Ustawienia). Stuknięcie komunikatu samo dzwoni do TelePakt, scala rozmowy i odtwarza komunikat; zajmuje to kilka sekund. Możesz w każdej chwili wrócić do dawnej aplikacji Telefon w ustawieniach telefonu. Jeśli wolisz zostać przy swojej aplikacji Telefon, TelePakt pokaże nakładkę na ekranie rozmowy: stuknij „Połącz z TelePakt (3-way)”, a gdy TelePakt odbierze, stuknij „Scal” (opcjonalna usługa ułatwień dostępu może zrobić to za Ciebie).
-• NA IPHONE: system nie pozwala aplikacjom scalać rozmów. Zadzwoń sam na numer TelePakt („Dodaj połączenie”), stuknij „Scal połączenia”, a komunikat wybierz w aplikacji TelePakt.
+• ustaw TelePakt jako aplikację Telefon (baner „Ustaw TelePakt jako Telefon” albo Ustawienia). Stuknięcie komunikatu samo dzwoni do TelePakt, scala rozmowy i odtwarza komunikat; zajmuje to kilka sekund. Możesz w każdej chwili wrócić do dawnej aplikacji Telefon w ustawieniach telefonu. Jeśli wolisz zostać przy swojej aplikacji Telefon, TelePakt pokaże nakładkę na ekranie rozmowy: stuknij „Połącz z TelePakt (3-way)”, a gdy TelePakt odbierze, stuknij „Scal” (opcjonalna usługa ułatwień dostępu może zrobić to za Ciebie).
 • Gdy rozmowa jest połączona z TelePakt, komunikat słyszy rozmówca, a rozmowa jest nagrywana po stronie serwera.
 • Wymagane jest, by operator pozwalał na rozmowy konferencyjne; aplikacja sprawdza to w Twoim telefonie i informuje, jeśli nie.
 
 KROK 4: NAGRANIE I ZASADA ZERO-STORAGE
 • Po zakończeniu połączenia otrzymasz powiadomienie: „Rozmowa zabezpieczona”.
-• Nagranie audio oraz gotowe pismo zawiadomienia do UKE/UODO trafiają wyłącznie do pamięci Twojego telefonu lub na Twoją prywatną chmurę (Google Drive, iCloud, Dropbox).
+• Nagranie audio oraz gotowe pismo zawiadomienia do UKE/UODO trafiają wyłącznie do pamięci Twojego telefonu lub na Twoją prywatną chmurę (Google Drive, Dropbox).
 • Po pobraniu pliku jest on trwale usuwany z naszych serwerów i z serwera operatora telefonii. Niepobrane nagrania usuwamy automatycznie po 30 dniach.`;
 
 export const COOKIES_POLICY_TEXT = `POLITYKA PLIKÓW COOKIES I PAMIĘCI LOKALNEJ (telepakt.pl)

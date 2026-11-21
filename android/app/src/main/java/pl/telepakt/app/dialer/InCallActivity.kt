@@ -157,6 +157,18 @@ class InCallActivity : Activity() {
             card.addView(text(number, 13f, "#94A3B8"))
         }
         card.addView(text(stateText(call), 14f, if (call.state == Call.STATE_ACTIVE) "#34D399" else "#38BDF8"))
+        val reports = CallManager.reputationFor(call)
+        if (reports > 0) {
+            card.addView(text("⚠ Ten numer zgłosiło jako niechciany: $reports użytk. TelePakt", 12f, "#FBBF24", bold = true).apply { setPadding(0, dp(6), 0, 0) })
+        }
+        if (number.isNotBlank() && !CallManager.isConference(call) && !CallManager.isTelePakt(call) && call.state != Call.STATE_DISCONNECTED) {
+            card.addView(smallButton("🚫 Zablokuj i zgłoś jako niechciany") {
+                CallManager.blockAndReport(this, number) { msg ->
+                    android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show()
+                }
+                call.disconnect()
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        }
 
         if (call.state == Call.STATE_RINGING) {
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }

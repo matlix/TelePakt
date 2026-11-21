@@ -1,6 +1,6 @@
 """Trasy URL dla modułu telephony (telepakt.pl)."""
 from django.urls import path
-from . import views, voice_views
+from . import views, voice_views, reputation_views
 
 urlpatterns = [
     path('conference-bridge/', views.twilio_conference_bridge, name='twilio_bridge'),
@@ -21,5 +21,7 @@ urlpatterns = [
     path('zero-storage-delete/', views.zero_storage_delete, name='zero_storage_delete'),
     path('reviews/', views.reviews_api, name='reviews_api'),
     path('verify-purchase/', views.verify_iap_purchase, name='verify_purchase'),
+    path('number-reputation/', reputation_views.number_reputation, name='number_reputation'),
+    path('report-number/', reputation_views.report_number, name='report_number'),
     path('health/', views.health_check, name='health_check'),
 ]

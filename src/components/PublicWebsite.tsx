@@ -85,7 +85,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [downloadModalTab, setDownloadModalTab] = useState<'pwa' | 'apk' | 'testing' | 'simulator'>('pwa');
   const [testerEmail, setTesterEmail] = useState('');
-  const [testerStore, setTesterStore] = useState<'google' | 'apple' | 'samsung' | 'huawei'>('google');
+  const [testerStore, setTesterStore] = useState<'google' | 'samsung' | 'huawei'>('google');
   const [testerRegistered, setTesterRegistered] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -99,7 +99,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
 
   // Beta Program Signup State (Omnibus & UOKiK Compliance)
   const [betaEmail, setBetaEmail] = useState('');
-  const [betaPlatform, setBetaPlatform] = useState<'android' | 'ios'>('android');
+  const [betaPlatform, setBetaPlatform] = useState<'android'>('android');
   const [betaConsent, setBetaConsent] = useState(false);
   const [betaSubmitted, setBetaSubmitted] = useState(false);
   const [betaError, setBetaError] = useState('');
@@ -209,7 +209,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
     },
     {
       q: 'Jak technicznie działa TelePakt w trakcie trwającego połączenia?',
-      a: 'Gdy dzwoni natrętny telemarketer lub automat, stukasz w aplikacji TelePakt wybrany komunikat. Na Androidzie (gdy TelePakt jest Twoją aplikacją Telefon) aplikacja sama dzwoni do TelePakt, scala rozmowy (połączenie trójstronne) i odtwarza komunikat - np. sprzeciw z art. 398 PKE i art. 21 RODO z żądaniem usunięcia numeru z baz. Zajmuje to kilka sekund i wymaga, by Twój operator pozwalał na rozmowy konferencyjne. Na iPhonie system nie pozwala aplikacjom scalać rozmów, więc robisz to ręcznie („Dodaj połączenie”, „Scal”), a komunikat wybierasz w aplikacji TelePakt.'
+      a: 'Gdy dzwoni natrętny telemarketer lub automat, stukasz w aplikacji TelePakt wybrany komunikat. Na Androidzie (gdy TelePakt jest Twoją aplikacją Telefon) aplikacja sama dzwoni do TelePakt, scala rozmowy (połączenie trójstronne) i odtwarza komunikat - np. sprzeciw z art. 398 PKE i art. 21 RODO z żądaniem usunięcia numeru z baz. Zajmuje to kilka sekund i wymaga, by Twój operator pozwalał na rozmowy konferencyjne.'
     },
     {
       q: 'Czy ponoszę dodatkowe koszty za połączenie konferencyjne z botem?',
@@ -217,7 +217,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
     },
     {
       q: 'Co dzieje się z nagraniami rozmów? Na czym polega zasada ochrony prywatności?',
-      a: 'Stosujemy zasadę Zero-Storage: po rozmowie nagranie jest tymczasowo dostępne do pobrania. Gdy pobierzesz je na telefon lub do swojej prywatnej chmury (Google Drive, iCloud, Dropbox), usuwamy je z naszych serwerów i z serwera operatora telefonii. Niepobrane nagrania kasujemy automatycznie po 30 dniach.'
+      a: 'Stosujemy zasadę Zero-Storage: po rozmowie nagranie jest tymczasowo dostępne do pobrania. Gdy pobierzesz je na telefon lub do swojej prywatnej chmury (Google Drive, Dropbox), usuwamy je z naszych serwerów i z serwera operatora telefonii. Niepobrane nagrania kasujemy automatycznie po 30 dniach.'
     },
     {
       q: 'Czym TelePakt różni się od zwykłych, pasywnych aplikacji blokujących?',
@@ -361,7 +361,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 className="w-full py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-cyan-300 font-bold text-xs flex items-center justify-center gap-2"
               >
                 <User className="w-4 h-4" />
-                <span>Zaloguj się / Rejestracja (Gmail, Apple, Email)</span>
+                <span>Zaloguj się / Rejestracja (e-mail)</span>
               </button>
             )}
 
@@ -506,20 +506,6 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 <div className="text-left min-w-0">
                   <span className="text-[10px] text-emerald-400 font-mono block leading-tight">Otwórz w</span>
                   <strong className="text-xs text-white leading-tight break-words block">Google Play</strong>
-                </div>
-              </div>
-
-              {/* Apple App Store */}
-              <div 
-                onClick={onOpenApp}
-                className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-blue-500/60 text-white flex items-center gap-2.5 cursor-pointer transition-all shadow-md group hover:bg-slate-800/80 active:scale-95"
-              >
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform shrink-0">
-                  <Smartphone className="w-4 h-4" />
-                </div>
-                <div className="text-left min-w-0">
-                  <span className="text-[10px] text-blue-400 font-mono block leading-tight">Otwórz na</span>
-                  <strong className="text-xs text-white leading-tight break-words block">iPhone / iOS</strong>
                 </div>
               </div>
 
@@ -917,7 +903,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </span>
               <h3 className="text-base font-bold text-white">Jedno kliknięcie asystenta</h3>
               <p className="text-slate-400 leading-relaxed">
-                Na Androidzie stukasz komunikat na ekranie rozmowy TelePakt - aplikacja dzwoni do TelePakt, scala rozmowy i odtwarza komunikat. Na iPhonie z uwagi na wymogi iOS sam dzwonisz do TelePakt i klikasz „Scal połączenia”, a komunikat wybierasz w aplikacji.
+                Na Androidzie stukasz komunikat na ekranie rozmowy TelePakt - aplikacja dzwoni do TelePakt, scala rozmowy i odtwarza komunikat.
               </p>
             </div>
 
@@ -937,7 +923,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </span>
               <h3 className="text-base font-bold text-white">Nagranie do zawiadomienia</h3>
               <p className="text-slate-400 leading-relaxed">
-                Rozmowa zostaje automatycznie rozłączona, a nagranie z gotowym pismem trafia do pamięci Twojego telefonu lub na Twój prywatny dysk w chmurze (Google Drive, iCloud). Po pobraniu usuwamy je z naszych serwerów (Zero-Storage).
+                Rozmowa zostaje automatycznie rozłączona, a nagranie z gotowym pismem trafia do pamięci Twojego telefonu lub na Twój prywatny dysk w chmurze (Google Drive, Dropbox). Po pobraniu usuwamy je z naszych serwerów (Zero-Storage).
               </p>
             </div>
 
@@ -1167,7 +1153,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <div>
                 <strong className="text-white block">Płatność wyłącznie w oficjalnym sklepie:</strong>
                 <span className="text-slate-400 text-[11px]">
-                  Google Play • Apple App Store • Samsung Galaxy Store • Huawei AppGallery. Płatność obsługuje wybrany przez Ciebie sklep.
+                  Google Play • Samsung Galaxy Store • Huawei AppGallery. Płatność obsługuje wybrany przez Ciebie sklep.
                 </span>
               </div>
             </div>
@@ -1214,7 +1200,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               Dołącz do Zamkniętych Beta Testów TelePakt
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed">
-              Trwają przygotowania do publicznej premiery w Google Play i Apple App Store. W myśl dyrektywy Omnibus i zasad UOKiK nie publikujemy niesprawdzonych ani fikcyjnych recenzji przed oficjalnym debiutem sklepowym. Zapisz się na bezpłatny wczesny dostęp i przetestuj aplikację w realnych warunkach.
+              Trwają przygotowania do publicznej premiery w Google Play. W myśl dyrektywy Omnibus i zasad UOKiK nie publikujemy niesprawdzonych ani fikcyjnych recenzji przed oficjalnym debiutem sklepowym. Zapisz się na bezpłatny wczesny dostęp i przetestuj aplikację w realnych warunkach.
             </p>
           </div>
 
@@ -1224,7 +1210,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
                 <h3 className="text-base font-bold text-white">Dziękujemy za zgłoszenie do testów!</h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto">
-                  Twój adres e-mail został dodany do listy testerów ({betaPlatform === 'android' ? 'Testy wewnętrzne Google Play' : 'Testy Apple TestFlight'}). Wyślemy zaproszenie w najbliższej fali testowej.
+                  Twój adres e-mail został dodany do listy testerów ({betaPlatform === 'android' ? 'Testy wewnętrzne Google Play' : 'Testy wewnętrzne Google Play'}). Wyślemy zaproszenie w najbliższej fali testowej.
                 </p>
                 <div className="pt-2">
                   <button
@@ -1245,7 +1231,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     <input
                       type="email"
                       required
-                      placeholder="twoj-email@gmail.com / icloud.com"
+                      placeholder="twoj-email@gmail.com"
                       value={betaEmail}
                       onChange={(e) => setBetaEmail(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
@@ -1269,18 +1255,6 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                         <Smartphone className="w-4 h-4" />
                         <span>Android</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setBetaPlatform('ios')}
-                        className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                          betaPlatform === 'ios'
-                            ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                        }`}
-                      >
-                        <Smartphone className="w-4 h-4" />
-                        <span>iPhone (iOS)</span>
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1295,7 +1269,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                       className="mt-0.5 rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 bg-slate-900"
                     />
                     <span className="leading-relaxed text-[11px] text-slate-400">
-                      Wyrażam zgodę na przetwarzanie mojego adresu e-mail przez administratora w celu przesłania linku do zamkniętych testów aplikacji w sklepie {betaPlatform === 'android' ? 'Google Play' : 'Apple TestFlight'} oraz informacji o aktualizacjach testowych, zgodnie z <button type="button" onClick={() => setActiveLegalModal('privacy')} className="text-cyan-400 hover:underline">Polityką Prywatności</button> i <button type="button" onClick={() => setActiveLegalModal('rodo')} className="text-cyan-400 hover:underline">Klauzulą RODO</button>.
+                      Wyrażam zgodę na przetwarzanie mojego adresu e-mail przez administratora w celu przesłania linku do zamkniętych testów aplikacji w sklepie Google Play oraz informacji o aktualizacjach testowych, zgodnie z <button type="button" onClick={() => setActiveLegalModal('privacy')} className="text-cyan-400 hover:underline">Polityką Prywatności</button> i <button type="button" onClick={() => setActiveLegalModal('rodo')} className="text-cyan-400 hover:underline">Klauzulą RODO</button>.
                     </span>
                   </label>
                 </div>
@@ -1553,7 +1527,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
             {/* Tab Contents */}
             <div className="p-4 sm:p-6 space-y-5 text-xs text-slate-300 flex-1">
               
-              {/* TAB 1: PWA (Recommended Instant Android & iOS Install) */}
+              {/* TAB 1: PWA */}
               {downloadModalTab === 'pwa' && (
                 <div className="space-y-4">
                   
@@ -1567,7 +1541,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                         </span>
                       </div>
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded font-bold">
-                        Android • iOS • PC
+                        Android • PC
                       </span>
                     </div>
 
@@ -1613,9 +1587,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                           <span>Instalacja w Twojej przeglądarce:</span>
                         </div>
                         <p className="text-[11px] leading-relaxed">
-                          {isIOS
-                            ? 'Na iPhone (Safari): Dotknij ikonę Udostępnij (kwadrat ze strzałką) i wybierz „Do ekranu początkowego”.'
-                            : 'W Chrome na Androidzie: Dotknij 3 pionowe kropki (⋮) w prawym górnym rogu i wybierz „Zainstaluj aplikację” (lub „Dodaj do ekranu głównego”).'}
+                          {'W Chrome na Androidzie: Dotknij 3 pionowe kropki (⋮) w prawym górnym rogu i wybierz „Zainstaluj aplikację” (lub „Dodaj do ekranu głównego”).'}
                         </p>
                         <div className="p-2.5 rounded-lg bg-slate-950/80 border border-amber-500/30 text-[10px] text-amber-300/90 leading-relaxed">
                           🔒 <strong>Jesteś w trybie incognito / prywatnym?</strong> Przeglądarki mobilne (Chrome, Safari) ze względów bezpieczeństwa celowo wyłączają bezpośredni instalator w oknach incognito. Otwórz stronę w normalnej karcie przeglądarki, aby zainstalować aplikację 1 kliknięciem!
@@ -1706,15 +1678,6 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-white text-sm">Jak zainstalować na iPhone (Apple Safari):</h4>
-                    <ol className="list-decimal list-inside space-y-2 text-slate-300 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                      <li>Otwórz stronę w <strong>Safari</strong> na iOS.</li>
-                      <li>Dotknij przycisk <strong className="text-white">Udostępnij</strong> (kwadrat ze strzałką w górę na dolnym pasku).</li>
-                      <li>Przewiń w dół i wybierz <strong className="text-white">„Do ekranu początkowego” (Add to Home Screen)</strong>.</li>
-                    </ol>
-                  </div>
-
                   {/* Dual Action Bottom Bar */}
                   <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 border-t border-slate-800/80">
                     <button
@@ -1791,14 +1754,14 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 </div>
               )}
 
-              {/* TAB 3: CLOSED TESTING TRACKS (Google Play & Apple TestFlight) */}
+              {/* TAB 3: CLOSED TESTING TRACKS (Google Play) */}
               {downloadModalTab === 'testing' && (
                 <div className="space-y-4">
                   <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-start gap-3">
                     <Smartphone className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <strong className="text-white text-xs block">
-                        Zamknięte Testy Sklepowe (Google Play Closed Testing & TestFlight)
+                        Zamknięte Testy Sklepowe (Google Play Closed Testing)
                       </strong>
                       <p className="text-slate-300 text-[11px] leading-relaxed">
                         Zgodnie z wymogami Google Play (obowiązkowe testy z udziałem 20 testerów przez 14 dni przed premierą publiczną), aplikacja jest dostępna w oficjalnych sklepach na <strong>prywatnych ścieżkach testowych</strong>.
@@ -1818,7 +1781,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     <form onSubmit={handleRegisterTester} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
                       <h4 className="font-bold text-white text-sm">Dołącz do zamkniętej grupy testerów:</h4>
                       <p className="text-slate-400 text-[11px]">
-                        Podaj swój adres e-mail powiązany z kontem Google Play lub Apple ID:
+                        Podaj swój adres e-mail powiązany z kontem Google Play:
                       </p>
 
                       <div className="space-y-2">
@@ -1826,8 +1789,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {[
                             { id: 'google', label: 'Google Play' },
-                            { id: 'apple', label: 'App Store (TestFlight)' },
-                            { id: 'samsung', label: 'Galaxy Store' },
+                                                        { id: 'samsung', label: 'Galaxy Store' },
                             { id: 'huawei', label: 'AppGallery' }
                           ].map(store => (
                             <button
@@ -1966,7 +1928,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
         </div>
       )}
 
-      {/* Floating Quick Action: Fake Call Tester on Android / iPhone */}
+      {/* Floating Quick Action: Fake Call Tester on Android */}
       <div className={`fixed right-4 sm:right-6 z-40 ${isCookieBannerOpen ? 'hidden sm:block bottom-4 sm:bottom-32' : 'bottom-4 sm:bottom-6'}`}>
         <button
           onClick={() => setIsFakeCallModalOpen(true)}
@@ -2036,7 +1998,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
         </aside>
       )}
 
-      {/* Authentication Modal (Email, Gmail, Apple ID) */}
+      {/* Authentication Modal (e-mail) */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}

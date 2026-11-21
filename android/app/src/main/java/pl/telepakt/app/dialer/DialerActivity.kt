@@ -97,6 +97,12 @@ class DialerActivity : Activity() {
         requestPermissionsIfNeeded()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Lista ostatnich połączeń ma być aktualna po powrocie z rozmowy.
+        if (checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED) loadRecents()
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         intent?.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart?.let { number = StringBuilder(Uri.decode(it)); refresh() }
@@ -155,14 +161,16 @@ class DialerActivity : Activity() {
                         CallLog.Calls.MISSED_TYPE, CallLog.Calls.REJECTED_TYPE -> "✗"
                         else -> "↙"
                     }
+                    val blocked = Blocklist.isBlocked(this, num)
                     recents.addView(Button(this).apply {
-                        text = "$arrow  ${name.ifEmpty { num }}${if (name.isNotEmpty()) "  ($num)" else ""}"
+                        text = "${if (blocked) "🚫 " else ""}$arrow  ${name.ifEmpty { num }}${if (name.isNotEmpty()) "  ($num)" else ""}"
                         isAllCaps = false
                         textSize = 13f
                         gravity = Gravity.START or Gravity.CENTER_VERTICAL
                         setTextColor(Color.parseColor(if (type == CallLog.Calls.MISSED_TYPE) "#F87171" else "#E2E8F0"))
                         background = rounded("#0F172A", 12, "#1E293B")
                         setOnClickListener { number = StringBuilder(num); refresh() }
+                        setOnLongClickListener { showNumberMenu(num); true }
                     }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
                     shown++
                 }
@@ -172,6 +180,34 @@ class DialerActivity : Activity() {
             android.util.Log.e("TelePakt", "odczyt rejestru połączeń nie powiódł się", e)
             recents.addView(label("Nie udało się wczytać ostatnich połączeń.", 12f, "#F87171"))
         }
+    }
+
+    /** Menu po dłuższym stuknięciu ostatniego połączenia: zadzwoń, zablokuj/odblokuj, zgłoś jako niechciany. */
+    private fun showNumberMenu(num: String) {
+        val blocked = Blocklist.isBlocked(this, num)
+        val items = arrayOf(
+            "Zadzwoń",
+            if (blocked) "Odblokuj numer" else "Zablokuj i zgłoś jako niechciany",
+            "Tylko zgłoś jako niechciany"
+        )
+        android.app.AlertDialog.Builder(this).setTitle(num).setItems(items) { _, which ->
+            when (which) {
+                0 -> placeCall(num)
+                1 -> if (blocked) {
+                    val ok = Blocklist.unblock(this, num)
+                    Toast.makeText(this, if (ok) "Numer odblokowany." else "Nie udało się odblokować numeru.", Toast.LENGTH_LONG).show()
+                    loadRecents()
+                } else {
+                    CallManager.blockAndReport(this, num) { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show(); loadRecents() }
+                }
+                2 -> Thread {
+                    val msg = try {
+                        TelePaktApi.reportNumber(applicationContext, num); "Zgłoszono jako niechciany."
+                    } catch (e: Exception) { "Nie wysłano zgłoszenia: ${e.message}" }
+                    runOnUiThread { Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
+                }.start()
+            }
+        }.show()
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()

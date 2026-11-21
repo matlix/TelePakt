@@ -23,7 +23,7 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 
 ## Product rules (decided with the owner, Nov 2026)
 - Consumer focus. No claims about SHA-256 / 'accepted by courts' / '100% legal'; no threatening scripts (stalking, statute of limitations, fine threats).
-- Payments only through store billing (Google Play, App Store, Galaxy Store, AppGallery) - no BLIK/card/direct payment copy.
+- Android only (owner, Nov 21 2026: iPhone/iOS and the Apple App Store are out for now; no iOS copy on the website/app). Payments only through store billing (Google Play, Galaxy Store, AppGallery) - no BLIK/card/direct payment copy.
 - No sample data in the production client (no fake reviews, report counts, numbers). The 'check number' list starts empty; absence of a report is NOT shown as 'safe'.
 - Assistant phone number comes from `VITE_ASSISTANT_NUMBER` (not set until Twilio exists).
 - Penalties cite art. 444 + 446 PKE (not art. 445, which concerns data-protection duties).
@@ -77,6 +77,13 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - One tap on a message in the call screen: `CallManager.startThreeWay` fetches the TelePakt number (`/forwarding-info/`), `TelecomManager.placeCall`, waits for ACTIVE, merges like AOSP Dialer (`conference(conferenceableCalls[0])` else `mergeConference()`, retried every 4 s up to 4 times), then POSTs `/messages/<id>/speak/` (retries on 409). Status/error text is shown in the TelePakt panel of the call screen.
 - In this mode the old overlay (`CallReceiver`) does nothing; the overlay + AccessibilityService remain as the fallback for users who keep their own Phone app. Emergency numbers go through the normal `placeCall`.
 - Not built: contacts browser, voicemail, call blocking, SMS, video calls. Unverified: real carrier merge, Bluetooth routing, lock-screen behaviour on real phones, other makers' quirks.
+
+## Dialer features added Nov 21 2026 (emulator-tested; community data needs deploy + real use)
+- Blocklist: `dialer/Blocklist.kt` uses the system BlockedNumberContract (only the default dialer may write); blocked numbers never reach the app. UI: "Zablokuj i zgłoś jako niechciany" on the call screen, long-press on a recent call (block/unblock/report). Verified on the emulator (blocked number never reaches Telecom).
+- Community reports: `NumberReport` model (migration 0007), `GET /api/telephony/number-reputation/?number=` and `POST /api/telephony/report-number/` (auth required, one report per user+number, 100/day cap). A warning is shown ONLY when >=3 distinct users reported the number (`REPORT_THRESHOLD`); absence of reports is never shown as 'safe'. Reported third-party numbers are personal data - mention in the privacy policy before relying on it.
+- Missed-call notification with "Oddzwoń" (the system one only exists for the stock dialer); call screen is brought to the front when a call is answered elsewhere (Bluetooth/notification); recents refresh on resume.
+- 3-way failure handling: the disconnect cause from Telecom is shown in the TelePakt panel (e.g. "rozłączona przez TelePakt/sieć (NORMAL)" = the remote side hung up) and the held original call is resumed automatically.
+- Emulator quirk: calls accepted via `adb emu gsm accept` hang up by themselves after ~6-10 s (also with the stock dialer), and a second `gsm call` replaces the first, so merge/call-waiting cannot be tested there.
 
 ## Known issues / TODO
 - IAP store verification (verify-purchase is still unauthenticated), plaintext `IntegrationCredential.secret_value` (see backend/README.md).

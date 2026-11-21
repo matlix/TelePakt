@@ -60,14 +60,56 @@ object CallManager {
     }
 
     private val callback = object : Call.Callback() {
-        override fun onStateChanged(call: Call, state: Int) { onCallsChanged() }
+        override fun onStateChanged(call: Call, state: Int) {
+            // Rozmowa odebrana poza naszym ekranem (słuchawka Bluetooth, przycisk w powiadomieniu): pokaż ekran rozmowy.
+            if (state == Call.STATE_ACTIVE) service?.let { (it as? TelePaktInCallService)?.openCallScreen() }
+            onCallsChanged()
+        }
         override fun onDetailsChanged(call: Call, details: Call.Details) { onCallsChanged() }
         override fun onParentChanged(call: Call, parent: Call?) { onCallsChanged() }
         override fun onChildrenChanged(call: Call, children: MutableList<Call>) { onCallsChanged() }
         override fun onConferenceableCallsChanged(call: Call, conferenceableCalls: MutableList<Call>) { onCallsChanged() }
     }
 
+    /** Zgłoszenia numeru przez innych użytkowników (>0 = ostrzegamy). Brak wpisu = nie wiemy; nigdy nie piszemy „bezpieczny”. */
+    private val reputation = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val reputationAsked = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    fun reputationFor(call: Call): Int = reputation[digits(numberOf(call))] ?: 0
+
+    private fun fetchReputation(ctx: Context, call: Call) {
+        val number = numberOf(call)
+        val key = digits(number)
+        if (key.length < 7 || !TelePaktApi.isConfigured(ctx) || !reputationAsked.add(key)) return
+        Thread {
+            try {
+                val reports = TelePaktApi.reputation(ctx.applicationContext, number)
+                if (reports > 0) { reputation[key] = reports; notifyChanged() }
+            } catch (e: Exception) {
+                reputationAsked.remove(key)  // spróbujemy przy następnym połączeniu
+                Log.w(TAG, "reputacja numeru: ${e.message}")
+            }
+        }.start()
+    }
+
+    /** Zgłasza numer i blokuje go na systemowej liście; zwraca opis wyniku dla użytkownika. */
+    fun blockAndReport(ctx: Context, number: String, onDone: (String) -> Unit) {
+        val blocked = Blocklist.block(ctx, number)
+        Thread {
+            var reportMsg = ""
+            try {
+                TelePaktApi.reportNumber(ctx.applicationContext, number)
+            } catch (e: Exception) {
+                reportMsg = " Zgłoszenia nie wysłano: ${e.message}"
+            }
+            val text = (if (blocked) "Numer zablokowany." else "Nie udało się zablokować numeru (to wymaga bycia domyślną aplikacją Telefon).") +
+                (if (reportMsg.isEmpty()) " Zgłoszono jako niechciany." else reportMsg)
+            main.post { onDone(text) }
+        }.start()
+    }
+
     fun onCallAdded(call: Call) {
+        appContext?.let { if (call.state == Call.STATE_RINGING) fetchReputation(it, call) }
         calls.add(call)
         call.registerCallback(callback)
         onCallsChanged()
@@ -100,6 +142,8 @@ object CallManager {
     private fun digits(s: String?) = (s ?: "").filter { it.isDigit() }
 
     fun numberOf(call: Call): String = call.details.handle?.schemeSpecificPart ?: ""
+
+    fun isTelePakt(call: Call) = isTelePaktLeg(call)
 
     private fun isTelePaktLeg(call: Call): Boolean {
         val tp = digits(telepaktNumber)
@@ -180,6 +224,10 @@ object CallManager {
                 if (dialing || pending != null) {
                     dialing = false
                     pending = null; active = false
+                    // Nie zostawiamy użytkownika z wstrzymaną rozmową: wznawiamy tę, którą sami odłożyliśmy na czas dzwonienia.
+                    calls.filter { it.state == Call.STATE_HOLDING && !isTelePaktLeg(it) }.forEach {
+                        try { it.unhold() } catch (e: Exception) { Log.w(TAG, "wznowienie rozmowy nie powiodło się", e) }
+                    }
                     val why = describeDisconnect(leg)
                     Log.w(TAG, "rozmowa z TelePakt zakończona: $why")
                     setStatus("TelePakt nie odebrał lub rozłączył rozmowę. Powód z telefonu: $why", true)
@@ -314,6 +362,8 @@ object CallManager {
     fun clearStatus() { setStatus(null) }
 
     fun refresh() = notifyChanged()
+
+    fun attach(ctx: Context) { appContext = ctx.applicationContext }
 
     private val nameCache = java.util.concurrent.ConcurrentHashMap<String, String>()
 

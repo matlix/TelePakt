@@ -1,6 +1,7 @@
 """Modele danych PostgreSQL dla TelePakt (telepakt.pl)."""
 import uuid
 import hashlib
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -199,3 +200,49 @@ class VoiceMessage(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.owner})"
+
+
+class NumberReport(models.Model):
+    """Zgłoszenie numeru jako niechciany/spam przez użytkownika TelePakt (jedno na parę użytkownik + numer).
+
+    Numer jest znormalizowany do samych cyfr z prefiksem kraju (patrz ``normalize_number``). Publicznie (innym
+    użytkownikom) pokazujemy tylko LICZBĘ zgłaszających, i to dopiero od progu ``REPORT_THRESHOLD`` - brak zgłoszeń
+    nigdy nie oznacza, że numer jest bezpieczny.
+    """
+    CATEGORIES = [
+        ('telemarketing', 'Telemarketing / oferta handlowa'),
+        ('scam', 'Oszustwo / wyłudzenie'),
+        ('robocall', 'Automat (robocall)'),
+        ('other', 'Inne'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='number_reports')
+    number = models.CharField(max_length=20, db_index=True, verbose_name="Numer (cyfry z prefiksem kraju)")
+    category = models.CharField(max_length=20, choices=CATEGORIES, default='telemarketing')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Zgłoszenie numeru"
+        verbose_name_plural = "Zgłoszenia numerów"
+        constraints = [models.UniqueConstraint(fields=['user', 'number'], name='one_report_per_user_and_number')]
+
+    def __str__(self):
+        return f"{self.number} ({self.category})"
+
+
+REPORT_THRESHOLD = 3  # tylu różnych użytkowników musi zgłosić numer, zanim ostrzegamy innych
+
+
+def normalize_number(raw):
+    """Same cyfry z prefiksem kraju: '500 123 456' -> '48500123456', '+48500123456' -> '48500123456'.
+
+    Zwraca None dla czegoś, co nie przypomina numeru (za krótkie/za długie, brak cyfr).
+    """
+    digits = ''.join(c for c in str(raw or '') if c.isdigit())
+    if str(raw or '').strip().startswith('00'):
+        digits = digits[2:]
+    if len(digits) == 9:
+        digits = '48' + digits
+    if not 8 <= len(digits) <= 15:
+        return None
+    return digits

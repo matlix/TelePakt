@@ -25,6 +25,7 @@ class TelePaktInCallService : InCallService() {
     override fun onCreate() {
         super.onCreate()
         CallManager.service = this
+        CallManager.attach(this)
         CallManager.addListener(listener)
     }
 
@@ -49,6 +50,7 @@ class TelePaktInCallService : InCallService() {
         super.onCallRemoved(call)
         CallManager.onCallRemoved(call)
         updateNotification()
+        notifyIfMissed(call)
     }
 
     override fun onCallAudioStateChanged(audioState: CallAudioState?) {
@@ -56,7 +58,7 @@ class TelePaktInCallService : InCallService() {
         CallManager.refresh()
     }
 
-    private fun openCallScreen() {
+    fun openCallScreen() {
         try {
             startActivity(Intent(this, InCallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (e: Exception) {
@@ -96,6 +98,33 @@ class TelePaktInCallService : InCallService() {
         nm.notify(NOTIFICATION_ID, builder.build())
     }
 
+    /** Połączenie przychodzące, którego nikt nie odebrał (ani nie odrzucił): powiadomienie z przyciskiem „Oddzwoń”. */
+    private fun notifyIfMissed(call: Call) {
+        val cause = call.details.disconnectCause ?: return
+        if (cause.code != android.telecom.DisconnectCause.MISSED) return
+        val number = CallManager.numberOf(call)
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm.getNotificationChannel(MISSED_CHANNEL) == null) {
+            nm.createNotificationChannel(NotificationChannel(MISSED_CHANNEL, "Nieodebrane połączenia", NotificationManager.IMPORTANCE_DEFAULT))
+        }
+        val callBack = PendingIntent.getActivity(
+            this, number.hashCode(),
+            Intent(this, DialerActivity::class.java).setAction(Intent.ACTION_DIAL)
+                .setData(android.net.Uri.fromParts("tel", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        @Suppress("DEPRECATION")
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, MISSED_CHANNEL) else Notification.Builder(this)
+        builder.setSmallIcon(android.R.drawable.sym_call_missed)
+            .setContentTitle("Nieodebrane połączenie")
+            .setContentText(CallManager.displayName(this, call))
+            .setContentIntent(callBack)
+            .setCategory(Notification.CATEGORY_MISSED_CALL)
+            .setAutoCancel(true)
+            .addAction(Notification.Action.Builder(null, "Oddzwoń", callBack).build())
+        nm.notify(number.hashCode(), builder.build())
+    }
+
     private fun action(name: String): PendingIntent =
         PendingIntent.getBroadcast(
             this, name.hashCode(), Intent(this, CallActionReceiver::class.java).setAction(name),
@@ -116,6 +145,7 @@ class TelePaktInCallService : InCallService() {
     companion object {
         private const val CHANNEL_ID = "telepakt_calls"
         private const val NOTIFICATION_ID = 4242
+        private const val MISSED_CHANNEL = "telepakt_missed"
         const val ACTION_ANSWER = "pl.telepakt.app.ANSWER"
         const val ACTION_DECLINE = "pl.telepakt.app.DECLINE"
     }

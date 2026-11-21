@@ -12,7 +12,7 @@ from unfold.widgets import UnfoldAdminPasswordToggleWidget
 from . import providers
 from .models import (
     CallLog, CustomerReview, InAppPurchaseReceipt, IntegrationCredential, LegalScript,
-    TelephonyProvider, UkeComplaint,
+    NumberReport, TelephonyProvider, UkeComplaint,
 )
 
 
@@ -172,3 +172,11 @@ class TelephonyProviderAdmin(ModelAdmin):
                 self.message_user(request, f"Synteza mowy Telnyx działa: {len(audio) // 1024} KB {content_type}.", messages.SUCCESS)
         if not queryset.filter(kind='telnyx').exists():
             self.message_user(request, "Zaznacz wiersz Telnyx - synteza mowy (podgląd głosu) używa jego klucza.", messages.WARNING)
+
+
+@admin.register(NumberReport)
+class NumberReportAdmin(ModelAdmin):
+    list_display = ('number', 'category', 'user', 'created_at')
+    list_filter = ('category',)
+    search_fields = ('number', 'user__email')
+    date_hierarchy = 'created_at'
