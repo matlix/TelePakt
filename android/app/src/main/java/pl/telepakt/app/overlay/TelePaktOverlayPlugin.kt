@@ -111,16 +111,20 @@ class TelePaktOverlayPlugin : Plugin() {
                 Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
                     .putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
             }
-            val activity = activity ?: run {
-                call.reject("Nie można otworzyć okna wyboru aplikacji Telefon.")
-                return
-            }
-            activity.startActivity(intent)
-            call.resolve()
+            // Okno wyboru roli MUSI być uruchomione „dla wyniku” - zwykłe startActivity zamyka je od razu, bez śladu.
+            startActivityForResult(call, intent, "dialerRoleResult")
         } catch (e: Exception) {
             android.util.Log.e("TelePakt", "requestDefaultDialer failed", e)
             call.reject("Nie udało się otworzyć wyboru aplikacji Telefon: ${e.message}")
         }
+    }
+
+    @com.getcapacitor.annotation.ActivityCallback
+    private fun dialerRoleResult(call: PluginCall?, @Suppress("UNUSED_PARAMETER") result: androidx.activity.result.ActivityResult?) {
+        val telecom = context.getSystemService(android.content.Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+        val ret = JSObject()
+        ret.put("isDefault", telecom.defaultDialerPackage == context.packageName)
+        call?.resolve(ret)
     }
 
     /** Czy włączono usługę automatycznego scalania rozmowy (Ustawienia > Ułatwienia dostępu). */
