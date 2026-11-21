@@ -29,11 +29,11 @@ const STEPS: StepData[] = [
     title: 'Odebranie połączenia',
     badge: 'KROK 1 • POŁĄCZENIE PRZYCHODZĄCE',
     subtitle: 'Dzwoni natrętne call center lub bot (fotowoltaika, finanse, garnki)',
-    description: 'Odbierasz telefon w normalny sposób. Nie musisz się rozłączać ani denerwować. Gdy tylko rozmówca zaczyna czytać ofertę handlową, jesteś gotowy do uruchomienia tarczy.',
+    description: 'Odbierasz telefon w normalny sposób. Nie musisz się rozłączać ani denerwować. Gdy tylko rozmówca zaczyna czytać ofertę handlową, stukasz komunikat w aplikacji TelePakt.',
     technicalDetails: [
-      'Działa na każdym telefonie z Androidem oraz iPhone (iOS)',
-      'Kompatybilny ze wszystkimi polskimi operatorami (Play, Orange, Plus, T-Mobile)',
-      'Nie wymaga wcześniejszego dodawania numeru do żadnej czarnej listy'
+      'Android: pełna obsługa. iPhone: połączenie 3-way scalasz ręcznie',
+      'Operator musi pozwalać na rozmowy konferencyjne - aplikacja sprawdza to w Twoim telefonie',
+      'Nie wymaga dodawania numeru do żadnej listy'
     ],
     screenState: {
       callerName: 'Podejrzenie Spamu: Call Center',
@@ -47,40 +47,40 @@ const STEPS: StepData[] = [
   },
   {
     number: 2,
-    title: 'Aktywacja Suwaka TelePakt',
-    badge: 'KROK 2 • JEDEN RUCH PALCA',
-    subtitle: 'Przesuwasz pływający suwak prawny na ekranie połączenia',
-    description: 'Na Twoim ekranie pojawia się dyskretny, pływający przycisk/suwak TelePakt. Przeciągasz go w prawo – to jedyne działanie, jakie musisz wykonać. Aplikacja natychmiast przejmuje kontrolę nad sytuacją.',
+    title: 'Stuknij komunikat',
+    badge: 'KROK 2 • JEDNO STUKNIĘCIE',
+    subtitle: 'Na ekranie rozmowy TelePakt wybierasz komunikat',
+    description: 'Gdy TelePakt jest Twoją aplikacją Telefon, ekran rozmowy ma przyciski komunikatów. Stukasz ten, który chcesz odtworzyć - aplikacja sama dzwoni do TelePakt, scala rozmowy i odtwarza komunikat. Zajmuje to kilka sekund.',
     technicalDetails: [
-      'Brak konieczności przełączania aplikacji lub wpisywania czegokolwiek',
-      'Pływający widżet asystenta (Overlay na Androidzie, szybki skrót na iOS)',
-      'Wybór gotowej formuły lektora lub Twojego własnego nagranego głosu'
+      'Android: TelePakt jako domyślna aplikacja Telefon (zalecane) albo nakładka na ekranie rozmowy',
+      'iPhone: scalasz rozmowę ręcznie („Dodaj połączenie”, „Scal”), a komunikat wybierasz w aplikacji TelePakt',
+      'Komunikat czyta głos AI albo odtwarza Twoje własne nagranie'
     ],
     screenState: {
       callerName: 'Call Center • Fotowoltaika',
       callerNumber: '+48 22 000 00 88',
-      callStatus: 'Aktywacja Tarczy Prawnej TelePakt...',
+      callStatus: 'Łączenie z TelePakt...',
       statusColor: 'text-cyan-400',
-      bannerText: 'Zestawianie telekonferencji z węzłem prawnym SIP',
+      bannerText: 'Dzwonię do TelePakt i scalam rozmowy',
       speakerWave: false,
       evidenceReady: false
     }
   },
   {
     number: 3,
-    title: 'Węzeł SIP & Formuła Prawna',
-    badge: 'KROK 3 • AUTOMATYCZNA TELEKONFERENCJA',
-    subtitle: 'Węzeł w ułamku sekundy wygłasza sprzeciw z art. 398 PKE',
-    description: 'TelePakt zestawia połączenie trójstronne (3-way conference). Spokojny, oficjalny głos odczytuje bezwzględny sprzeciw z art. 398 PKE oraz art. 21 RODO, żądając podania NIP firmy dzwoniącej.',
+    title: 'TelePakt w rozmowie',
+    badge: 'KROK 3 • TELEKONFERENCJA 3-WAY',
+    subtitle: 'TelePakt odtwarza wybrany komunikat rozmówcy',
+    description: 'TelePakt dołącza do rozmowy jako trzecia strona (3-way) i odtwarza wybrany komunikat - słyszy go rozmówca. Treść komunikatów ustawiasz w zakładce Komunikaty; domyślnie to spokojny sprzeciw z art. 398 PKE i żądanie usunięcia numeru z baz.',
     technicalDetails: [
-      'Oficjalne, bezdyskusyjne oświadczenie woli o zakazie kontaktu',
-      '95% telemarketerów i botów rozłącza się samo w 10–20 sekund',
-      'Ścieżka dźwiękowa rejestrowana jest w celach dowodowych dla UKE i UODO'
+      'Treść komunikatów edytujesz sam (głos AI albo własne nagranie)',
+      'Rozmowę możesz zakończyć w dowolnej chwili jak zwykłe połączenie',
+      'Nagrywanie całej rozmowy włączasz przyciskiem „Połącz z TelePakt i nagrywaj”'
     ],
     screenState: {
-      callerName: 'TelePakt 3-Way Conference • AKTYWNA',
+      callerName: 'TelePakt • rozmowa 3-way',
       callerNumber: 'Formuła: Art. 398 PKE / RODO',
-      callStatus: 'Lektor wygłasza formalny sprzeciw (00:18)',
+      callStatus: 'Odtwarzam komunikat (00:18)',
       statusColor: 'text-indigo-400',
       bannerText: '„Żądam natychmiastowego usunięcia numeru z bazy zgodnie z art. 398 PKE...”',
       speakerWave: true,
@@ -89,21 +89,21 @@ const STEPS: StepData[] = [
   },
   {
     number: 4,
-    title: 'Auto-Rozłączenie & Zero-Storage',
-    badge: 'KROK 4 • DOWÓD W TELEFONIE & 100% PRYWATNOŚCI',
-    subtitle: 'Rozmowa kończy się, a nagranie i pismo trafiają wyłącznie do Ciebie',
-    description: 'Aplikacja sama rozłącza połączenie. Kompletny pakiet dowodowy (nagranie MP3 oraz gotowe pismo zawiadomienia o karę do UKE) trafia prosto do pamięci Twojego telefonu lub prywatnej chmury. Na serwerach TelePakt plik audio zostaje natychmiast trwale zniszczony.',
+    title: 'Nagranie i Zero-Storage',
+    badge: 'KROK 4 • NAGRANIE I PRYWATNOŚĆ',
+    subtitle: 'Po rozmowie odsłuchasz nagranie i możesz je usunąć',
+    description: 'Nagranie rozmowy (jeśli połączyłeś ją z TelePakt) znajdziesz w zakładce Nagrania: odsłuchasz je, udostępnisz do swojej chmury albo usuniesz. Po pobraniu plik jest usuwany z serwera operatora, a niepobrane nagrania po 30 dniach.',
     technicalDetails: [
-      '100% Zero-Storage: brak przechowywania plików audio na naszych serwerach',
-      'Gotowy wniosek do UKE z datą, godziną i numerem dzwoniącego',
-      'Twój numer trafia na wewnętrzną czarną listę call center – telefon milknie!'
+      'Zero-Storage: nagrania nie leżą u nas w nieskończoność - kasujemy je po pobraniu i po 30 dniach',
+      'Wniosek do UKE/UODO z datą, godziną i numerem dzwoniącego przygotujesz w generatorze na telepakt.pl',
+      'Skuteczność zależy od firmy dzwoniącej - TelePakt niczego nie obiecuje'
     ],
     screenState: {
-      callerName: 'Połączenie Zakończone • Sukces!',
-      callerNumber: '+48 22 000 00 88 (Zablokowany)',
-      callStatus: 'Protokół dowodowy wygenerowany',
+      callerName: 'Połączenie zakończone',
+      callerNumber: '+48 22 000 00 88',
+      callStatus: 'Nagranie dostępne w zakładce Nagrania',
       statusColor: 'text-emerald-400',
-      bannerText: 'Plik audio zapisany w telefonie • Węzeł wyczyszczony (Zero-Storage)',
+      bannerText: 'Nagranie czeka w aplikacji • po pobraniu usuwamy je z serwera',
       speakerWave: false,
       evidenceReady: true
     }

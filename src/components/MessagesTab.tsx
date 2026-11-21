@@ -311,7 +311,7 @@ export function MessagesTab() {
       <div className="space-y-1">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Komunikaty dla rozmówcy</h2>
         <p className="text-[11px] text-slate-400 leading-snug">
-          Odbierz rozmowę i stuknij w nakładce „Połącz z TelePakt (3-way)”. Telefon zadzwoni na numer TelePakt - gdy odbierze, stuknij „Scal” w aplikacji Telefon. Potem przesuń „Wybierz odpowiedź” i suwak komunikatu: usłyszą go obie strony, a rozmowa się nagrywa (zakładka Nagrania).
+          Gdy TelePakt jest Twoją aplikacją Telefon: odbierz rozmowę i stuknij komunikat na ekranie rozmowy - aplikacja sama połączy z TelePakt, scali rozmowy i odtworzy komunikat. Przy własnej aplikacji Telefon użyj nakładki: „Połącz z TelePakt (3-way)”, „Scal”, potem suwak komunikatu. Rozmowa połączona z TelePakt jest nagrywana (zakładka Nagrania).
         </p>
       </div>
 

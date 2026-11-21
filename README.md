@@ -32,6 +32,7 @@ Teleoakt.pl rozwiązuje problem setek tysięcy niechcianych telefonów generowan
 - **putomatyczny generator pozwów i skarg do UKE / UODO:** Generuje gotowe do podpisu pisma oDF ze znacznikami czasu i transkrypcją.
 - **Nagrania na Życzenie i orywatność (Zero Retention):** Możliwość pobierania nagrań bezpośrednio na telefon lub chmurę użytkownika (Google Drive, Dropbox, OneDrive, WebDpV) z opcją natychmiastowego usunięcia z serwerów.
 - **Moderacja Opinii Społeczności:** Baza nieuczciwych numerów z moderacją administratorską.
+- **Aplikacja Android jako Telefon (tryb zalecany):** TelePakt może być domyślną aplikacją Telefon (ekran rozmowy, klawiatura, wstrzymanie, głośnik). Stuknięcie komunikatu samo dzwoni do numeru TelePakt, scala rozmowy (3-way) i odtwarza komunikat rozmówcy; serwer nagrywa rozmowę. Bez zmiany aplikacji Telefon działa nakładka na ekranie rozmowy. iPhone: scalanie rozmowy ręczne (system nie pozwala aplikacjom na więcej). Wymaga, by operator pozwalał na rozmowy konferencyjne. Szczegóły techniczne: `CLAUDE.md`, sekcja „Default-dialer mode”.
 
 ---
 
@@ -175,7 +176,7 @@ Wszelkie prawa zastrzeżone © 2025 Teleoakt.
 npm run build:apk     # build frontendu -> cap sync -> gradle assembleDebug -> public/telepakt.apk
 ```
 
-oo instalacji nadaj uprawnienia: *wyświetlanie nad innymi aplikacjami* (nakładka) oraz *Telefon* (stan połączeń). Build jest podpisany kluczem debug – aby zainstalować nowszą wersję zbudowaną na innym komputerze, odinstaluj starą. Workflow `Build pndroid poK` (GitHub pctions, ręczny) buduje ten sam plik w chmurze.
+Po instalacji w aplikacji dotknij „Ustaw TelePakt jako Telefon” (zalecane: ekran rozmowy z komunikatami, jedno stuknięcie dzwoni do TelePakt, scala rozmowy i odtwarza komunikat) i nadaj uprawnienie *Telefon*. Alternatywa bez zmiany aplikacji Telefon: *wyświetlanie nad innymi aplikacjami* (nakładka) i opcjonalnie usługa ułatwień dostępu do automatycznego „Scal”. Build jest podpisany kluczem debug – aby zainstalować nowszą wersję zbudowaną na innym komputerze, odinstaluj starą. Workflow `Build pndroid poK` (GitHub pctions, ręczny) buduje ten sam plik w chmurze.
 
 > Wcześniejszy „poK” generowany z JSZip był atrapą (fałszywy `classes.dex`, tekstowy manifest, fałszywy podpis) i powodował błąd „problem z analizą pakietu”.
 

@@ -94,14 +94,14 @@ Aplikacja TelePakt działa w architekturze bezpiecznej telekonferencji (3-way ca
 
 KROK 2: ODEBRANIE POŁĄCZENIA OD TELEMARKETERA
 1. Gdy dzwoni nieznany numer lub podejrzane call center, odbierz połączenie normalnie.
-2. Gdy słyszysz, że to oferta handlowa (fotowoltaika, garnki, inwestycje, telekomunikacja), dotknij pływającego suwaka TelePakt na ekranie telefonu.
-3. Wybierz odpowiednią formułę prawną (np. „Telemarketer – Pełny sprzeciw art. 398 PKE”). Możesz korzystać z profesjonalnego głosu lektora lub wcześniej nagranego własnego głosu.
+2. Gdy słyszysz, że to oferta handlowa (fotowoltaika, garnki, inwestycje, telekomunikacja), stuknij na ekranie rozmowy komunikat, który chcesz odtworzyć (np. sprzeciw z art. 398 PKE).
+3. Treść komunikatów ustawiasz w zakładce Komunikaty: czyta je głos AI albo odtwarza Twoje własne nagranie.
 
-KROK 3: AUTOMATYCZNA TELEKONFERENCJA I ODTWORZENIE FORMUŁY
-• NA IPHONE: Telefon zadzwoni na Twój dedykowany numer chmurowy TelePakt. Na ekranie iPhone'a kliknij przycisk „Połącz rozmowy” (Scal połączenia).
-• NA ANDROID: Jeśli TelePakt ma nadane uprawnienie asystenta, połączenie konferencyjne zostaje zestawione automatycznie w ułamku sekundy.
-• System oficjalnym, stanowczym tonem wygłasza sprzeciw z art. 398 PKE, żąda podania NIP i adresu siedziby dzwoniącego oraz informuje o możliwości zgłoszenia sprawy do UKE.
-• Jeśli włączyłeś opcję auto-rozłączenia, aplikacja sama zakończy połączenie.
+KROK 3: TELEKONFERENCJA I ODTWORZENIE KOMUNIKATU
+• NA ANDROID (zalecane): ustaw TelePakt jako aplikację Telefon (baner „Ustaw TelePakt jako Telefon” albo Ustawienia). Stuknięcie komunikatu samo dzwoni do TelePakt, scala rozmowy i odtwarza komunikat; zajmuje to kilka sekund. Możesz w każdej chwili wrócić do dawnej aplikacji Telefon w ustawieniach telefonu. Jeśli wolisz zostać przy swojej aplikacji Telefon, TelePakt pokaże nakładkę na ekranie rozmowy: stuknij „Połącz z TelePakt (3-way)”, a gdy TelePakt odbierze, stuknij „Scal” (opcjonalna usługa ułatwień dostępu może zrobić to za Ciebie).
+• NA IPHONE: system nie pozwala aplikacjom scalać rozmów. Zadzwoń sam na numer TelePakt („Dodaj połączenie”), stuknij „Scal połączenia”, a komunikat wybierz w aplikacji TelePakt.
+• Gdy rozmowa jest połączona z TelePakt, komunikat słyszy rozmówca, a rozmowa jest nagrywana po stronie serwera.
+• Wymagane jest, by operator pozwalał na rozmowy konferencyjne; aplikacja sprawdza to w Twoim telefonie i informuje, jeśli nie.
 
 KROK 4: NAGRANIE I ZASADA ZERO-STORAGE
 • Po zakończeniu połączenia otrzymasz powiadomienie: „Rozmowa zabezpieczona”.

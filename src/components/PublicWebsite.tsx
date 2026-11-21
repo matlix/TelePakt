@@ -209,7 +209,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
     },
     {
       q: 'Jak technicznie działa TelePakt w trakcie trwającego połączenia?',
-      a: 'Gdy dzwoni natrętny telemarketer lub automat, jednym ruchem suwaka dołączasz asystenta prawnego (bezpieczna telekonferencja trójstronna). Asystent odtwarza formalną formułę prawną sprzeciwu z art. 398 PKE oraz art. 21 RODO i żąda podania NIP oraz adresu firmy. Na systemie Android scalenie następuje automatycznie, natomiast na telefonach iPhone (iOS) należy dotknąć przycisku «Scal rozmowy» na ekranie połączenia.'
+      a: 'Gdy dzwoni natrętny telemarketer lub automat, stukasz w aplikacji TelePakt wybrany komunikat. Na Androidzie (gdy TelePakt jest Twoją aplikacją Telefon) aplikacja sama dzwoni do TelePakt, scala rozmowy (połączenie trójstronne) i odtwarza komunikat - np. sprzeciw z art. 398 PKE i art. 21 RODO z żądaniem usunięcia numeru z baz. Zajmuje to kilka sekund i wymaga, by Twój operator pozwalał na rozmowy konferencyjne. Na iPhonie system nie pozwala aplikacjom scalać rozmów, więc robisz to ręcznie („Dodaj połączenie”, „Scal”), a komunikat wybierasz w aplikacji TelePakt.'
     },
     {
       q: 'Czy ponoszę dodatkowe koszty za połączenie konferencyjne z botem?',
@@ -563,7 +563,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl shadow-cyan-500/25 active:scale-95 transition-all cursor-pointer ring-2 ring-cyan-400 group"
               >
                 <Download className="w-5 h-5 text-slate-950 group-hover:scale-110 transition-transform animate-bounce" />
-                <span>Pobierz plik .APK na telefon (z pływającym suwakiem)</span>
+                <span>Pobierz plik .APK na telefon z Androidem</span>
                 <ArrowRight className="w-4 h-4 text-slate-950" />
               </button>
 
@@ -600,7 +600,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                   onClick={() => setIsOverlayModalOpen(true)}
                   className="text-[11px] text-cyan-400 hover:text-cyan-300 underline underline-offset-4 cursor-pointer font-medium"
                 >
-                  Zobacz jak działa natywny suwak pływający w Androidzie (WindowManager) ➔
+                  Zobacz, jak wygląda nakładka na ekranie rozmowy w Androidzie ➔
                 </button>
               </div>
             </div>
@@ -917,7 +917,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               </span>
               <h3 className="text-base font-bold text-white">Jedno kliknięcie asystenta</h3>
               <p className="text-slate-400 leading-relaxed">
-                Przesuwasz suwak TelePakt (lub wybierasz numer asystenta). Na iPhone z uwagi na wymogi iOS klikasz „Scal połączenia” na ekranie rozmowy. Asystent dołącza do telekonferencji w ułamku sekundy.
+                Na Androidzie stukasz komunikat na ekranie rozmowy TelePakt - aplikacja dzwoni do TelePakt, scala rozmowy i odtwarza komunikat. Na iPhonie z uwagi na wymogi iOS sam dzwonisz do TelePakt i klikasz „Scal połączenia”, a komunikat wybierasz w aplikacji.
               </p>
             </div>
 
@@ -1015,7 +1015,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
               <span className="text-2xl leading-none">🛡️</span>
               <div className="space-y-0.5">
                 <strong className="text-white block">Gwarancja 100% Odblokowanych Funkcji:</strong>
-                <span>Auto-Sprzeciw (art. 398 PKE), nagranie rozmowy, Wnioski UKE, Baza Offline, Pływający Suwak i Zero-Storage działają bez ograniczeń w każdym pakiecie.</span>
+                <span>Auto-Sprzeciw (art. 398 PKE), nagranie rozmowy, Wnioski UKE, Baza Offline, komunikaty w rozmowie i Zero-Storage działają bez ograniczeń w każdym pakiecie.</span>
               </div>
             </div>
           </div>
@@ -1053,7 +1053,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     ✓ <strong>100% funkcji odblokowanych</strong>
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Pływający suwak Androida i Auto-Sprzeciw art. 398 PKE
+                    ✓ Komunikaty w rozmowie (Android) i Auto-Sprzeciw art. 398 PKE
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Nagranie rozmowy do pobrania
@@ -1123,7 +1123,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({
                     ✓ <strong>Wszystkie opcje odblokowane</strong> dla każdego
                   </li>
                   <li className="flex items-center gap-2">
-                    ✓ Pływający suwak Android (.APK) i Auto-Sprzeciw art. 398 PKE
+                    ✓ Komunikaty w rozmowie (Android, .APK) i Auto-Sprzeciw art. 398 PKE
                   </li>
                   <li className="flex items-center gap-2">
                     ✓ Nagrania do pobrania na telefon lub do Twojej chmury
