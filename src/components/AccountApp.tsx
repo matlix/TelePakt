@@ -389,6 +389,15 @@ const PHONE_HELP: PermissionHelp = {
   ],
 };
 
+const DIALER_HELP: PermissionHelp = {
+  why: 'TelePakt zastępuje wtedy systemową aplikację Telefon (dzwonienie, odbieranie, wstrzymanie, głośnik, klawiatura - wszystko jak zwykle). Dzięki temu jedno stuknięcie komunikatu na ekranie rozmowy samo łączy z TelePakt, scala rozmowy i odtwarza komunikat. Nie trzeba nakładki ani usługi ułatwień dostępu. W każdej chwili możesz wrócić do dawnej aplikacji Telefon w Ustawienia telefonu > Aplikacje > Domyślne aplikacje.',
+  steps: [
+    'Dotknij „Włącz” - Android zapyta, czy ustawić TelePakt jako domyślną aplikację Telefon.',
+    'Wybierz „TelePakt” i potwierdź.',
+    'Od teraz połączenia (przychodzące i wychodzące) pokazują ekran TelePakt. Numery alarmowe (112) działają jak zawsze.',
+  ],
+};
+
 const MERGE_HELP: PermissionHelp = {
   why: 'Android nie pozwala aplikacjom scalać rozmów, więc zwykle trzeba stuknąć „Scal” samemu. Ta opcja robi to za Ciebie. Działa wyłącznie przez 90 sekund po stuknięciu „Połącz z TelePakt (3-way)”, patrzy tylko na ekran aplikacji Telefon, szuka przycisku „Scal” i go naciska. Niczego nie czyta poza tym, nie zapisuje ani nie wysyła. Jest opcjonalna - bez niej wystarczy stuknąć „Scal” ręcznie.',
   steps: [
@@ -479,22 +488,39 @@ function CarrierNotice() {
   );
 }
 
-/** Baner nad całą aplikacją, dopóki brakuje uprawnień potrzebnych do pracy nakładki na ekranie rozmowy. */
+/** Baner nad całą aplikacją, dopóki brakuje uprawnień potrzebnych do pracy TelePakt przy rozmowach. */
 function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { status, refresh } = useOverlayStatus();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (!NativeOverlayBridge.isNative() || !status) return null;
-  if (status.hasOverlayPermission && status.hasPhoneStatePermission && status.hasMergeService) return null;
+  // Wystarczy jeden z dwóch trybów: TelePakt jako aplikacja Telefon ALBO nakładka na ekranie rozmowy.
+  const modeOk = status.isDefaultDialer || status.hasOverlayPermission;
+  if (status.hasPhoneStatePermission && modeOk) return null;
 
-  const enableAll = async () => {
+  const setAsPhone = async () => {
     setBusy(true);
+    setError(null);
+    try {
+      if (!status.hasPhoneStatePermission) await NativeOverlayBridge.requestPhonePermission();
+      await NativeOverlayBridge.requestDefaultDialer();
+    } catch (err: any) {
+      setError(err?.message || 'Nie udało się otworzyć wyboru aplikacji Telefon.');
+    } finally {
+      setBusy(false);
+      refresh();
+    }
+  };
+
+  const useOverlay = async () => {
+    setBusy(true);
+    setError(null);
     try {
       if (!status.hasPhoneStatePermission) await NativeOverlayBridge.requestPhonePermission();
       const now = await NativeOverlayBridge.checkStatus();
       if (!now.hasOverlayPermission) {
         await NativeOverlayBridge.requestOverlayPermission();
       } else if (!now.hasMergeService) {
-        // Po pozostałych uprawnieniach: ułatwienia dostępu (automatyczne scalanie), jedno ustawienie na stuknięcie.
         await NativeOverlayBridge.openAccessibilitySettings();
       }
     } finally {
@@ -517,31 +543,27 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
         <div className="space-y-1">
           <div className="text-xs font-black text-amber-100">Dokończ konfigurację</div>
           <p className="text-[11px] text-amber-100/80 leading-snug">
-            Bez tych uprawnień TelePakt nie pokaże przycisków na ekranie dzwoniącego połączenia.
+            Zalecane: ustaw TelePakt jako aplikację Telefon. Wtedy jedno stuknięcie komunikatu podczas rozmowy samo łączy
+            z TelePakt, scala rozmowy i odtwarza komunikat.
           </p>
         </div>
       </div>
       <ul className="text-[11px] space-y-1.5 pl-1">
         {item(status.hasPhoneStatePermission, 'Dostęp do połączeń (wykrywanie rozmów i wybieranie numeru TelePakt)')}
-        {item(status.hasOverlayPermission, 'Wyświetlanie nad innymi aplikacjami')}
-        {item(!!status.hasMergeService, 'Automatyczne scalanie rozmowy (opcjonalne, Ułatwienia dostępu)')}
+        {item(status.isDefaultDialer, 'TelePakt jako domyślna aplikacja Telefon (zalecane)')}
       </ul>
-      {!status.hasMergeService && (
-        <p className="text-[10px] text-amber-100/80 leading-snug p-2.5 rounded-xl bg-amber-500/10">
-          <strong>Automatyczne scalanie:</strong> po stuknięciu „Włącz teraz” otworzą się Ułatwienia dostępu. Wybierz na liście
-          „TelePakt - automatyczne scalanie rozmowy” (może być w „Zainstalowane aplikacje”), włącz przełącznik u góry i potwierdź
-          „Zezwól”. Jeśli opcja jest wyszarzona: Ustawienia telefonu → Aplikacje → TelePakt → menu ⋮ → „Zezwól na ustawienia
-          z ograniczeniami”. Na końcu wróć do TelePakt.
-        </p>
-      )}
       <div className="flex gap-2">
-        <button onClick={enableAll} disabled={busy} className="flex-1 py-2.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-black disabled:opacity-60">
-          {busy ? 'Chwileczkę…' : 'Włącz teraz'}
+        <button onClick={setAsPhone} disabled={busy} className="flex-1 py-2.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-black disabled:opacity-60">
+          {busy ? 'Chwileczkę…' : 'Ustaw TelePakt jako Telefon'}
         </button>
         <button onClick={onOpenSettings} className="px-3 py-2.5 rounded-xl border border-amber-500/40 text-amber-100 text-xs font-bold">
           Jak to zrobić?
         </button>
       </div>
+      {error && <p className="text-[11px] text-rose-200 leading-snug">{error}</p>}
+      <button onClick={useOverlay} disabled={busy} className="w-full text-center text-[10px] text-amber-100/70 underline">
+        Wolę zostać przy swojej aplikacji Telefon (nakładka na ekranie rozmowy, mniej wygodna)
+      </button>
     </div>
   );
 }
@@ -590,6 +612,13 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tarcza połączeń</h2>
         {isNative ? (
           <>
+            <StatusRow
+              label="TelePakt jako aplikacja Telefon"
+              desc="Zalecane: jedno stuknięcie komunikatu samo łączy z TelePakt, scala rozmowy i odtwarza komunikat."
+              granted={!!status?.isDefaultDialer}
+              onAction={() => NativeOverlayBridge.requestDefaultDialer().then(refresh).catch(() => refresh())}
+              help={DIALER_HELP}
+            />
             <StatusRow
               label="Wyświetlanie nad innymi aplikacjami"
               desc="Pozwala pokazać panel TelePakt nad rozmową po jej odebraniu."

@@ -17,6 +17,9 @@ import android.telephony.TelephonyManager
 class CallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
+        // Gdy TelePakt jest domyślną aplikacją Telefon, ma własny ekran rozmowy - nakładka byłaby zbędna.
+        val telecom = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+        if (telecom.defaultDialerPackage == context.packageName) return
         val prefs = context.getSharedPreferences("telepakt", Context.MODE_PRIVATE)
 
         when (intent.getStringExtra(TelephonyManager.EXTRA_STATE)) {

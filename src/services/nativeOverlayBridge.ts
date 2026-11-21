@@ -4,6 +4,7 @@ export interface OverlayStatus {
   hasOverlayPermission: boolean;
   hasPhoneStatePermission: boolean;
   hasMergeService: boolean;
+  isDefaultDialer: boolean;
   isNative: boolean;
   platform: string;
 }
@@ -19,6 +20,8 @@ export interface TelePaktOverlayPluginInterface {
   getPhoneNumbers(): Promise<{ numbers: SimNumber[]; sims: number }>;
   checkConferenceSupport(): Promise<ConferenceSupport>;
   checkMergeService(): Promise<{ enabled: boolean }>;
+  checkDefaultDialer(): Promise<{ isDefault: boolean }>;
+  requestDefaultDialer(): Promise<void>;
   openAccessibilitySettings(): Promise<void>;
   getDialerLabels(): Promise<{ labels: string }>;
 }
@@ -54,6 +57,7 @@ export class NativeOverlayBridge {
         hasOverlayPermission: false,
         hasPhoneStatePermission: false,
         hasMergeService: false,
+        isDefaultDialer: false,
         isNative: false,
         platform: 'web'
       };
@@ -63,10 +67,12 @@ export class NativeOverlayBridge {
       const overlayRes = await TelePaktOverlayNative.checkOverlayPermission();
       const phoneRes = await TelePaktOverlayNative.checkPhoneStatePermission();
       const mergeRes = await TelePaktOverlayNative.checkMergeService().catch(() => ({ enabled: false }));
+      const dialerRes = await TelePaktOverlayNative.checkDefaultDialer().catch(() => ({ isDefault: false }));
       return {
         hasOverlayPermission: !!overlayRes?.granted,
         hasPhoneStatePermission: !!phoneRes?.granted,
         hasMergeService: !!mergeRes?.enabled,
+        isDefaultDialer: !!dialerRes?.isDefault,
         isNative: true,
         platform: Capacitor.getPlatform()
       };
@@ -75,6 +81,7 @@ export class NativeOverlayBridge {
         hasOverlayPermission: false,
         hasPhoneStatePermission: false,
         hasMergeService: false,
+        isDefaultDialer: false,
         isNative: true,
         platform: Capacitor.getPlatform()
       };
@@ -113,6 +120,12 @@ export class NativeOverlayBridge {
     } catch {
       return '';
     }
+  }
+
+  /** Pokazuje systemowe okno wyboru TelePakt jako domyślnej aplikacji Telefon. Rzuca z czytelnym powodem przy błędzie. */
+  static async requestDefaultDialer(): Promise<void> {
+    if (!this.isNative()) return;
+    await TelePaktOverlayNative.requestDefaultDialer();
   }
 
   /** Otwiera Ustawienia > Ułatwienia dostępu, gdzie użytkownik włącza automatyczne scalanie rozmowy. */

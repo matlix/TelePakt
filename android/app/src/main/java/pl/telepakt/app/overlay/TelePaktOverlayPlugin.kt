@@ -87,6 +87,42 @@ class TelePaktOverlayPlugin : Plugin() {
         call.resolve(ret)
     }
 
+    /** Czy TelePakt jest domyślną aplikacją Telefon (wtedy sam łączy 3-way i scala, bez nakładki ani ułatwień dostępu). */
+    @PluginMethod
+    fun checkDefaultDialer(call: PluginCall) {
+        val telecom = context.getSystemService(android.content.Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+        val ret = JSObject()
+        ret.put("isDefault", telecom.defaultDialerPackage == context.packageName)
+        call.resolve(ret)
+    }
+
+    /** Pokazuje systemowe okno „Ustawić TelePakt jako domyślną aplikację Telefon?”. Wybór potwierdza użytkownik. */
+    @PluginMethod
+    fun requestDefaultDialer(call: PluginCall) {
+        try {
+            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val rm = context.getSystemService(android.content.Context.ROLE_SERVICE) as android.app.role.RoleManager
+                if (!rm.isRoleAvailable(android.app.role.RoleManager.ROLE_DIALER)) {
+                    call.reject("Ten telefon nie pozwala wybrać innej aplikacji Telefon.")
+                    return
+                }
+                rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER)
+            } else {
+                Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
+                    .putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
+            }
+            val activity = activity ?: run {
+                call.reject("Nie można otworzyć okna wyboru aplikacji Telefon.")
+                return
+            }
+            activity.startActivity(intent)
+            call.resolve()
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "requestDefaultDialer failed", e)
+            call.reject("Nie udało się otworzyć wyboru aplikacji Telefon: ${e.message}")
+        }
+    }
+
     /** Czy włączono usługę automatycznego scalania rozmowy (Ustawienia > Ułatwienia dostępu). */
     @PluginMethod
     fun checkMergeService(call: PluginCall) {
