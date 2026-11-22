@@ -11,6 +11,7 @@ from . import providers, voice
 from .models import CallLog, TelephonyProvider, VoiceMessage
 from .tests import authed_client
 from .views import OWN_CALL_LABEL
+from accounts.models import Profile
 
 PHONE = '+48500600700'
 
@@ -241,3 +242,50 @@ class AnnounceEndpointsTests(TestCase):
         tokens = list(VoiceMessage.objects.values_list('public_token', flat=True))
         self.assertEqual(len(set(tokens)), len(tokens))
         self.assertTrue(all(len(t) == 40 for t in tokens))
+
+
+class TelnyxAnnounceAudioTests(TestCase):
+    """Telnyx dostaje <Play> z gotowym plikiem audio (synteza Telnyx), a konto testowe zapisuje slad po stronie serwera."""
+
+    def setUp(self):
+        cache.clear()
+        from telephony import voice_views
+        voice_views._TTS_CACHE.clear()
+        self.api = authed_client(email='a@telepakt.test', phone=PHONE)
+        self.msg = VoiceMessage.objects.get(pk=self.api.get('/api/telephony/messages/').json()['messages'][0]['id'])
+
+    def _fake_adapter(self):
+        adapter = mock.Mock()
+        adapter.has_credentials.return_value = True
+        adapter.synthesize.return_value = (b'ID3-fake-mp3', 'audio/mpeg')
+        return adapter
+
+    def test_telnyx_gets_play_and_the_audio_file(self):
+        with mock.patch('telephony.providers.adapter_for', return_value=self._fake_adapter()):
+            body = APIClient().post(f'/api/telephony/announce/{self.msg.public_token}/?provider=telnyx').content.decode()
+            self.assertIn('<Play>', body)
+            self.assertNotIn('<Say', body)
+            self.assertIn(f'/announce/{self.msg.public_token}/tts.mp3', body)
+            audio = APIClient().get(f'/api/telephony/announce/{self.msg.public_token}/tts.mp3')
+        self.assertEqual((audio.status_code, audio['Content-Type']), (200, 'audio/mpeg'))
+        self.assertEqual(audio.content, b'ID3-fake-mp3')
+
+    def test_falls_back_to_say_and_shows_why_when_synthesis_fails(self):
+        from accounts.models import ClientLog
+        Profile.objects.filter(user__username='a@telepakt.test').update(is_tester=True)
+        broken = self._fake_adapter()
+        broken.synthesize.side_effect = RuntimeError('Telnyx HTTP 403')
+        with mock.patch('telephony.providers.adapter_for', return_value=broken):
+            body = APIClient().post(f'/api/telephony/announce/{self.msg.public_token}/?provider=telnyx').content.decode()
+        self.assertIn('<Say', body)
+        trace = ' | '.join(ClientLog.objects.values_list('message', flat=True))
+        self.assertIn('synteza Telnyx NIE DZIALA', trace)
+        self.assertIn('Telnyx HTTP 403', trace)
+
+    def test_trace_is_written_only_for_tester_accounts(self):
+        from accounts.models import ClientLog
+        APIClient().post(f'/api/telephony/announce/{self.msg.public_token}/')
+        self.assertEqual(ClientLog.objects.count(), 0)
+        Profile.objects.filter(user__username='a@telepakt.test').update(is_tester=True)
+        APIClient().post(f'/api/telephony/announce/{self.msg.public_token}/')
+        self.assertEqual(ClientLog.objects.filter(source='server').count(), 1)

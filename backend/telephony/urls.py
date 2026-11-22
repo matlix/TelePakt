@@ -16,6 +16,7 @@ urlpatterns = [
     path('messages/<int:pk>/speak/', voice_views.message_speak, name='message_speak'),
     path('announce/<str:token>/', voice_views.announce_twiml, name='announce_twiml'),
     path('announce/<str:token>/audio.wav', voice_views.announce_audio, name='announce_audio'),
+    path('announce/<str:token>/tts.mp3', voice_views.announce_tts, name='announce_tts'),
     path('start-recording/', views.start_recording, name='start_recording'),
     path('forwarding-info/', views.forwarding_info, name='forwarding_info'),
     path('zero-storage-delete/', views.zero_storage_delete, name='zero_storage_delete'),

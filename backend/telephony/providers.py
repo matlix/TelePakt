@@ -314,13 +314,15 @@ class TelnyxProvider(BaseProvider):
             resp = self._request('POST', f"Conferences/{conferences[0]['sid']}/Participants/{call_sid}", timeout=ANNOUNCE_TIMEOUT,
                                  data={'AnnounceUrl': announce_url, 'AnnounceMethod': 'POST'})
         except requests.ReadTimeout:
-            # Telnyx potrafi odpowiadać na to żądanie wolno, choć już pobiera komunikat (widać to w logu: Telnyx
-            # odpytuje adres announce/<token>/ w tej samej chwili). Zgłaszanie błędu byłoby wtedy nieprawdą.
+            # Telnyx potrafi odpowiadac na to zadanie wolno, choc juz pobiera komunikat (widac to w logu: Telnyx
+            # odpytuje adres announce/<token>/ w tej samej chwili). Zgłaszanie bledu byloby wtedy nieprawda.
             logger.warning("Telnyx: brak odpowiedzi na AnnounceUrl w %s s (rozmowa %s) - komunikat zapewne jest odtwarzany",
                            ANNOUNCE_TIMEOUT, call_sid)
-            return
+            return {'conference': conferences[0].get('sid'), 'status': 'timeout', 'body': ''}
         if resp.status_code not in (200, 201):
             raise ProviderError(f"Telnyx HTTP {resp.status_code}: {self._detail(resp)}")
+        return {'conference': conferences[0].get('sid'), 'conference_status': conferences[0].get('status'),
+                'status': resp.status_code, 'body': (resp.text or '')[:300]}
 
     def _no_conference_message(self, conference_name: str) -> str:
         """Komunikat z PRZYCZYNĄ: co Telnyx faktycznie widzi (nazwa i stan ostatnich konferencji), by dało się to zdiagnozować."""

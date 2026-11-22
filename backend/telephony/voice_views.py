@@ -63,6 +63,34 @@ def _seed_defaults(user) -> None:
     ])
 
 
+_TTS_CACHE = {}  # (id komunikatu, skrot tresci+glosu+tempa) -> (bajty, content-type); w pamieci procesu, odtwarzane na zadanie
+
+
+def _trace(user, message, details=''):
+    """Slad po stronie serwera dla KONT TESTOWYCH (widoczny w Dzienniku klienta): co dostawca odpowiedzial i co pobral."""
+    try:
+        if ensure_profile(user).is_tester:
+            from accounts.models import ClientLog
+            ClientLog.objects.create(user=user, level='info', source='server', screen='announce',
+                                     message=str(message)[:500], details=str(details)[:4000])
+    except Exception:  # noqa: BLE001 - slad nie moze psuc odtwarzania
+        logger.exception("Nie udalo sie zapisac sladu serwera")
+
+
+def _telnyx_audio(message):
+    """Komunikat TTS jako gotowy plik audio z syntezy Telnyx (z cache). Zwraca (bajty, content-type)."""
+    profile = ensure_profile(message.owner)
+    key = (message.pk, hash((message.text, profile.tts_voice, profile.tts_rate)))
+    if key not in _TTS_CACHE:
+        adapter = providers.adapter_for('telnyx')
+        if adapter is None or not adapter.has_credentials():
+            raise providers.ProviderError('Telnyx nie jest skonfigurowany.')
+        _TTS_CACHE[key] = adapter.synthesize(message.text, profile.tts_voice, profile.tts_rate)
+        if len(_TTS_CACHE) > 200:
+            _TTS_CACHE.pop(next(iter(_TTS_CACHE)))
+    return _TTS_CACHE[key]
+
+
 def message_twiml(request, message, hangup=False) -> VoiceResponse:
     """TwiML odtwarzający komunikat: własne nagranie (``<Play>``) albo głos Polly z ustawień konta (``<Say>``)."""
     response = VoiceResponse()
@@ -279,12 +307,16 @@ def message_speak(request, pk):
     if adapter is None or not adapter.has_credentials():
         return _error('Telefonia nie jest skonfigurowana.', 503)
     url = request.build_absolute_uri(reverse('announce_twiml', args=[message.public_token]))
+    if call.provider == 'telnyx':
+        url += '?provider=telnyx'  # Telnyx dostaje gotowy plik audio (<Play>) zamiast <Say> z glosem Polly
     try:
-        adapter.announce(call.call_sid, f'telepakt_bridge_{call.call_sid}', url)
+        info = adapter.announce(call.call_sid, f'telepakt_bridge_{call.call_sid}', url)
     except Exception as exc:  # noqa: BLE001 - błąd dostawcy -> czytelny komunikat + log z identyfikatorami
         logger.exception("Nie udało się odtworzyć komunikatu %s w rozmowie %s (%s): %s",
                          message.pk, call.call_sid, call.provider, exc)
+        _trace(request.user, f'speak: BLAD dostawcy: {exc}', f'komunikat={message.pk} rozmowa={call.call_sid} url={url}')
         return _error(f'Nie udało się odtworzyć komunikatu: {exc}', 502)
+    _trace(request.user, 'speak: dostawca przyjal polecenie', f'komunikat={message.pk} rozmowa={call.call_sid} url={url} odpowiedz={info}')
     return Response({'status': 'playing', 'title': message.title})
 
 
@@ -299,7 +331,38 @@ def announce_twiml(request, token):
     message = VoiceMessage.objects.filter(public_token=token).first()
     if message is None:
         return HttpResponse(status=404)
-    return HttpResponse(str(message_twiml(request, message)), content_type='application/xml')
+    if request.GET.get('provider') == 'telnyx' and not message.plays_recording:
+        # Telnyx: gotowy plik audio z syntezy (nie zalezy od obslugi <Say>/SSML/nazwy glosu w konferencji).
+        try:
+            _telnyx_audio(message)
+            twiml = VoiceResponse()
+            twiml.play(request.build_absolute_uri(reverse('announce_tts', args=[token])))
+            _trace(message.owner, 'announce: Telnyx pobral TwiML (Play synteza)', f'ua={request.META.get("HTTP_USER_AGENT", "")[:120]}')
+            return HttpResponse(str(twiml), content_type='application/xml')
+        except Exception as exc:  # noqa: BLE001 - wracamy do <Say>, ale blad ma byc widoczny
+            logger.exception("Synteza Telnyx dla komunikatu %s nie powiodla sie, uzywam <Say>", message.pk)
+            _trace(message.owner, f'announce: synteza Telnyx NIE DZIALA, uzywam <Say>: {exc}')
+    twiml_text = str(message_twiml(request, message))
+    _trace(message.owner, 'announce: dostawca pobral TwiML', f'ua={request.META.get("HTTP_USER_AGENT", "")[:120]} twiml={twiml_text[:300]}')
+    return HttpResponse(twiml_text, content_type='application/xml')
+
+
+@csrf_exempt
+def announce_tts(request, token):
+    """Plik audio z syntezy dla komunikatu (pobierany przez Telnyx po <Play> z announce_twiml)."""
+    message = VoiceMessage.objects.filter(public_token=token).first()
+    if message is None or message.plays_recording:
+        return HttpResponse(status=404)
+    try:
+        data, content_type = _telnyx_audio(message)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("announce_tts: synteza komunikatu %s nie powiodla sie", message.pk)
+        _trace(message.owner, f'announce: plik audio NIE powstal: {exc}')
+        return HttpResponse(status=502)
+    _trace(message.owner, f'announce: Telnyx pobral plik audio ({len(data)} B, {content_type})')
+    response = HttpResponse(data, content_type=content_type)
+    response['Cache-Control'] = 'no-store'
+    return response
 
 
 @csrf_exempt

@@ -266,6 +266,8 @@ object CallManager {
             Call.STATE_RINGING -> setStatus("Łączę z TelePakt…")
             Call.STATE_ACTIVE -> {
                 dialing = false
+                // Autotest: sam odbiorca to tester - głośnik, żeby usłyszał odtwarzany komunikat bez przykładania telefonu do ucha.
+                if (soloTest) service?.setAudioRoute(android.telecom.CallAudioState.ROUTE_SPEAKER)
                 if (isBridged()) {
                     val msg = pending
                     if (msg != null) speak(ctx, msg) else { active = false; setStatus("Rozmowa jest połączona z TelePakt (nagrywanie).") }
