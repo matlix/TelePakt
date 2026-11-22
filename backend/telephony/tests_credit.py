@@ -94,6 +94,16 @@ class ClientLogTests(TestCase):
         self.assertEqual(list(ClientLog.objects.order_by('id').values_list('level', flat=True)), ['error', 'info'])
         self.assertEqual(api.post('/api/auth/client-log/', {'events': []}, format='json').status_code, 400)
 
+    def test_tester_can_read_only_own_logs(self):
+        _, api = client_for('t@telepakt.test', is_tester=True)
+        _, other = client_for('t2@telepakt.test', is_tester=True)
+        api.post('/api/auth/client-log/', {'events': [{'level': 'error', 'message': 'mine'}, {'message': 'fine'}]}, format='json')
+        other.post('/api/auth/client-log/', {'events': [{'level': 'error', 'message': 'theirs'}]}, format='json')
+        body = api.get('/api/auth/client-log/?level=error').json()
+        self.assertEqual([e['message'] for e in body['events']], ['mine'])
+        _, regular = client_for('a@telepakt.test')
+        self.assertEqual(regular.get('/api/auth/client-log/').status_code, 403)
+
 
 class BalanceEndpointTests(TestCase):
     def test_only_testers_and_staff_see_the_balance(self):

@@ -203,7 +203,7 @@ def password_reset_confirm(request):
     return Response({'status': 'ok'})
 
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def client_log(request):
     """Dziennik z aplikacji KONTA TESTOWEGO: {"events": [{level, source, screen, message, details}]} (maks. 100).
@@ -213,6 +213,18 @@ def client_log(request):
     """
     if not ensure_profile(request.user).is_tester:
         return Response({'error': 'Dziennik klienta jest dostępny tylko dla kont testowych.'}, status=403)
+    if request.method == 'GET':
+        # Własne wpisy konta testowego (najnowsze najpierw): pozwala odczytać dziennik bez dostępu do panelu admina.
+        qs = ClientLog.objects.filter(user=request.user)
+        if request.query_params.get('level') in ('info', 'warn', 'error'):
+            qs = qs.filter(level=request.query_params['level'])
+        try:
+            limit = min(int(request.query_params.get('limit', 100)), 300)
+        except ValueError:
+            limit = 100
+        return Response({'events': [
+            {'at': e.created_at.isoformat(), 'level': e.level, 'source': e.source, 'screen': e.screen,
+             'message': e.message, 'details': e.details[:4000]} for e in qs[:limit]]})
     events = request.data.get('events')
     if not isinstance(events, list) or not events:
         return Response({'error': 'Brak zdarzeń do zapisania.'}, status=400)
