@@ -338,6 +338,40 @@ class TelnyxProvider(BaseProvider):
         return ("Nie znaleziono trwającej konferencji - czy rozmowy zostały scalone? "
                 f"Szukano: {conference_name}. Telnyx widzi: {seen or 'żadnych konferencji'}")
 
+    def find_recording(self, call_sid: str) -> dict:
+        """Szuka nagrania konferencji tej rozmowy u Telnyx (gdy callback nie dotarl).
+
+        Zwraca {'found': bool, 'sid', 'url', 'duration', 'detail': opis tego, co Telnyx odpowiedzial}.
+        """
+        name = f'telepakt_bridge_{call_sid}'
+        found = self._request('GET', 'Conferences', params={'FriendlyName': name})
+        if found.status_code != 200:
+            return {'found': False, 'detail': f'lista konferencji: HTTP {found.status_code} {self._detail(found)}'}
+        conferences = found.json().get('conferences') or []
+        if not conferences:
+            return {'found': False, 'detail': f'brak konferencji {name} u Telnyx'}
+        conf = conferences[0]
+        resp = self._request('GET', f"Conferences/{conf['sid']}/Recordings.json")
+        if resp.status_code != 200:
+            return {'found': False, 'detail': f"nagrania konferencji: HTTP {resp.status_code} {self._detail(resp)}"}
+        items = resp.json().get('recordings') or []
+        done = [r for r in items if (r.get('status') or 'completed') == 'completed']
+        if not done:
+            states = ','.join(str(r.get('status')) for r in items) or 'brak'
+            return {'found': False, 'detail': f"konferencja {conf.get('status')}, nagrania: {states}"}
+        rec = done[-1]
+        url = rec.get('media_url') or ''
+        if not url and rec.get('uri'):
+            url = 'https://api.telnyx.com' + str(rec['uri']).replace('.json', '')
+        if not url:
+            return {'found': False, 'detail': f"nagranie bez adresu: klucze {sorted(rec.keys())}"}
+        try:
+            duration = int(float(rec.get('duration') or 0))
+        except (TypeError, ValueError):
+            duration = 0
+        return {'found': True, 'sid': str(rec.get('sid') or '')[:64], 'url': url, 'duration': duration,
+                'detail': f"nagranie {rec.get('sid')}"}
+
     def delete_recording(self, recording_sid):
         try:
             resp = self._request('DELETE', f'Recordings/{recording_sid}.json')

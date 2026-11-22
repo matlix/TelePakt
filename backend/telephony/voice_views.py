@@ -308,7 +308,10 @@ def message_speak(request, pk):
         return _error('Telefonia nie jest skonfigurowana.', 503)
     url = request.build_absolute_uri(reverse('announce_twiml', args=[message.public_token]))
     if call.provider == 'telnyx':
-        url += '?provider=telnyx'  # Telnyx dostaje gotowy plik audio (<Play>) zamiast <Say> z glosem Polly
+        # Telnyx: AnnounceUrl ma wskazywac gotowy PLIK AUDIO (w logu testera Telnyx pobieral nasz TwiML i nigdy pliku,
+        # wiec nic nie bylo slychac). Nagranie wlasne -> WAV, komunikat tekstowy -> MP3 z syntezy Telnyx.
+        url = request.build_absolute_uri(reverse('announce_audio' if message.plays_recording else 'announce_tts',
+                                                 args=[message.public_token]))
     try:
         info = adapter.announce(call.call_sid, f'telepakt_bridge_{call.call_sid}', url)
     except Exception as exc:  # noqa: BLE001 - błąd dostawcy -> czytelny komunikat + log z identyfikatorami

@@ -73,6 +73,7 @@ object CallManager {
             finish(false, "TelePakt nie jest domyślną aplikacją Telefon (jest: ${telecom.defaultDialerPackage}) - test połączenia wymaga tego trybu.")
             return
         }
+        if (calls.isEmpty()) reset()  // poprzedni test nie może zostawić flag ("Poczekaj, trwa odtwarzanie…")
         if (calls.isNotEmpty()) { finish(false, "Trwa inna rozmowa - zakończ ją przed testem."); return }
         Thread {
             val msg = try { TelePaktApi.messages(app).firstOrNull() } catch (e: Exception) { null }

@@ -142,6 +142,7 @@ def twilio_conference_bridge(request):
         },
     )
 
+    _trace_recording(call_sid, f'bridge: polaczenie odebrane, rozmowa wlasna={is_own_call}, provider={request.GET.get("provider") or "twilio"}')
     dial = Dial()
     dial.conference(
         f"telepakt_bridge_{call_sid}",
@@ -198,6 +199,9 @@ def twilio_recording_callback(request):
     call_sid = request.POST.get('CallSid')
     recording_url = request.POST.get('RecordingUrl')
     recording_sid = request.POST.get('RecordingSid', '')[:64]
+    logger.info("recording-callback: CallSid=%s pola=%s", call_sid, sorted(request.POST.keys()))
+    _trace_recording(call_sid, f"callback nagrania: pola={sorted(request.POST.keys())} url={'tak' if recording_url else 'BRAK'} "
+                               f"czas={request.POST.get('RecordingDuration')}")
     try:
         duration = max(int(request.POST.get('RecordingDuration', 0)), 0)
     except (TypeError, ValueError):
@@ -271,6 +275,49 @@ def start_recording(request):
 start_recording.cls.throttle_scope = 'recording'
 
 
+def _trace_recording(call_sid, message):
+    """Slad dla kont testowych: co przyszlo w callbacku nagrania / co powiedzial dostawca przy uzgadnianiu."""
+    try:
+        call = CallLog.objects.filter(call_sid=call_sid).first()
+        owner = Profile.objects.filter(phone_protected=call.recipient_number).select_related('user').first() if call else None
+        if owner and owner.is_tester:
+            from accounts.models import ClientLog
+            ClientLog.objects.create(user=owner.user, level='info', source='server', screen='recording',
+                                     message=message[:500], details=f'rozmowa={call_sid}')
+    except Exception:  # noqa: BLE001 - slad nie moze psuc obslugi
+        logger.exception("Nie udalo sie zapisac sladu nagrania")
+
+
+RECONCILE_AFTER_SECONDS = 60
+RECONCILE_MAX_PER_REQUEST = 3
+
+
+def _reconcile_recordings(user, calls):
+    """Nagranie bez adresu po minucie: pytamy dostawce, czy je ma (callback mogl nie dotrzec). Max 3 zapytania na odswiezenie."""
+    now = timezone.now()
+    asked = 0
+    for call in calls:
+        if call.recording_url or call.provider != 'telnyx' or asked >= RECONCILE_MAX_PER_REQUEST:
+            continue
+        if (now - call.timestamp).total_seconds() < RECONCILE_AFTER_SECONDS or call.timestamp < now - timedelta(days=2):
+            continue
+        adapter = providers.adapter_for('telnyx')
+        if adapter is None or not adapter.has_credentials():
+            continue
+        asked += 1
+        try:
+            info = adapter.find_recording(call.call_sid)
+        except Exception as exc:  # noqa: BLE001 - pokazujemy powod testerowi, uzytkownik dostaje po prostu "w przetwarzaniu"
+            logger.warning("Uzgadnianie nagrania %s: %s", call.call_sid, exc)
+            _trace_recording(call.call_sid, f'uzgadnianie nagrania: BLAD {exc}')
+            continue
+        _trace_recording(call.call_sid, f"uzgadnianie nagrania: {info.get('detail')}")
+        if info.get('found'):
+            call.recording_url, call.recording_sid = info['url'], info['sid']
+            call.duration_seconds, call.status = info['duration'], 'recorded'
+            call.save()
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def recordings_list(request):
@@ -278,8 +325,9 @@ def recordings_list(request):
     phone = ensure_profile(request.user).phone_protected
     if not phone:
         return Response({"recordings": [], "needs_phone": True})
-    calls = CallLog.objects.filter(recipient_number=phone, recording_started=True,
-                                   deleted_from_server=False).order_by("-timestamp")[:100]
+    calls = list(CallLog.objects.filter(recipient_number=phone, recording_started=True,
+                                        deleted_from_server=False).order_by("-timestamp")[:100])
+    _reconcile_recordings(request.user, calls)
     return Response({"recordings": [{
         "call_sid": c.call_sid,
         "timestamp": c.timestamp.isoformat(),

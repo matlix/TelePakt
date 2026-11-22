@@ -289,3 +289,43 @@ class TelnyxAnnounceAudioTests(TestCase):
         Profile.objects.filter(user__username='a@telepakt.test').update(is_tester=True)
         APIClient().post(f'/api/telephony/announce/{self.msg.public_token}/')
         self.assertEqual(ClientLog.objects.filter(source='server').count(), 1)
+
+
+class TelnyxSpeakUrlAndRecordingTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.api = authed_client(email='a@telepakt.test', phone=PHONE)
+        self.message = self.api.get('/api/telephony/messages/').json()['messages'][0]
+        self.msg_obj = VoiceMessage.objects.get(pk=self.message['id'])
+        CallLog.objects.create(call_sid='CAt1', caller_number=OWN_CALL_LABEL, recipient_number=PHONE, provider='telnyx')
+
+    def test_telnyx_is_given_an_audio_file_url_not_twiml(self):
+        fake = mock.Mock()
+        fake.has_credentials.return_value = True
+        fake.announce.return_value = {'status': 200}
+        with mock.patch('telephony.providers.adapter_for', return_value=fake):
+            resp = self.api.post(f"/api/telephony/messages/{self.message['id']}/speak/")
+        self.assertEqual(resp.status_code, 200)
+        url = fake.announce.call_args[0][2]
+        self.assertTrue(url.endswith(f'/api/telephony/announce/{self.msg_obj.public_token}/tts.mp3'), url)
+
+    def test_recording_is_found_at_the_provider_when_the_callback_never_came(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        CallLog.objects.filter(call_sid='CAt1').update(timestamp=timezone.now() - timedelta(minutes=5), recording_started=True)
+        fake = mock.Mock()
+        fake.has_credentials.return_value = True
+        fake.find_recording.return_value = {'found': True, 'sid': 'RE1', 'url': 'https://api.telnyx.com/rec/RE1', 'duration': 42, 'detail': 'ok'}
+        with mock.patch('telephony.providers.adapter_for', return_value=fake):
+            body = self.api.get('/api/telephony/recordings/').json()
+        item = body['recordings'][0]
+        self.assertEqual((item['ready'], item['duration_seconds']), (True, 42))
+        self.assertEqual(CallLog.objects.get(call_sid='CAt1').recording_sid, 'RE1')
+
+    def test_young_calls_are_not_looked_up(self):
+        CallLog.objects.filter(call_sid='CAt1').update(recording_started=True)
+        fake = mock.Mock()
+        fake.has_credentials.return_value = True
+        with mock.patch('telephony.providers.adapter_for', return_value=fake):
+            self.api.get('/api/telephony/recordings/')
+        fake.find_recording.assert_not_called()
