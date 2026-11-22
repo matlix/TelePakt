@@ -419,8 +419,8 @@ function useOverlayStatus() {
     refresh();
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
-    // Po powrocie z okienek systemowych WebView nie zawsze zgłasza focus - dlatego dodatkowo sprawdzamy co 2 s.
-    const timer = window.setInterval(refresh, 2000);
+    // Po powrocie z okienek systemowych WebView nie zawsze zgłasza focus - dlatego dodatkowo sprawdzamy co 4 s.
+    const timer = window.setInterval(refresh, 4000);
     return () => {
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);

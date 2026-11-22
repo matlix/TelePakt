@@ -111,7 +111,7 @@ export function SetupWizard() {
     refresh();
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
-    const timer = window.setInterval(refresh, 2000);
+    const timer = window.setInterval(refresh, 4000);
     return () => {
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);

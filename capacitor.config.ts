@@ -9,6 +9,7 @@ export interface CapacitorConfig {
     allowMixedContent?: boolean;
     backgroundColor?: string;
   };
+  loggingBehavior?: 'none' | 'debug' | 'production';
 }
 
 const config: CapacitorConfig = {
@@ -18,6 +19,8 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https'
   },
+  // Bez logowania każdego wywołania wtyczek: okresowe odświeżanie uprawnień zalewało log aplikacji wysyłany przy diagnozie.
+  loggingBehavior: 'none',
   android: {
     allowMixedContent: true,
     backgroundColor: '#031634'

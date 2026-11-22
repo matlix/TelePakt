@@ -66,7 +66,13 @@ object CallManager {
             Log.i(TAG, "autotest połączenia: ok=$ok $detail")
         }
         app.getSharedPreferences("telepakt", Context.MODE_PRIVATE).edit().remove("live_test").apply()
-        if (service == null) { finish(false, "TelePakt nie jest domyślną aplikacją Telefon - test połączenia wymaga tego trybu."); return }
+        // Usługa połączeń (InCallService) system uruchamia dopiero przy pierwszej rozmowie, więc jej brak NIE znaczy,
+        // że TelePakt nie jest aplikacją Telefon - sprawdzamy rolę.
+        val telecom = app.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+        if (telecom.defaultDialerPackage != app.packageName) {
+            finish(false, "TelePakt nie jest domyślną aplikacją Telefon (jest: ${telecom.defaultDialerPackage}) - test połączenia wymaga tego trybu.")
+            return
+        }
         if (calls.isNotEmpty()) { finish(false, "Trwa inna rozmowa - zakończ ją przed testem."); return }
         Thread {
             val msg = try { TelePaktApi.messages(app).firstOrNull() } catch (e: Exception) { null }
