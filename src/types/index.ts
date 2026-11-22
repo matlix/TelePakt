@@ -154,6 +154,11 @@ export interface UserAccount {
   createdAt: string;
   isVerified: boolean;
   phoneProtected?: string;
+  /** Serwer: czy konto ma środki na funkcje TelePakt (false = aplikacja działa jak zwykły telefon). */
+  telephonyEnabled?: boolean;
+  creditMinutes?: number;
+  /** Konto testowe: aplikacja wysyła dziennik użycia i błędów na serwer. */
+  isTester?: boolean;
 }
 
 export interface PredefinedSmsTemplate {

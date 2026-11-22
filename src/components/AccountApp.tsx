@@ -15,6 +15,8 @@ import { authService } from '../services/authService';
 import { ConferenceSupport, NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
 import { API_URL, FEATURES } from '../config';
 import { recordingsService, RecordingItem } from '../services/recordingsService';
+import { fetchBalance, installTesterLogging, runLiveTest, runSelfTest, setScreen, StepResult, Balance } from '../services/diagnostics';
+import { buildUkeDraft } from '../utils/complaintDraft';
 import { MessagesTab } from './MessagesTab';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
@@ -488,6 +490,21 @@ function CarrierNotice() {
   );
 }
 
+/** Brak środków na koncie TelePakt: funkcje oparte o telefonię są wyłączone, a aplikacja działa jak zwykły telefon. */
+function CreditNotice({ user }: { user: UserAccount }) {
+  if (user.telephonyEnabled !== false) return null;
+  return (
+    <div role="status" className="mb-5 p-4 rounded-2xl bg-slate-900 border border-slate-600 space-y-1.5">
+      <div className="text-xs font-black text-white">Brak środków na koncie TelePakt</div>
+      <p className="text-[11px] text-slate-300 leading-snug">
+        Funkcje TelePakt (komunikaty w rozmowie, nagrywanie, połączenie 3-way) są wyłączone. Aplikacja działa jak zwykły
+        telefon: dzwonienie, kontakty, blokowanie numerów i poczta głosowa działają bez zmian. Saldo: {user.creditMinutes ?? 0} min.
+        Doładowanie konta będzie dostępne w sklepie z aplikacjami.
+      </p>
+    </div>
+  );
+}
+
 /** Baner nad całą aplikacją, dopóki brakuje uprawnień potrzebnych do pracy TelePakt przy rozmowach. */
 function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { status, refresh } = useOverlayStatus();
@@ -568,6 +585,78 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
   );
 }
 
+/** Narzędzia konta testowego: autotest funkcji, test połączenia z limitem kosztu, podgląd salda dostawcy. */
+function TesterCard() {
+  const [steps, setSteps] = useState<StepResult[]>([]);
+  const [running, setRunning] = useState(false);
+  const [balance, setBalance] = useState<Balance | null>(null);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [live, setLive] = useState<StepResult | null>(null);
+  const [liveRunning, setLiveRunning] = useState(false);
+  const [confirmLive, setConfirmLive] = useState(false);
+
+  const checkBalance = async () => {
+    setBalanceError(null);
+    try { setBalance(await fetchBalance()); } catch (err: any) { setBalance(null); setBalanceError(err?.message || 'Nie udało się sprawdzić salda.'); }
+  };
+  const runAll = async () => {
+    setRunning(true);
+    setSteps([]);
+    try { await runSelfTest(s => setSteps(prev => [...prev, s])); } finally { setRunning(false); }
+  };
+  const runLive = async () => {
+    setConfirmLive(false);
+    setLiveRunning(true);
+    setLive(null);
+    try { setLive(await runLiveTest()); } finally { setLiveRunning(false); }
+  };
+
+  return (
+    <section className="space-y-2.5 p-4 rounded-2xl bg-violet-500/10 border border-violet-500/40">
+      <h2 className="text-[11px] font-bold uppercase tracking-wider text-violet-200">Tryb testowy</h2>
+      <p className="text-[11px] text-violet-100/80 leading-snug">
+        To konto jest testowe: ekrany, użycie i błędy tej aplikacji trafiają na serwer (Dziennik klienta w panelu admina), żeby można je było naprawić.
+      </p>
+      <button onClick={runAll} disabled={running} className="w-full py-2.5 rounded-xl bg-violet-500 text-white text-xs font-black disabled:opacity-60">
+        {running ? 'Testuję…' : 'Uruchom autotest funkcji'}
+      </button>
+      {steps.length > 0 && (
+        <ul className="text-[10px] space-y-1">
+          {steps.map((st, i) => (
+            <li key={i} className={st.ok ? 'text-emerald-300' : 'text-rose-300'}>
+              {st.ok ? '✓' : '✗'} {st.name}: <span className="text-slate-300 break-words">{st.detail}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="pt-1 space-y-2">
+        <button onClick={checkBalance} className="w-full py-2 rounded-xl border border-violet-500/40 text-violet-100 text-[11px] font-bold">Sprawdź saldo dostawcy telefonii</button>
+        {balance && (
+          <p className="text-[11px] text-slate-200">
+            {balance.provider}: {balance.balance} {balance.currency}. Szacowany koszt testu połączenia: ok. {balance.estimated_test_cost_usd} USD
+            ({balance.enough_for_full_test ? 'saldo wystarcza' : 'saldo nie wystarcza - test zablokowany'}). Szacunek nie jest cennikiem dostawcy.
+          </p>
+        )}
+        {balanceError && <p className="text-[11px] text-rose-300">{balanceError}</p>}
+        {!confirmLive ? (
+          <button onClick={() => setConfirmLive(true)} disabled={liveRunning} className="w-full py-2 rounded-xl border border-amber-500/50 text-amber-200 text-[11px] font-bold disabled:opacity-60">
+            {liveRunning ? 'Trwa test połączenia…' : 'Test połączenia z TelePakt (kosztuje)'}
+          </button>
+        ) : (
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/40 space-y-2">
+            <p className="text-[11px] text-amber-100 leading-snug">Aplikacja zadzwoni na numer TelePakt, odtworzy pierwszy komunikat i się rozłączy (ok. minuty rozmowy u dostawcy). Najwyżej 3 testy dziennie; test nie ruszy, jeśli saldo nie pokrywa kosztu.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setConfirmLive(false)} className="py-2 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-bold text-white">Anuluj</button>
+              <button onClick={runLive} className="py-2 rounded-xl bg-amber-400 text-slate-950 text-[11px] font-black">Zadzwoń</button>
+            </div>
+          </div>
+        )}
+        {live && <p className={`text-[11px] ${live.ok ? 'text-emerald-300' : 'text-rose-300'}`}>{live.ok ? '✓' : '✗'} {live.name}: {live.detail}</p>}
+      </div>
+    </section>
+  );
+}
+
 function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: (d: LegalDocType) => void; onLogout: () => void }) {
   const isNative = NativeOverlayBridge.isNative();
   const [status, setStatus] = useState<OverlayStatus | null>(null);
@@ -608,6 +697,7 @@ function SettingsTab({ user, onLegal, onLogout }: { user: UserAccount; onLegal: 
 
   return (
     <div className="space-y-6">
+      {user.isTester && <TesterCard />}
       <section className="space-y-2.5">
         <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tarcza połączeń</h2>
         {isNative ? (
@@ -716,6 +806,8 @@ function RecordingsTab() {
   const [busySid, setBusySid] = useState<string | null>(null);
   const [confirmSid, setConfirmSid] = useState<string | null>(null);
   const [sharingSid, setSharingSid] = useState<string | null>(null);
+  const [draft, setDraft] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -842,7 +934,7 @@ function RecordingsTab() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => play(item.call_sid)}
                     disabled={!item.ready || busySid === item.call_sid}
@@ -860,12 +952,38 @@ function RecordingsTab() {
                   <button onClick={() => setConfirmSid(item.call_sid)} className="inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-800 text-rose-300 text-[11px] font-bold">
                     <Trash2 className="w-3.5 h-3.5" /> Usuń
                   </button>
+                  <button
+                    onClick={() => {
+                      const me = authService.getCurrentUser();
+                      setCopied(false);
+                      setDraft(buildUkeDraft({ name: me?.name || '', phone: me?.phoneProtected, callerNumber: item.caller_number, timestamp: item.timestamp, durationSeconds: item.duration_seconds }));
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold"
+                  >
+                    Zawiadomienie UKE
+                  </button>
                 </div>
               )}
             </li>
           );
         })}
       </ul>
+      {draft !== null && (
+        <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-700 space-y-2">
+          <div className="text-xs font-black text-white">Szkic zawiadomienia do UKE</div>
+          <p className="text-[10px] text-slate-400 leading-snug">
+            TelePakt nie publikuje ani nie przekazuje nagrań. Zapisz nagranie u siebie („Chmura”: telefon, dysk, e-mail do siebie) i dołącz je do zawiadomienia sam.
+          </p>
+          <textarea readOnly value={draft} rows={12} className="w-full text-[11px] bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-200" />
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={async () => { try { await navigator.clipboard.writeText(draft); setCopied(true); } catch { setCopied(false); } }}
+              className="py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-[11px] font-bold"
+            >{copied ? 'Skopiowano ✓' : 'Kopiuj tekst'}</button>
+            <button onClick={() => setDraft(null)} className="py-2 rounded-xl border border-slate-700 text-slate-200 text-[11px] font-bold">Zamknij</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -875,6 +993,8 @@ function RecordingsTab() {
 export function AccountApp() {
   const [user, setUser] = useState<UserAccount | null>(() => authService.getCurrentUser());
   const [tab, setTab] = useState<'profile' | 'recordings' | 'messages' | 'settings'>('profile');
+  useEffect(() => { if (user?.isTester) installTesterLogging(); }, [user?.isTester]);
+  useEffect(() => { if (user?.isTester) setScreen(tab); }, [tab, user?.isTester]);
   const [legalDoc, setLegalDoc] = useState<LegalDocType | null>(null);
 
   useEffect(() => authService.subscribe(setUser), []);
@@ -912,6 +1032,7 @@ export function AccountApp() {
 
       <main className="flex-1 w-full max-w-md mx-auto px-5 py-6 pb-28">
         <PermissionBanner onOpenSettings={() => setTab('settings')} />
+        <CreditNotice user={user} />
         <CarrierNotice />
         {tab === 'profile' ? (
           <ProfileTab user={user} onUpdate={setUser} />

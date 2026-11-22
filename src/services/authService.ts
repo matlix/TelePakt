@@ -184,6 +184,12 @@ class AuthService {
     await this.request('POST', '/carrier-report/', { supported, carriers });
   }
 
+  /** Dziennik konta testowego (serwer odpowie 403 zwykłym kontom). */
+  public async clientLog(events: unknown[]): Promise<void> {
+    if (!this.token) return;
+    await this.request('POST', '/client-log/', { events });
+  }
+
   /** Zmienia imię i/lub chroniony numer. Plan subskrypcji ustawia tylko serwer. */
   public async updateProfile(updates: Partial<UserAccount>): Promise<UserAccount> {
     if (!this.currentUser) throw new Error('Brak aktywnej sesji użytkownika.');

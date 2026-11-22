@@ -49,6 +49,47 @@ object CallManager {
     private var speakTries = 0
     private var dialStartedAt = 0L
 
+    @Volatile private var soloTest = false
+
+    /**
+     * Autotest konta testowego: dzwoni do TelePakt BEZ drugiej rozmowy, prosi serwer o odtworzenie pierwszego komunikatu
+     * i rozłącza się. Sprawdza całą ścieżkę przez dostawcę telefonii (numer, webhook, konferencja, komunikat) za koszt
+     * ok. minuty rozmowy. Wynik trafia do SharedPreferences "telepakt" (live_test) - odczytuje go aplikacja.
+     */
+    fun startSoloTest(ctx: Context) {
+        val app = ctx.applicationContext
+        fun finish(ok: Boolean, detail: String) {
+            soloTest = false
+            calls.firstOrNull { isTelePaktLeg(it) }?.let { try { it.disconnect() } catch (e: Exception) { Log.w(TAG, "rozłączenie testu", e) } }
+            app.getSharedPreferences("telepakt", Context.MODE_PRIVATE).edit()
+                .putString("live_test", org.json.JSONObject().put("ok", ok).put("detail", detail).put("at", System.currentTimeMillis()).toString()).apply()
+            Log.i(TAG, "autotest połączenia: ok=$ok $detail")
+        }
+        app.getSharedPreferences("telepakt", Context.MODE_PRIVATE).edit().remove("live_test").apply()
+        if (service == null) { finish(false, "TelePakt nie jest domyślną aplikacją Telefon - test połączenia wymaga tego trybu."); return }
+        if (calls.isNotEmpty()) { finish(false, "Trwa inna rozmowa - zakończ ją przed testem."); return }
+        Thread {
+            val msg = try { TelePaktApi.messages(app).firstOrNull() } catch (e: Exception) { null }
+            main.post {
+                if (msg == null) { finish(false, "Brak aktywnego komunikatu do odtworzenia."); return@post }
+                soloTest = true
+                startThreeWay(app, msg)
+                val startedAt = System.currentTimeMillis()
+                lateinit var watch: Runnable
+                watch = Runnable {
+                    val s = status.orEmpty()
+                    when {
+                        s.startsWith("✓") -> main.postDelayed({ finish(true, "Komunikat \"${msg.title}\" odtworzony w rozmowie z TelePakt.") }, 3000)
+                        statusIsError -> finish(false, s)
+                        System.currentTimeMillis() - startedAt > 90_000 -> finish(false, "Przekroczono 90 s. Ostatni status: $s")
+                        else -> main.postDelayed(watch, 1000)
+                    }
+                }
+                main.postDelayed(watch, 1500)
+            }
+        }.start()
+    }
+
     fun addListener(l: () -> Unit) { listeners.add(l) }
     fun removeListener(l: () -> Unit) { listeners.remove(l) }
     private fun notifyChanged() { main.post { listeners.forEach { it() } } }
@@ -156,6 +197,7 @@ object CallManager {
     private fun isBridged(): Boolean {
         val leg = calls.firstOrNull { isTelePaktLeg(it) } ?: return false
         if (leg.state != Call.STATE_ACTIVE) return false
+        if (soloTest) return true  // autotest: sama rozmowa z TelePakt, bez drugiej rozmowy do scalenia
         if (leg.parent != null) return true
         return calls.any { isConference(it) && it.children.contains(leg) }
     }

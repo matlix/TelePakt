@@ -87,6 +87,83 @@ class TelePaktOverlayPlugin : Plugin() {
         call.resolve(ret)
     }
 
+    /** Autotest konta testowego (część natywna): zwraca listę kroków {name, ok, detail}. Nic nie kosztuje i niczego nie zostawia. */
+    @PluginMethod
+    fun runNativeSelfTest(call: PluginCall) {
+        val steps = org.json.JSONArray()
+        fun step(name: String, ok: Boolean, detail: String) {
+            steps.put(org.json.JSONObject().put("name", name).put("ok", ok).put("detail", detail))
+        }
+        fun granted(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
+        try {
+            step("Urządzenie", true, "${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            val telecom = context.getSystemService(android.content.Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+            val isDefault = telecom.defaultDialerPackage == context.packageName
+            step("Domyślna aplikacja Telefon", isDefault, "domyślna: ${telecom.defaultDialerPackage}")
+            step("Uprawnienia", true, listOf("READ_PHONE_STATE", "CALL_PHONE", "READ_CONTACTS", "READ_CALL_LOG", "RECORD_AUDIO")
+                .joinToString(", ") { it + "=" + granted("android.permission.$it") })
+            step("Nakładka (SYSTEM_ALERT_WINDOW)", true, Settings.canDrawOverlays(context).toString())
+            step("Usługa scalania (ułatwienia dostępu)", true, MergeAccessibilityService.isEnabled(context).toString())
+            val accounts = try { telecom.callCapablePhoneAccounts.size } catch (e: SecurityException) { -1 }
+            step("Karty SIM do połączeń", accounts != 0, "liczba kont: $accounts")
+            val blockOk = if (isDefault && pl.telepakt.app.dialer.Blocklist.available(context)) {
+                val probe = "+48000000001"
+                val blocked = pl.telepakt.app.dialer.Blocklist.block(context, probe)
+                val seen = pl.telepakt.app.dialer.Blocklist.isBlocked(context, probe)
+                val removed = pl.telepakt.app.dialer.Blocklist.unblock(context, probe)
+                step("Blokowanie numerów (zapis i odczyt)", blocked && seen && removed, "block=$blocked widoczny=$seen odblokowany=$removed")
+                true
+            } else { step("Blokowanie numerów", false, "wymaga bycia domyślną aplikacją Telefon"); false }
+            if (granted("android.permission.READ_CONTACTS")) {
+                val n = context.contentResolver.query(android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI, arrayOf("_id"), null, null, null)?.use { it.count } ?: -1
+                step("Kontakty (odczyt)", n >= 0, "numerów w kontaktach: $n")
+            } else step("Kontakty (odczyt)", false, "brak uprawnienia READ_CONTACTS")
+            if (granted("android.permission.READ_CALL_LOG")) {
+                val n = context.contentResolver.query(android.provider.CallLog.Calls.CONTENT_URI, arrayOf("_id"), null, null, null)?.use { it.count } ?: -1
+                step("Rejestr połączeń (odczyt)", n >= 0, "wpisów: $n")
+            } else step("Rejestr połączeń (odczyt)", false, "brak uprawnienia READ_CALL_LOG")
+            val prefs = context.getSharedPreferences("telepakt", android.content.Context.MODE_PRIVATE)
+            step("Ustawienia lokalne", true, "cisza nocna=${prefs.getBoolean("quiet_enabled", false)} środki włączone=${prefs.getBoolean("telephony_enabled", true)} token=${!prefs.getString("auth_token", "").isNullOrBlank()}")
+            if (!blockOk) Unit
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "runNativeSelfTest failed", e)
+            step("Autotest natywny", false, "wyjątek: ${e.message}")
+        }
+        val ret = JSObject()
+        ret.put("steps", steps)
+        call.resolve(ret)
+    }
+
+    /** Ostatnie linie logu TEJ aplikacji (logcat własnego procesu) - do wysłania na serwer przy diagnozie. */
+    @PluginMethod
+    fun getAppLog(call: PluginCall) {
+        try {
+            val proc = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-t", "300", "-v", "time", "--pid=" + android.os.Process.myPid()))
+            val text = proc.inputStream.bufferedReader().use { it.readText() }
+            val ret = JSObject()
+            ret.put("log", text.takeLast(15000))
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("Nie udało się odczytać logu aplikacji: ${e.message}")
+        }
+    }
+
+    /** Uruchamia test połączenia z TelePakt (koszt ok. minuty rozmowy); wynik odczytuje getLiveTestResult. */
+    @PluginMethod
+    fun startLiveTest(call: PluginCall) {
+        pl.telepakt.app.dialer.CallManager.startSoloTest(context)
+        call.resolve()
+    }
+
+    @PluginMethod
+    fun getLiveTestResult(call: PluginCall) {
+        val raw = context.getSharedPreferences("telepakt", android.content.Context.MODE_PRIVATE).getString("live_test", null)
+        val ret = JSObject()
+        ret.put("finished", raw != null)
+        if (raw != null) ret.put("result", org.json.JSONObject(raw))
+        call.resolve(ret)
+    }
+
     /** Czy TelePakt jest domyślną aplikacją Telefon (wtedy sam łączy 3-way i scala, bez nakładki ani ułatwień dostępu). */
     @PluginMethod
     fun checkDefaultDialer(call: PluginCall) {

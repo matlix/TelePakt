@@ -24,6 +24,10 @@ export interface TelePaktOverlayPluginInterface {
   requestDefaultDialer(): Promise<void>;
   openAccessibilitySettings(): Promise<void>;
   getDialerLabels(): Promise<{ labels: string }>;
+  runNativeSelfTest(): Promise<{ steps: { name: string; ok: boolean; detail: string }[] }>;
+  getAppLog(): Promise<{ log: string }>;
+  startLiveTest(): Promise<void>;
+  getLiveTestResult(): Promise<{ finished: boolean; result?: { ok: boolean; detail: string; at: number } }>;
 }
 
 /** Czy operator pozwala na rozmowy konferencyjne (3-way). `known=false`: brak aktywnej karty SIM, nic nie wiadomo. */
@@ -120,6 +124,22 @@ export class NativeOverlayBridge {
     } catch {
       return '';
     }
+  }
+
+  static async runNativeSelfTest(): Promise<{ name: string; ok: boolean; detail: string }[]> {
+    return (await TelePaktOverlayNative.runNativeSelfTest()).steps;
+  }
+
+  static async getAppLog(): Promise<string> {
+    return (await TelePaktOverlayNative.getAppLog()).log;
+  }
+
+  static async startLiveTest(): Promise<void> {
+    await TelePaktOverlayNative.startLiveTest();
+  }
+
+  static async getLiveTestResult() {
+    return TelePaktOverlayNative.getLiveTestResult();
   }
 
   /** Pokazuje systemowe okno wyboru TelePakt jako domyślnej aplikacji Telefon. Rzuca z czytelnym powodem przy błędzie. */
