@@ -25,7 +25,11 @@ import com.getcapacitor.annotation.Permission
         Permission(
             strings = [Manifest.permission.READ_PHONE_NUMBERS, Manifest.permission.READ_PHONE_STATE],
             alias = "numbers"
-        )
+        ),
+        // Kreator konfiguracji: te uprawnienia prosimy pojedynczo, z wyjaśnieniem po co.
+        Permission(strings = [Manifest.permission.READ_CONTACTS], alias = "contacts"),
+        Permission(strings = [Manifest.permission.READ_CALL_LOG], alias = "calllog"),
+        Permission(strings = [Manifest.permission.POST_NOTIFICATIONS], alias = "notif")
     ]
 )
 class TelePaktOverlayPlugin : Plugin() {
@@ -85,6 +89,58 @@ class TelePaktOverlayPlugin : Plugin() {
         val ret = JSObject()
         ret.put("success", true)
         call.resolve(ret)
+    }
+
+    /** Stan wszystkich uprawnień potrzebnych aplikacji (kreator konfiguracji pokazuje je krok po kroku). */
+    @PluginMethod
+    fun getPermissionStates(call: PluginCall) {
+        fun g(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
+        val telecom = context.getSystemService(android.content.Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+        val ret = JSObject()
+        ret.put("phone", g(Manifest.permission.READ_PHONE_STATE) && g(Manifest.permission.CALL_PHONE))
+        ret.put("contacts", g(Manifest.permission.READ_CONTACTS))
+        ret.put("calllog", g(Manifest.permission.READ_CALL_LOG))
+        // Od Androida 13 powiadomienia wymagają zgody; wcześniej wystarczy, że nie są wyłączone w ustawieniach.
+        ret.put("notifications", androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled())
+        ret.put("dialer", telecom.defaultDialerPackage == context.packageName)
+        ret.put("overlay", Settings.canDrawOverlays(context))
+        ret.put("sdk", Build.VERSION.SDK_INT)
+        call.resolve(ret)
+    }
+
+    /** Prosi o jedno uprawnienie: group = contacts | calllog | notifications. Zwraca nowy stan wszystkich. */
+    @PluginMethod
+    fun requestPermissionGroup(call: PluginCall) {
+        val alias = when (call.getString("group")) {
+            "contacts" -> "contacts"
+            "calllog" -> "calllog"
+            "notifications" -> "notif"
+            else -> null
+        }
+        if (alias == null) { call.reject("Nieznana grupa uprawnień."); return }
+        requestPermissionForAlias(alias, call, "permissionGroupResult")
+    }
+
+    @com.getcapacitor.annotation.PermissionCallback
+    private fun permissionGroupResult(call: PluginCall) {
+        getPermissionStates(call)
+    }
+
+    /** Otwiera ustawienia aplikacji (kind = notifications otwiera ustawienia powiadomień) - gdy Android nie pokazuje już okienka zgody. */
+    @PluginMethod
+    fun openAppSettings(call: PluginCall) {
+        try {
+            val intent = if (call.getString("kind") == "notifications") {
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            } else {
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
+            }
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            call.resolve()
+        } catch (e: Exception) {
+            android.util.Log.e("TelePakt", "openAppSettings failed", e)
+            call.reject("Nie udało się otworzyć ustawień aplikacji: ${e.message}")
+        }
     }
 
     /** Autotest konta testowego (część natywna): zwraca listę kroków {name, ok, detail}. Nic nie kosztuje i niczego nie zostawia. */

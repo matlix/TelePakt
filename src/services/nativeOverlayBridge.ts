@@ -24,10 +24,24 @@ export interface TelePaktOverlayPluginInterface {
   requestDefaultDialer(): Promise<void>;
   openAccessibilitySettings(): Promise<void>;
   getDialerLabels(): Promise<{ labels: string }>;
+  getPermissionStates(): Promise<PermissionStates>;
+  requestPermissionGroup(options: { group: 'contacts' | 'calllog' | 'notifications' }): Promise<PermissionStates>;
+  openAppSettings(options?: { kind?: 'notifications' }): Promise<void>;
   runNativeSelfTest(): Promise<{ steps: { name: string; ok: boolean; detail: string }[] }>;
   getAppLog(): Promise<{ log: string }>;
   startLiveTest(): Promise<void>;
   getLiveTestResult(): Promise<{ finished: boolean; result?: { ok: boolean; detail: string; at: number } }>;
+}
+
+/** Stan uprawnień potrzebnych aplikacji (kreator konfiguracji). */
+export interface PermissionStates {
+  phone: boolean;
+  contacts: boolean;
+  calllog: boolean;
+  notifications: boolean;
+  dialer: boolean;
+  overlay: boolean;
+  sdk: number;
 }
 
 /** Czy operator pozwala na rozmowy konferencyjne (3-way). `known=false`: brak aktywnej karty SIM, nic nie wiadomo. */
@@ -123,6 +137,34 @@ export class NativeOverlayBridge {
       return (await TelePaktOverlayNative.getDialerLabels()).labels || '';
     } catch {
       return '';
+    }
+  }
+
+  static async getPermissionStates(): Promise<PermissionStates | null> {
+    if (!this.isNative()) return null;
+    try {
+      return await TelePaktOverlayNative.getPermissionStates();
+    } catch (err) {
+      console.warn('getPermissionStates failed', err);
+      return null;
+    }
+  }
+
+  /** Prosi o uprawnienie (contacts | calllog | notifications); zwraca nowy stan albo null przy błędzie. */
+  static async requestPermissionGroup(group: 'contacts' | 'calllog' | 'notifications'): Promise<PermissionStates | null> {
+    try {
+      return await TelePaktOverlayNative.requestPermissionGroup({ group });
+    } catch (err) {
+      console.warn('requestPermissionGroup failed', err);
+      return null;
+    }
+  }
+
+  static async openAppSettings(kind?: 'notifications'): Promise<void> {
+    try {
+      await TelePaktOverlayNative.openAppSettings(kind ? { kind } : {});
+    } catch (err) {
+      console.warn('openAppSettings failed', err);
     }
   }
 

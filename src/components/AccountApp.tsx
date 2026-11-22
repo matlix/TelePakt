@@ -17,6 +17,7 @@ import { API_URL, FEATURES } from '../config';
 import { recordingsService, RecordingItem } from '../services/recordingsService';
 import { fetchBalance, installTesterLogging, runLiveTest, runSelfTest, setScreen, StepResult, Balance } from '../services/diagnostics';
 import { buildUkeDraft } from '../utils/complaintDraft';
+import { SetupWizard } from './SetupWizard';
 import { MessagesTab } from './MessagesTab';
 import { LegalDocumentModal, LegalDocType } from './LegalDocumentModal';
 import logoImage from '../assets/images/telepakt_logo_icon_1793197547893.jpg';
@@ -418,9 +419,12 @@ function useOverlayStatus() {
     refresh();
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
+    // Po powrocie z okienek systemowych WebView nie zawsze zgłasza focus - dlatego dodatkowo sprawdzamy co 2 s.
+    const timer = window.setInterval(refresh, 2000);
     return () => {
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
+      window.clearInterval(timer);
     };
   }, [refresh]);
   return { status, refresh };
@@ -1021,6 +1025,7 @@ export function AccountApp() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SetupWizard />
       <header className="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800 pt-[env(safe-area-inset-top)]">
         <div className="max-w-md mx-auto px-5 h-14 flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl overflow-hidden border border-cyan-500/40 bg-slate-900 shrink-0">

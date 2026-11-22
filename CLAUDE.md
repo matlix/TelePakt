@@ -91,6 +91,10 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - Phone basics: contacts + favourites (`ContactsActivity`), blocklist screen with earlier-call counts (`BlocklistActivity`; only the user blocks, TelePakt never auto-blocks), voicemail button, quick SMS replies (opens the SMS app with text, no SMS permission), dual-SIM chooser + same SIM for the TelePakt leg, quiet hours (unknown numbers ring silently via `silenceRinger`, nothing is rejected), warning before dialing foreign / 70x premium numbers not in contacts.
 - UKE: Nagrania has 'Zawiadomienie UKE' = a text draft only. By owner's decision recordings are never published or attached by us: the user saves a copy (Chmura/e-mail) and attaches their own. Community reports are NOT tied to recordings.
 
+## First-run setup wizard (Nov 22 2026)
+- `src/components/SetupWizard.tsx`: full-screen, shown after login on Android until the required steps are done (phone access, default Phone app OR overlay mode, notifications); contacts and call log are recommended and skippable (`setup_skipped_v1` in localStorage). Each step has 'Po co to?', numbered 'Jak to włączyć', one action button, and after a refused request an 'Otwórz ustawienia TelePakt' fallback. State comes from the plugin's `getPermissionStates` (refreshes on focus and every 2 s because the WebView does not always report focus after system dialogs). Plugin: `getPermissionStates`, `requestPermissionGroup(contacts|calllog|notifications)`, `openAppSettings`.
+- Finding: becoming the default Phone app grants READ_CONTACTS, READ_CALL_LOG and POST_NOTIFICATIONS automatically (flag GRANTED_BY_ROLE on the emulator), so on the recommended path the wizard ends after step 2. The refusal/manual-settings path and the overlay alternative were not exercised.
+
 ## Known issues / TODO
 - IAP store verification (verify-purchase is still unauthenticated), plaintext `IntegrationCredential.secret_value` (see backend/README.md).
 - Components are huge (PublicWebsite 126 KB, AdminPanelHub 90 KB); main JS bundle 1.8 MB - needs code splitting.
