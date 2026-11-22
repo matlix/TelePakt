@@ -279,8 +279,9 @@ def _trace_recording(call_sid, message):
     """Slad dla kont testowych: co przyszlo w callbacku nagrania / co powiedzial dostawca przy uzgadnianiu."""
     try:
         call = CallLog.objects.filter(call_sid=call_sid).first()
-        owner = Profile.objects.filter(phone_protected=call.recipient_number).select_related('user').first() if call else None
-        if owner and owner.is_tester:
+        # ten sam numer moze byc na koncie zwyklym i testowym - sladujemy tylko na testowym
+        owner = Profile.objects.filter(phone_protected=call.recipient_number, is_tester=True).select_related('user').first() if call else None
+        if owner:
             from accounts.models import ClientLog
             ClientLog.objects.create(user=owner.user, level='info', source='server', screen='recording',
                                      message=message[:500], details=f'rozmowa={call_sid}')

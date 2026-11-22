@@ -15,7 +15,7 @@ import { authService } from '../services/authService';
 import { ConferenceSupport, NativeOverlayBridge, OverlayStatus } from '../services/nativeOverlayBridge';
 import { API_URL, FEATURES } from '../config';
 import { recordingsService, RecordingItem } from '../services/recordingsService';
-import { fetchBalance, installTesterLogging, runLiveTest, runSelfTest, setScreen, StepResult, Balance } from '../services/diagnostics';
+import { fetchBalance, installTesterLogging, runLiveTest, runSelfTest, setScreen, MANUAL_CHECKLIST, logChecklistResult, StepResult, Balance } from '../services/diagnostics';
 import { buildUkeDraft } from '../utils/complaintDraft';
 import { SetupWizard } from './SetupWizard';
 import { MessagesTab } from './MessagesTab';
@@ -589,6 +589,32 @@ function PermissionBanner({ onOpenSettings }: { onOpenSettings: () => void }) {
   );
 }
 
+/** Lista funkcji telefonu do sprawdzenia ręcznie (wymagają drugiej osoby); wynik każdej trafia do dziennika na serwerze. */
+function ManualChecklist() {
+  const [results, setResults] = useState<Record<string, boolean>>({});
+  const mark = (item: string, ok: boolean) => {
+    const note = ok ? '' : (window.prompt(`Co poszło nie tak? (${item})`) || '');
+    setResults(r => ({ ...r, [item]: ok }));
+    logChecklistResult(item, ok, note);
+  };
+  const done = Object.keys(results).length;
+  return (
+    <details className="pt-1">
+      <summary className="text-[11px] font-bold text-violet-100 cursor-pointer">Lista kontrolna funkcji telefonu ({done}/{MANUAL_CHECKLIST.length})</summary>
+      <p className="text-[10px] text-slate-400 leading-snug mt-1">Tych funkcji aplikacja nie sprawdzi sama (potrzebna druga osoba lub drugi telefon). Wykonaj każdą i zaznacz wynik - trafi do dziennika na serwerze.</p>
+      <ul className="mt-2 space-y-1.5">
+        {MANUAL_CHECKLIST.map(item => (
+          <li key={item} className="flex items-center gap-2 text-[11px]">
+            <span className={`flex-1 leading-snug ${results[item] === undefined ? 'text-slate-300' : results[item] ? 'text-emerald-300' : 'text-rose-300'}`}>{item}</span>
+            <button onClick={() => mark(item, true)} className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-200 font-bold" aria-label={`Działa: ${item}`}>✓</button>
+            <button onClick={() => mark(item, false)} className="px-2 py-1 rounded-lg bg-rose-500/20 text-rose-200 font-bold" aria-label={`Nie działa: ${item}`}>✗</button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 /** Narzędzia konta testowego: autotest funkcji, test połączenia z limitem kosztu, podgląd salda dostawcy. */
 function TesterCard() {
   const [steps, setSteps] = useState<StepResult[]>([]);
@@ -657,6 +683,7 @@ function TesterCard() {
         )}
         {live && <p className={`text-[11px] ${live.ok ? 'text-emerald-300' : 'text-rose-300'}`}>{live.ok ? '✓' : '✗'} {live.name}: {live.detail}</p>}
       </div>
+      <ManualChecklist />
     </section>
   );
 }

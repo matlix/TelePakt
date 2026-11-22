@@ -107,3 +107,7 @@ Secrets (Twilio SID/token, DJANGO_SECRET_KEY) live in the Render dashboard, neve
 - APK is debug-signed; set up a release keystore (kept out of git) before Play Store.
 - Windows PowerShell shows Polish text as mojibake; files are valid UTF-8.
 - Test the APK on the Android emulator (AVD `Pixel_10`; needs free disk space): `adb install -r public/telepakt.apk`.
+## Nov 22 2026 (later): tester log round 2
+- Announce works up to Telnyx: it now fetches `tts.mp3` (59 KB) but the participant POST still answers `timeout`; whether it is audible/what the 'error' spoken at the end is - unverified. Recording traces were missing because the tester shares a phone number with a normal account and `_trace_recording` took `.first()` profile; now filters `is_tester=True`.
+- Tester card: autotest also round-trips messages/voice settings, checks recordings list + playback, mic/MediaRecorder, Share; the paid call test waits up to 2.5 min for the recording and fetches its audio; 'Lista kontrolna' = manual checklist (`MANUAL_CHECKLIST`) whose ✓/✗ results go to the client log (`source=manual-test`).
+- Build the APK with `JAVA_HOME="C:\Program Files\Java\jdk-21"` (JDK 24 breaks Kotlin/Java target check).
