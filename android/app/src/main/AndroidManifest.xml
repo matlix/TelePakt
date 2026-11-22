@@ -75,6 +75,15 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".dialer.ContactsActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+        <activity
+            android:name=".dialer.BlocklistActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
         <!-- Ekran rozmowy (pokazywany też nad ekranem blokady) -->
         <activity
             android:name=".dialer.InCallActivity"

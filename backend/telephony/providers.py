@@ -78,6 +78,10 @@ class BaseProvider:
         """Rzuca wyjątek, gdy dostawca nie działa lub dane są błędne."""
         raise NotImplementedError
 
+    def balance(self) -> dict:
+        """Saldo konta u dostawcy: {'balance': float, 'currency': str, 'available_credit': float|None}."""
+        raise ProviderError("Ten dostawca nie udostępnia salda.")
+
     def start_recording(self, call_sid: str, callback_url: str) -> None:
         raise NotImplementedError
 
@@ -116,6 +120,11 @@ class TwilioProvider(BaseProvider):
     def check(self) -> None:
         sid = twilio_credentials()[0]
         self._client().api.accounts(sid).fetch()
+
+    def balance(self) -> dict:
+        sid = twilio_credentials()[0]
+        data = self._client().api.v2010.accounts(sid).balance.fetch()
+        return {'balance': float(data.balance), 'currency': data.currency, 'available_credit': None}
 
     def start_recording(self, call_sid, callback_url):
         self._client().calls(call_sid).recordings.create(
@@ -185,6 +194,23 @@ class TelnyxProvider(BaseProvider):
             detail = self._detail(resp)
             logger.warning("Telnyx check: HTTP %s %s", resp.status_code, detail)
             raise ProviderError(f"Telnyx HTTP {resp.status_code}{': ' + detail if detail else ''}{hint}")
+
+    def balance(self):
+        key = decrypt_secret(self.row.secret_encrypted)
+        if not key:
+            raise ProviderError("Brak klucza API Telnyx")
+        resp = requests.get('https://api.telnyx.com/v2/balance', headers={'Authorization': f'Bearer {key}'},
+                            timeout=HTTP_TIMEOUT)
+        if resp.status_code != 200:
+            detail = self._detail(resp)
+            logger.warning("Telnyx balance: HTTP %s %s", resp.status_code, detail)
+            raise ProviderError(f"Telnyx HTTP {resp.status_code}{': ' + detail if detail else ''}")
+        data = resp.json().get('data') or {}
+        available = data.get('available_credit')
+        return {
+            'balance': float(data.get('balance') or 0), 'currency': data.get('currency') or '',
+            'available_credit': float(available) if available not in (None, '') else None,
+        }
 
     def start_recording(self, call_sid, callback_url):
         resp = self._request('POST', f'Calls/{call_sid}/Recordings.json', data={

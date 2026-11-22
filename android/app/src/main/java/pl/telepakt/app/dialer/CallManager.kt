@@ -175,6 +175,11 @@ object CallManager {
             setStatus("Zaloguj się w aplikacji TelePakt, aby używać komunikatów.", true)
             return
         }
+        if (!Policy.telephonyEnabled(ctx)) {
+            pending = null; active = false
+            setStatus("Brak środków na koncie TelePakt - funkcje TelePakt są wyłączone.", true)
+            return
+        }
         if (telepaktNumber != null) {
             advance()
             return
@@ -264,7 +269,12 @@ object CallManager {
             dialStartedAt = System.currentTimeMillis()
             mergeTries = 0
             setStatus("Łączę z TelePakt…")
-            telecom.placeCall(Uri.fromParts("tel", number, null), Bundle())
+            // Ta sama karta SIM co rozmowa, do której dołączamy (przy dual SIM inaczej scalenie się nie uda).
+            val extras = Bundle()
+            calls.firstOrNull { !isTelePaktLeg(it) }?.details?.accountHandle?.let {
+                extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it)
+            }
+            telecom.placeCall(Uri.fromParts("tel", number, null), extras)
             main.postDelayed({
                 val leg = calls.firstOrNull { isTelePaktLeg(it) }
                 if (dialing && (leg == null || leg.state != Call.STATE_ACTIVE)) {

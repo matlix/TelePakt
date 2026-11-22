@@ -108,11 +108,22 @@ class TelephonyProviderAdmin(ModelAdmin):
                     'last_checked_at', 'last_error')
     list_editable = ('is_enabled', 'priority')
     readonly_fields = ('status', 'consecutive_failures', 'last_checked_at', 'last_ok_at', 'last_error', 'webhook_urls')
-    actions = ['check_now', 'check_tts', 'rotate_webhook_token']
+    actions = ['check_now', 'check_balance', 'check_tts', 'rotate_webhook_token']
 
     @display(description="Stan", label={'ok': 'success', 'failing': 'danger', 'unknown': 'warning'})
     def show_status(self, obj):
         return obj.status, obj.get_status_display()
+
+    @admin.action(description="Sprawdź saldo konta u dostawcy")
+    def check_balance(self, request, queryset):
+        for row in queryset:
+            adapter = providers.adapter_for(row.kind)
+            try:
+                info = adapter.balance()
+                extra = f", dostępny kredyt {info['available_credit']}" if info['available_credit'] is not None else ''
+                self.message_user(request, f"{row.get_kind_display()}: saldo {info['balance']} {info['currency']}{extra}")
+            except Exception as exc:  # noqa: BLE001
+                self.message_user(request, f"{row.get_kind_display()}: {exc}", level=messages.ERROR)
 
     @display(boolean=True, description="Sekret zapisany")
     def has_secret(self, obj):

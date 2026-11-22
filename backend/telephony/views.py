@@ -36,8 +36,11 @@ from twilio.request_validator import RequestValidator
 from twilio.twiml.voice_response import Dial, VoiceResponse
 
 from .models import CallLog, CustomerReview, InAppPurchaseReceipt, LegalScript
+from django.db.models import F
+from django.db.models.functions import Greatest
+
 from accounts.models import Profile
-from accounts.services import ensure_profile, normalize_phone
+from accounts.services import telephony_allowed, ensure_profile, normalize_phone
 from . import providers
 from .retention import erase_recording, maybe_purge_expired
 
@@ -93,6 +96,13 @@ def _xml(response: VoiceResponse) -> HttpResponse:
     return HttpResponse(str(response), content_type='application/xml')
 
 
+def _no_credit():
+    return Response({
+        "error": "Brak środków na koncie TelePakt - funkcje TelePakt są wyłączone, aplikacja działa jak zwykły telefon.",
+        "code": "no_credit",
+    }, status=402)
+
+
 @twilio_webhook
 def twilio_conference_bridge(request):
     """Tworzy mostek telekonferencji 3-stronnej (3-way call) z nagrywaniem.
@@ -110,7 +120,13 @@ def twilio_conference_bridge(request):
     # Rozmowa WLASNA (3-way): uzytkownik w trakcie rozmowy dzwoni na numer TelePakt i scala polaczenia.
     # Wtedy "dzwoniacym" jest jego wlasny numer, a w jego nogach slychac obie strony rozmowy.
     own_phone = normalize_phone(caller) or ''
-    is_own_call = bool(own_phone) and Profile.objects.filter(phone_protected=own_phone).exists()
+    own_profile = Profile.objects.filter(phone_protected=own_phone).first() if own_phone else None
+    is_own_call = own_profile is not None
+    if is_own_call and not telephony_allowed(own_profile):
+        # Brak srodkow: zadnego mostka ani nagrywania - rozmowa z TelePakt konczy sie od razu.
+        response.say('Brak środków na koncie TelePakt. Funkcje TelePakt są wyłączone.', language='pl-PL')
+        response.hangup()
+        return _xml(response)
     if is_own_call:
         caller, called = OWN_CALL_LABEL, own_phone
 
@@ -193,11 +209,16 @@ def twilio_recording_callback(request):
         logger.info("recording-callback dla nieznanego CallSid=%s", call_sid)
         return HttpResponse(status=200)
 
+    first_time = call.status != 'recorded'
     call.recording_url = recording_url
     call.recording_sid = recording_sid
     call.duration_seconds = duration
     call.status = 'recorded'
     call.save()
+    if first_time and call.caller_number == OWN_CALL_LABEL and getattr(settings, 'TELEPAKT_REQUIRE_CREDIT', False):
+        # Rozmowa wlasna (3-way) zuzywa srodki uzytkownika; nie schodzimy ponizej zera.
+        Profile.objects.filter(phone_protected=call.recipient_number).update(
+            credit_seconds=Greatest(F('credit_seconds') - duration, 0))
     return HttpResponse(status=200)
 
 
@@ -212,7 +233,10 @@ def start_recording(request):
     ``{"call_sid": "CA..."}``; bez niego wybieramy najnowsze polaczenie tego numeru
     z ostatnich 10 minut, ktore jeszcze nie jest nagrywane. Rozmowca nie slyszy zadnego komunikatu.
     """
-    phone = ensure_profile(request.user).phone_protected
+    profile = ensure_profile(request.user)
+    if not telephony_allowed(profile):
+        return _no_credit()
+    phone = profile.phone_protected
     if not phone:
         return Response({"error": "Ustaw chroniony numer telefonu w profilu"}, status=400)
     call_sid = str(request.data.get('call_sid') or '')
@@ -432,6 +456,8 @@ def forwarding_info(request):
 
     Zwraca 503, gdy żaden dostawca nie ma skonfigurowanych danych i numeru.
     """
+    if request.user.is_authenticated and not telephony_allowed(ensure_profile(request.user)):
+        return _no_credit()
     for adapter in providers.ordered_providers():
         if adapter.row.phone_number:
             return Response({

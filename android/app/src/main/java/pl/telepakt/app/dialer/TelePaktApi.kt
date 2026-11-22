@@ -40,6 +40,8 @@ object TelePaktApi {
             val code = conn.responseCode
             val body = (if (code in 200..299) conn.inputStream else conn.errorStream)
                 ?.bufferedReader()?.use { it.readText() }.orEmpty()
+            // 402 = brak środków na koncie TelePakt: od teraz aplikacja działa jak zwykły telefon (do odświeżenia salda).
+            if (code == 402) Policy.setTelephonyEnabled(ctx, false)
             return Pair(code, body)
         } catch (e: IOException) {
             Log.e(TAG, "API $method $path: sieć", e)
@@ -85,6 +87,20 @@ object TelePaktApi {
         if (code in 200..299) return Pair(code, null)
         Log.w(TAG, "speak HTTP $code: $body")
         return Pair(code, errorOf(body, "Nie udało się odtworzyć komunikatu (HTTP $code)"))
+    }
+
+    /** Pobiera z serwera, czy konto ma środki na funkcje TelePakt, i zapamiętuje to lokalnie; błąd sieci nic nie zmienia. */
+    fun refreshEntitlement(ctx: Context, onDone: () -> Unit = {}) {
+        if (!isConfigured(ctx)) return
+        Thread {
+            try {
+                val (code, body) = request(ctx, "GET", "/api/auth/me/", 8000)
+                if (code in 200..299) Policy.setTelephonyEnabled(ctx, JSONObject(body).optBoolean("telephonyEnabled", true))
+            } catch (e: Exception) {
+                Log.w(TAG, "odświeżenie stanu konta: ${e.message}")
+            }
+            onDone()
+        }.start()
     }
 
     /** Ile różnych użytkowników TelePakt zgłosiło numer (0 = brak wystarczających zgłoszeń; to NIE znaczy „bezpieczny”). */

@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from twilio.twiml.voice_response import VoiceResponse
 
-from accounts.services import ensure_profile
+from accounts.services import ensure_profile, telephony_allowed
 
 from . import providers, voice
 from .models import CallLog, VoiceMessage
@@ -266,6 +266,8 @@ def _active_own_call(user):
 @throttle_classes([ScopedRateThrottle])
 def message_speak(request, pk):
     """Odtwarza komunikat w trwającej rozmowie nagrywanej przez TelePakt (po scaleniu 3-way)."""
+    if not telephony_allowed(ensure_profile(request.user)):
+        return Response({'error': 'Brak środków na koncie TelePakt - funkcje TelePakt są wyłączone.', 'code': 'no_credit'}, status=402)
     message = _own_message(request.user, pk)
     if message is None:
         return _error('Nie znaleziono komunikatu.', 404)

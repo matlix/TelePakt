@@ -7,7 +7,7 @@ from unfold.admin import ModelAdmin, StackedInline
 from unfold.contrib.filters.admin import RangeDateTimeFilter
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
-from .models import Profile
+from .models import ClientLog, Profile
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
@@ -38,9 +38,19 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(ModelAdmin):
-    list_display = ('name', 'user', 'phone_protected', 'subscription_plan', 'conference_supported', 'carrier_note', 'created_at')
-    list_filter = ('subscription_plan', 'conference_supported', ('created_at', RangeDateTimeFilter))
+    list_display = ('name', 'user', 'phone_protected', 'subscription_plan', 'credit_seconds', 'is_tester', 'conference_supported', 'carrier_note', 'created_at')
+    list_filter = ('subscription_plan', 'is_tester', 'conference_supported', ('created_at', RangeDateTimeFilter))
     list_filter_submit = True
     search_fields = ('name', 'user__email', 'phone_protected')
-    list_editable = ('subscription_plan',)
+    list_editable = ('subscription_plan', 'credit_seconds', 'is_tester')
     date_hierarchy = 'created_at'
+
+
+@admin.register(ClientLog)
+class ClientLogAdmin(ModelAdmin):
+    list_display = ('created_at', 'level', 'source', 'screen', 'message', 'user')
+    list_filter = ('level', 'source', ('created_at', RangeDateTimeFilter))
+    list_filter_submit = True
+    search_fields = ('message', 'details', 'user__email', 'screen')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('user', 'level', 'source', 'screen', 'message', 'details', 'created_at')

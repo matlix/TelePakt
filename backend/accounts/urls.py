@@ -8,6 +8,7 @@ urlpatterns = [
     path('logout/', views.logout, name='auth_logout'),
     path('me/', views.me, name='auth_me'),
     path('carrier-report/', views.carrier_report, name='auth_carrier_report'),
+    path('client-log/', views.client_log, name='auth_client_log'),
     path('password-reset/', views.password_reset_request, name='auth_reset_request'),
     path('password-reset/confirm/', views.password_reset_confirm, name='auth_reset_confirm'),
 ]

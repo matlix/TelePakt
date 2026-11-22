@@ -56,6 +56,18 @@ def ensure_profile(user):
     return profile
 
 
+def telephony_allowed(profile) -> bool:
+    """Czy konto moze korzystac z funkcji TelePakt opartych o telefonie (3-way, komunikaty, nagrywanie).
+
+    Bez TELEPAKT_REQUIRE_CREDIT zawsze tak. Z nim: konto testowe albo dodatnie srodki; przy 0 aplikacja ma dzialac
+    jak zwykly telefon.
+    """
+    from django.conf import settings
+    if not getattr(settings, 'TELEPAKT_REQUIRE_CREDIT', False):
+        return True
+    return bool(profile.is_tester or profile.credit_seconds > 0)
+
+
 def serialize_user(user) -> dict:
     p = ensure_profile(user)
     return {
@@ -67,4 +79,7 @@ def serialize_user(user) -> dict:
         'createdAt': p.created_at.date().isoformat(),
         'isVerified': True,
         'phoneProtected': format_phone(p.phone_protected),
+        'telephonyEnabled': telephony_allowed(p),
+        'creditMinutes': p.credit_seconds // 60,
+        'isTester': p.is_tester,
     }

@@ -72,6 +72,7 @@ class InCallActivity : Activity() {
             addView(root, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         })
         loadMessages()
+        TelePaktApi.refreshEntitlement(applicationContext) { runOnUiThread { render() } }
     }
 
     override fun onStart() {
@@ -175,6 +176,9 @@ class InCallActivity : Activity() {
             row.addView(bigButton("Odrzuć", "#DC2626") { call.reject(false, null) }, weight())
             row.addView(bigButton("Odbierz", "#16A34A") { call.answer(VideoProfile.STATE_AUDIO_ONLY) }, weight())
             card.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+            if (CallManager.numberOf(call).isNotBlank()) {
+                card.addView(smallButton("✉ Odrzuć i wyślij wiadomość") { quickReply(call) }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+            }
         } else if (several && call.state == Call.STATE_HOLDING) {
             card.addView(smallButton("Wznów tę rozmowę") { call.unhold() }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
         }
@@ -255,7 +259,37 @@ class InCallActivity : Activity() {
     }
 
     /** Przyciski komunikatów: jeden stuknięcie = połącz z TelePakt, scal i odtwórz. */
+    /** Odrzuca połączenie i otwiera SMS z gotową treścią (bez uprawnienia do SMS - wysyła użytkownik w swojej aplikacji). */
+    private fun quickReply(call: Call) {
+        val number = CallManager.numberOf(call)
+        val items = Policy.QUICK_REPLIES.toTypedArray()
+        android.app.AlertDialog.Builder(this).setTitle("Odrzuć i odpisz").setItems(items) { _, which ->
+            call.reject(false, null)
+            try {
+                startActivity(
+                    Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:" + android.net.Uri.encode(number)))
+                        .putExtra("sms_body", items[which]).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("TelePakt", "otwarcie SMS nie powiodło się", e)
+                android.widget.Toast.makeText(this, "Nie znaleziono aplikacji do wiadomości.", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }.setNegativeButton("Anuluj", null).show()
+    }
+
     private fun addTelePaktPanel() {
+        if (!Policy.telephonyEnabled(this)) {
+            // Brak środków na koncie TelePakt: telefon działa normalnie, funkcje TelePakt są wyłączone.
+            val note = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                background = rounded("#1E293B", 20, "#475569")
+                setPadding(dp(12), dp(12), dp(12), dp(12))
+            }
+            note.addView(text("Funkcje TelePakt są wyłączone", 14f, "#CBD5E1", bold = true))
+            note.addView(text("Na koncie TelePakt nie ma środków. Telefon działa jak zwykła aplikacja Telefon - doładuj konto w aplikacji TelePakt, aby włączyć komunikaty i nagrywanie.", 11f, "#94A3B8"))
+            root.addView(note, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6); bottomMargin = dp(10) })
+            return
+        }
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = rounded("#082F49", 20, "#0EA5E9")

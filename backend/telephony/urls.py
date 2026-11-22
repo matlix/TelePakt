@@ -23,5 +23,6 @@ urlpatterns = [
     path('verify-purchase/', views.verify_iap_purchase, name='verify_purchase'),
     path('number-reputation/', reputation_views.number_reputation, name='number_reputation'),
     path('report-number/', reputation_views.report_number, name='report_number'),
+    path('provider-balance/', reputation_views.provider_balance, name='provider_balance'),
     path('health/', views.health_check, name='health_check'),
 ]

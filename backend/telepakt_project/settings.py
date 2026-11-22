@@ -174,6 +174,8 @@ APP_BASE_URL = os.environ.get('APP_BASE_URL', 'https://telepakt.pl')  # strona W
 # Adres API, pod ktorym dostawcy telefonii wolaja webhooki (NIE strona WWW).
 API_PUBLIC_URL = os.environ.get('API_PUBLIC_URL', 'https://api.telepakt.pl')
 DEFAULT_RETENTION_DAYS = int(os.environ.get('RETENTION_DAYS', '30'))
+# Gdy wlaczone (1/true), funkcje TelePakt przez dostawce telefonii wymagaja srodkow na koncie (Profile.credit_seconds).
+TELEPAKT_REQUIRE_CREDIT = os.environ.get('TELEPAKT_REQUIRE_CREDIT', '').lower() in ('1', 'true', 'yes')
 
 
 # --- Panel administracyjny (django-unfold) -------------------------------------------------

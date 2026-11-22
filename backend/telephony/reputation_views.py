@@ -51,3 +51,35 @@ def report_number(request):
     except IntegrityError:  # równoległe żądanie dodało to samo zgłoszenie
         created = False
     return Response({'status': 'reported' if created else 'already_reported', 'number': number}, status=201 if created else 200)
+
+
+# Szacunek kosztu pelnego autotestu (jedna rozmowa 3-way ok. 2 min + synteza + nagranie). To NIE jest cennik Telnyx:
+# stawki trzeba potwierdzic u dostawcy, dlatego zakladamy ostrozny gorny limit.
+ESTIMATED_TEST_COST_USD = 0.50
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def provider_balance(request):
+    """Saldo aktywnego dostawcy + czy wystarczy na pelny autotest. Tylko konta testowe i personel."""
+    from accounts.services import ensure_profile
+    from . import providers
+    if not (request.user.is_staff or ensure_profile(request.user).is_tester):
+        return _error('Dostępne tylko dla kont testowych.', 403)
+    last_error = 'Brak skonfigurowanego dostawcy z danymi dostępowymi.'
+    for adapter in providers.ordered_providers():
+        if not adapter.has_credentials():
+            continue
+        try:
+            info = adapter.balance()
+        except Exception as exc:  # noqa: BLE001 - pokazujemy powod uzytkownikowi (konto testowe)
+            logger.warning("Saldo %s: %s", adapter.kind, exc)
+            last_error = f"{adapter.kind}: {exc}"
+            continue
+        spendable = info['available_credit'] if info['available_credit'] is not None else info['balance']
+        return Response({
+            'provider': adapter.kind, **info,
+            'estimated_test_cost_usd': ESTIMATED_TEST_COST_USD,
+            'enough_for_full_test': info['currency'].upper() == 'USD' and spendable >= ESTIMATED_TEST_COST_USD * 2,
+        })
+    return _error(last_error, 503)

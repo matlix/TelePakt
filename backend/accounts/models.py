@@ -25,6 +25,11 @@ class Profile(models.Model):
     conference_supported = models.BooleanField(null=True, blank=True, verbose_name="Operator wspiera 3-way")
     carrier_note = models.CharField(max_length=120, blank=True, verbose_name="Operator (z aplikacji)")
     carrier_checked_at = models.DateTimeField(null=True, blank=True, verbose_name="Sprawdzono")
+    # Przedplacone srodki na funkcje TelePakt przez dostawce telefonii (sekundy rozmow 3-way). Egzekwowane tylko przy
+    # TELEPAKT_REQUIRE_CREDIT=1; przy 0 srodkow aplikacja dziala jak zwykly telefon. Doladowuje admin (docelowo sklep).
+    credit_seconds = models.PositiveIntegerField(default=0, verbose_name="Środki (sekundy rozmów)")
+    # Konto testowe: aplikacja wysyla na serwer dziennik uzycia i bledow (autotest), do diagnozy.
+    is_tester = models.BooleanField(default=False, verbose_name="Konto testowe (dziennik klienta)")
 
     class Meta:
         verbose_name = "Profil"
@@ -52,3 +57,24 @@ class PasswordResetCode(models.Model):
     code_hash = models.CharField(max_length=64)
     expires_at = models.DateTimeField()
     attempts = models.PositiveSmallIntegerField(default=0)
+
+
+class ClientLog(models.Model):
+    """Wpis dziennika z aplikacji konta testowego (ekran, uzycie, blad) - do diagnozy usterek bez dostepu do telefonu."""
+    LEVELS = [('info', 'info'), ('warn', 'warn'), ('error', 'error')]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='client_logs')
+    level = models.CharField(max_length=5, choices=LEVELS, default='info')
+    source = models.CharField(max_length=40, blank=True, verbose_name="Źródło (np. autotest, js, native)")
+    screen = models.CharField(max_length=60, blank=True)
+    message = models.CharField(max_length=500)
+    details = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name = "Dziennik klienta"
+        verbose_name_plural = "Dziennik klienta"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.level}] {self.message[:60]}"

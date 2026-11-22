@@ -46,6 +46,20 @@ class DialerActivity : Activity() {
             setPadding(dp(16), dp(36), dp(16), dp(16))
         }
         col.addView(label(if (addCall) "Dodaj rozmowę" else "Telefon TelePakt", 14f, "#7DD3FC", bold = true))
+        val menu = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun menuButton(text: String, onClick: () -> Unit) = Button(this).apply {
+            this.text = text
+            isAllCaps = false
+            textSize = 11f
+            setTextColor(Color.parseColor("#E2E8F0"))
+            background = rounded("#1E293B", 12)
+            setOnClickListener { onClick() }
+        }
+        menu.addView(menuButton("👤 Kontakty") { startActivity(Intent(this, ContactsActivity::class.java)) }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { setMargins(dp(2), dp(6), dp(2), 0) })
+        menu.addView(menuButton("🚫 Zablokowane") { startActivity(Intent(this, BlocklistActivity::class.java)) }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { setMargins(dp(2), dp(6), dp(2), 0) })
+        menu.addView(menuButton("📼 Poczta") { Dialing.voicemail(this) }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { setMargins(dp(2), dp(6), dp(2), 0) })
+        menu.addView(menuButton("🌙 Cisza") { showQuietHours() }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { setMargins(dp(2), dp(6), dp(2), 0) })
+        col.addView(menu)
 
         display = label("", 30f, "#FFFFFF", bold = true).apply { minHeight = dp(52) }
         col.addView(display)
@@ -123,19 +137,33 @@ class DialerActivity : Activity() {
         loadRecents()
     }
 
+    /** Wybiera numer z ostrzeżeniem (zagraniczny / o podwyższonej opłacie) i wyborem karty SIM przy dual SIM. */
     private fun placeCall(raw: String) {
-        val target = raw.trim()
-        if (target.isEmpty()) return
-        try {
-            val telecom = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
-            telecom.placeCall(Uri.fromParts("tel", target, null), Bundle())
-            finish()
-        } catch (e: SecurityException) {
-            Toast.makeText(this, "Brak uprawnienia do wykonywania połączeń. Zezwól na nie w ustawieniach TelePakt.", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            android.util.Log.e("TelePakt", "placeCall failed", e)
-            Toast.makeText(this, "Nie udało się wybrać numeru: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+        Dialing.call(this, raw) { finish() }
+    }
+
+    /** Cisza nocna: w wybranych godzinach dzwonek połączeń od numerów spoza kontaktów jest wyciszany (połączenie nie jest blokowane). */
+    private fun showQuietHours() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(10), dp(20), 0) }
+        val enabled = android.widget.CheckBox(this).apply { text = "Wyciszaj dzwonek nieznanych numerów"; isChecked = Policy.quietEnabled(this@DialerActivity) }
+        fun picker(value: Int) = android.widget.NumberPicker(this).apply { minValue = 0; maxValue = 23; this.value = value; wrapSelectorWheel = true }
+        val from = picker(Policy.quietStart(this))
+        val to = picker(Policy.quietEnd(this))
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        row.addView(TextView(this).apply { text = "od " })
+        row.addView(from)
+        row.addView(TextView(this).apply { text = "  do " })
+        row.addView(to)
+        row.addView(TextView(this).apply { text = " h" })
+        box.addView(enabled)
+        box.addView(row)
+        box.addView(TextView(this).apply { text = "Połączenia nie są odrzucane - tylko dzwonią bezgłośnie i zostają w rejestrze. Kontakty dzwonią normalnie."; textSize = 11f; setPadding(0, dp(8), 0, 0) })
+        android.app.AlertDialog.Builder(this).setTitle("Cisza nocna").setView(box)
+            .setPositiveButton("Zapisz") { _, _ ->
+                Policy.setQuiet(this, enabled.isChecked, from.value, to.value)
+                Toast.makeText(this, if (enabled.isChecked) "Cisza nocna: ${from.value}:00-${to.value}:00" else "Cisza nocna wyłączona", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Anuluj", null).show()
     }
 
     private fun loadRecents() {

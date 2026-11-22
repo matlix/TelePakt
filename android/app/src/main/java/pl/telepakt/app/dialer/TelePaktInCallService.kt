@@ -39,6 +39,15 @@ class TelePaktInCallService : InCallService() {
         super.onCallAdded(call)
         CallManager.onCallAdded(call)
         if (call.state == Call.STATE_RINGING) {
+            // Cisza nocna: numery spoza kontaktów dzwonią bezgłośnie (nic nie jest odrzucane ani blokowane).
+            val number = CallManager.numberOf(call)
+            if (Policy.quietNow(this) && !Dialing.inContacts(this, number)) {
+                try {
+                    (getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager).silenceRinger()
+                } catch (e: Exception) {
+                    Log.w("TelePakt", "wyciszenie dzwonka nie powiodło się", e)
+                }
+            }
             // Ekran pełnoekranowy pokaże powiadomienie (działa też na zablokowanym telefonie).
             updateNotification()
         } else {

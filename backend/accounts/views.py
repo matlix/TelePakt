@@ -18,7 +18,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
-from .models import PasswordResetCode, Profile
+from .models import ClientLog, PasswordResetCode, Profile
 from .services import ensure_profile, issue_token, normalize_phone, serialize_user
 
 logger = logging.getLogger(__name__)
@@ -201,3 +201,33 @@ def password_reset_confirm(request):
     user.reset_codes.all().delete()
     user.auth_tokens.all().delete()  # zmiana hasła wylogowuje wszystkie urządzenia
     return Response({'status': 'ok'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def client_log(request):
+    """Dziennik z aplikacji KONTA TESTOWEGO: {"events": [{level, source, screen, message, details}]} (maks. 100).
+
+    Zwykle konta dostaja 403 - zwykli uzytkownicy nie wysylaja nam zadnego dziennika uzycia. Wpisy trafiaja do
+    panelu admina (Dziennik klienta) oraz do logu serwera, zeby blad na telefonie testera byl widoczny od razu.
+    """
+    if not ensure_profile(request.user).is_tester:
+        return Response({'error': 'Dziennik klienta jest dostępny tylko dla kont testowych.'}, status=403)
+    events = request.data.get('events')
+    if not isinstance(events, list) or not events:
+        return Response({'error': 'Brak zdarzeń do zapisania.'}, status=400)
+    rows = []
+    for e in events[:100]:
+        if not isinstance(e, dict):
+            continue
+        level = str(e.get('level') or 'info')
+        rows.append(ClientLog(
+            user=request.user, level=level if level in ('info', 'warn', 'error') else 'info',
+            source=str(e.get('source') or '')[:40], screen=str(e.get('screen') or '')[:60],
+            message=str(e.get('message') or '')[:500], details=str(e.get('details') or '')[:20000],
+        ))
+    ClientLog.objects.bulk_create(rows)
+    for r in rows:
+        log = logger.error if r.level == 'error' else logger.warning if r.level == 'warn' else logger.info
+        log("CLIENT[%s] %s/%s: %s | %s", request.user.email, r.source, r.screen, r.message, r.details[:300])
+    return Response({'stored': len(rows)}, status=201)
