@@ -310,6 +310,20 @@ class TelnyxProvider(BaseProvider):
         conferences = [c for c in (found.json().get('conferences') or []) if c.get('status') != 'completed']
         if not conferences:
             raise ProviderError(self._no_conference_message(conference_name))
+        # 1) Akcja "play" Voice API na tej konferencji (UUID konferencji TeXML wyglada jak id Voice API). AnnounceUrl w TeXML
+        #    skonczyl sie u testera glosem Telnyx "an application error has occurred" - Telnyx uznaje wtedy odpowiedz za bledne TeXML.
+        play_note = ''
+        try:
+            key = decrypt_secret(self.row.secret_encrypted)
+            play = requests.post(f"https://api.telnyx.com/v2/conferences/{conferences[0]['sid']}/actions/play",
+                                 headers={'Authorization': f'Bearer {key}'}, json={'audio_url': announce_url}, timeout=HTTP_TIMEOUT)
+            if play.status_code in (200, 201, 202):
+                return {'conference': conferences[0].get('sid'), 'metoda': 'v2 conferences play',
+                        'status': play.status_code, 'body': (play.text or '')[:300]}
+            play_note = f"v2 play HTTP {play.status_code}: {self._detail(play)}"
+        except requests.RequestException as exc:
+            play_note = f"v2 play wyjatek: {exc}"
+        logger.warning("Telnyx: play w konferencji nie zadzialal (%s) - probuje AnnounceUrl", play_note)
         try:
             resp = self._request('POST', f"Conferences/{conferences[0]['sid']}/Participants/{call_sid}", timeout=ANNOUNCE_TIMEOUT,
                                  data={'AnnounceUrl': announce_url, 'AnnounceMethod': 'POST'})
@@ -318,11 +332,11 @@ class TelnyxProvider(BaseProvider):
             # odpytuje adres announce/<token>/ w tej samej chwili). Zgłaszanie bledu byloby wtedy nieprawda.
             logger.warning("Telnyx: brak odpowiedzi na AnnounceUrl w %s s (rozmowa %s) - komunikat zapewne jest odtwarzany",
                            ANNOUNCE_TIMEOUT, call_sid)
-            return {'conference': conferences[0].get('sid'), 'status': 'timeout', 'body': ''}
+            return {'conference': conferences[0].get('sid'), 'metoda': 'AnnounceUrl', 'poprzednia_proba': play_note, 'status': 'timeout', 'body': ''}
         if resp.status_code not in (200, 201):
             raise ProviderError(f"Telnyx HTTP {resp.status_code}: {self._detail(resp)}")
         return {'conference': conferences[0].get('sid'), 'conference_status': conferences[0].get('status'),
-                'status': resp.status_code, 'body': (resp.text or '')[:300]}
+                'metoda': 'AnnounceUrl', 'poprzednia_proba': play_note, 'status': resp.status_code, 'body': (resp.text or '')[:300]}
 
     def _no_conference_message(self, conference_name: str) -> str:
         """Komunikat z PRZYCZYNĄ: co Telnyx faktycznie widzi (nazwa i stan ostatnich konferencji), by dało się to zdiagnozować."""
